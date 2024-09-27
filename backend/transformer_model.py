@@ -10,9 +10,4 @@ class TransformerModel(nn.Module):
         self.src_mask = None
         self.trg_mask = None
 
-    def forward(self, src, trg):
-        out = self.transformer(src, trg, src_mask=self.src_mask, tgt_mask=self.trg_mask)
-        return self.fc_out(out)
 
-# Example parameters
-model = TransformerModel(vocab_size=30522, d_model=512, nhead=8, num_encoder_layers=6, num_decoder_layers=6)
