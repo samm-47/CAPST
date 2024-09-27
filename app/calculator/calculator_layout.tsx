@@ -41,7 +41,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </div>
 
       {/* Main content area */}
-      <main>{children}</main>
+      <main>
+        {children}
+      </main>
     </div>
   );
 }
