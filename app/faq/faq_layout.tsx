@@ -1,4 +1,4 @@
-// app/layout.tsx
+// app/faq/faq_layout.tsx
 "use client"; // Mark this as a Client Component for client-side hooks
 
 import React, { useEffect } from "react";
