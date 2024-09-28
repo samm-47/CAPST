@@ -6,6 +6,7 @@ npm run dev
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Any images or icons to be used put in the public folder and then refer to with /icon_name.filetype
 ## Getting Started
 
 First, run the development server:
