@@ -54,9 +54,11 @@ const ChatbotPage = () => {
                 </div>
                 {/* You can extend this with actual chatbot functionality later */}
 
-
-                {/* Homepage Link here */}
-                <Link href="/" className="mt-6 text-blue-500 hover:underline">
+                {/* Add a link back to the homepage */}
+                <Link 
+                    href="/" 
+                    className="mt-6 rounded-full border border-solid border-black/[.08] transition-colors flex items-center justify-center text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44 hover:bg-[#f2f2f2]"
+                >
                     Go back to the homepage
                 </Link>
             </div>

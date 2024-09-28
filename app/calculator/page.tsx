@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React, {useState} from 'react';
 // Important for creation of the logo top right
-import Layout from "./calculator_layout"
+import Layout from "./calculator_layout";
 
 
 const CalculatorPage = () => {
