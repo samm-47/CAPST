@@ -14,8 +14,10 @@ const CalculatorPage = () => {
   const calculateScore = () => {
     console.log("Button called");
     const susScore = document.getElementById("susScoreValue");
+    const energyInputElement = document.getElementById("energyConsumption") as HTMLInputElement;
+    const x = energyInputElement.value;
     if (susScore) {
-      susScore.textContent = "Sustainable!";
+      susScore.textContent = "Sustainable!" + "\nx = " + x.toString();
     }
     else {
       console.error("Sustainability score calculation error: No element found.");
@@ -36,6 +38,7 @@ const CalculatorPage = () => {
             <form>
               <label htmlFor="energyConsumption">Energy Consumption (kWh): </label>
               <input type="number" id="energyConsumption" name="energyConsumption" step="any"></input>
+              {/* Fix invalid inputs containing characters besides 0-9 */}
             </form>
             <form>
               <label htmlFor="waterUsage">Water Usage (L): </label>
