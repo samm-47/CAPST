@@ -12,6 +12,9 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+  input[type="number"], textarea {
+    color: black; /* FIxing text color in text input for dark mode users */
+  }
 }
 
 body {
@@ -25,3 +28,4 @@ body {
     text-wrap: balance;
   }
 }
+

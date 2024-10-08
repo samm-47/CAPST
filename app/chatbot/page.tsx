@@ -49,7 +49,7 @@ const ChatbotPage = () => {
                         readOnly
                         className="w-full p-4 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700"
                         rows={4}
-                        placeholder="Your response will apprear here"
+                        placeholder="Your response will appear here"
                     />
                 </div>
                 {/* You can extend this with actual chatbot functionality later */}
