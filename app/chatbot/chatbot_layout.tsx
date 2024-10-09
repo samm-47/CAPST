@@ -27,7 +27,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       {/* Top navigation bar with logo */}
-      <div className="bg-gray-100 h-16 flex items-center justify-center px-8">
+      <div className="bg-gray-100 h-16 flex items-center justify-center px-8 sticky top-0 z-50"> {/* z-index deals with what elements eppear on top of others */}
         <Link href="/" passHref>
           <Image
             src="/green_expectations_logo.png"

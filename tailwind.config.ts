@@ -9,6 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        'mint-green': '#e6f7ef',
+        'greenify-button-green': '#09ad5f',
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
