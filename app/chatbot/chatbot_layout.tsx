@@ -27,23 +27,32 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       {/* Top navigation bar with logo */}
-      <div className="bg-white h-14 flex items-center justify-start px-8 sticky top-0 z-50 shadow-md"> {/* z-index deals with what elements eppear on top of others */}
+      <div className="bg-white h-16 flex items-center justify-start px-8 sticky top-0 z-50 shadow-md"> {/* z-index deals with what elements eppear on top of others */}
         <Link href="/" passHref>
           <Image
             src="/green_expectations_logo.png"
             alt="Green Expectations Logo"
             width={35}
             height={35}
-            className="transition hover:grayscale hover:brightness-90"
+            className="ml-8 transition hover:filer-coffee-green hover:brightness-90"
             priority
           />
         </Link>
-        {/* Create a multi-line entry for Green Expectations nav like they have on  their site */}
-        <div className="leading-tight">{/* this wraps the text  */}
-          <span className="ml-2 block text-med font-semibold">Green</span> {/* span is an inline element  */}
-          <span className="ml-2 text-med">Expectations</span>{/* span is an inline element  */}
-        </div>
 
+        {/* Add a link to the Calculator page */}
+        <Link
+          href="/calculator"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+        >
+          Calculator
+        </Link>
+        {/* Add a link to the Calculator page */}
+        <Link
+          href="/chatbot"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+        >
+          Chatbot
+        </Link>
       </div>
 
       {/* Main content area */}
