@@ -1,284 +1,247 @@
 """
-Testing
-=======
-
-General guidelines for writing good tests:
-
-- doctests always assume ``import networkx as nx`` so don't add that
-- prefer pytest fixtures over classes with setup methods.
-- use the ``@pytest.mark.parametrize``  decorator
-- use ``pytest.importorskip`` for numpy, scipy, pandas, and matplotlib b/c of PyPy.
-  and add the module to the relevant entries below.
-
+Pytest configuration and fixtures for the Numpy test suite.
 """
-
 import os
 import sys
+import tempfile
+from contextlib import contextmanager
 import warnings
-from importlib.metadata import entry_points
 
+import hypothesis
 import pytest
+import numpy
 
-import networkx
+from numpy._core._multiarray_tests import get_fpu_mode
+from numpy.testing._private.utils import NOGIL_BUILD
+
+try:
+    from scipy_doctest.conftest import dt_config
+    HAVE_SCPDT = True
+except ModuleNotFoundError:
+    HAVE_SCPDT = False
+
+
+_old_fpu_mode = None
+_collect_results = {}
+
+# Use a known and persistent tmpdir for hypothesis' caches, which
+# can be automatically cleared by the OS or user.
+hypothesis.configuration.set_hypothesis_home_dir(
+    os.path.join(tempfile.gettempdir(), ".hypothesis")
+)
+
+# We register two custom profiles for Numpy - for details see
+# https://hypothesis.readthedocs.io/en/latest/settings.html
+# The first is designed for our own CI runs; the latter also 
+# forces determinism and is designed for use via np.test()
+hypothesis.settings.register_profile(
+    name="numpy-profile", deadline=None, print_blob=True,
+)
+hypothesis.settings.register_profile(
+    name="np.test() profile",
+    deadline=None, print_blob=True, database=None, derandomize=True,
+    suppress_health_check=list(hypothesis.HealthCheck),
+)
+# Note that the default profile is chosen based on the presence 
+# of pytest.ini, but can be overridden by passing the 
+# --hypothesis-profile=NAME argument to pytest.
+_pytest_ini = os.path.join(os.path.dirname(__file__), "..", "pytest.ini")
+hypothesis.settings.load_profile(
+    "numpy-profile" if os.path.isfile(_pytest_ini) else "np.test() profile"
+)
+
+# The experimentalAPI is used in _umath_tests
+os.environ["NUMPY_EXPERIMENTAL_DTYPE_API"] = "1"
+
+def pytest_configure(config):
+    config.addinivalue_line("markers",
+        "valgrind_error: Tests that are known to error under valgrind.")
+    config.addinivalue_line("markers",
+        "leaks_references: Tests that are known to leak references.")
+    config.addinivalue_line("markers",
+        "slow: Tests that are very slow.")
+    config.addinivalue_line("markers",
+        "slow_pypy: Tests that are very slow on pypy.")
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
-    )
-    parser.addoption(
-        "--backend",
-        action="store",
-        default=None,
-        help="Run tests with a backend by auto-converting nx graphs to backend graphs",
-    )
-    parser.addoption(
-        "--fallback-to-nx",
-        action="store_true",
-        default=False,
-        help="Run nx function if a backend doesn't implement a dispatchable function"
-        " (use with --backend)",
-    )
+    parser.addoption("--available-memory", action="store", default=None,
+                     help=("Set amount of memory available for running the "
+                           "test suite. This can result to tests requiring "
+                           "especially large amounts of memory to be skipped. "
+                           "Equivalent to setting environment variable "
+                           "NPY_AVAILABLE_MEM. Default: determined"
+                           "automatically."))
 
 
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow: mark test as slow to run")
-    backend = config.getoption("--backend")
-    if backend is None:
-        backend = os.environ.get("NETWORKX_TEST_BACKEND")
-    # nx_loopback backend is only available when testing with a backend
-    loopback_ep = entry_points(name="nx_loopback", group="networkx.backends")
-    if not loopback_ep:
-        warnings.warn(
-            "\n\n             WARNING: Mixed NetworkX configuration! \n\n"
-            "        This environment has mixed configuration for networkx.\n"
-            "        The test object nx_loopback is not configured correctly.\n"
-            "        You should not be seeing this message.\n"
-            "        Try `pip install -e .`, or change your PYTHONPATH\n"
-            "        Make sure python finds the networkx repo you are testing\n\n"
-        )
-    config.backend = backend
-    if backend:
-        # We will update `networkx.config.backend_priority` below in `*_modify_items`
-        # to allow tests to get set up with normal networkx graphs.
-        networkx.utils.backends.backends["nx_loopback"] = loopback_ep["nx_loopback"]
-        networkx.utils.backends.backend_info["nx_loopback"] = {}
-        networkx.config.backends = networkx.utils.Config(
-            nx_loopback=networkx.utils.Config(),
-            **networkx.config.backends,
-        )
-        fallback_to_nx = config.getoption("--fallback-to-nx")
-        if not fallback_to_nx:
-            fallback_to_nx = os.environ.get("NETWORKX_FALLBACK_TO_NX")
-        networkx.config.fallback_to_nx = bool(fallback_to_nx)
+gil_enabled_at_start = True
+if NOGIL_BUILD:
+    gil_enabled_at_start = sys._is_gil_enabled()
 
 
-def pytest_collection_modifyitems(config, items):
-    # Setting this to True here allows tests to be set up before dispatching
-    # any function call to a backend.
-    if config.backend:
-        # Allow pluggable backends to add markers to tests (such as skip or xfail)
-        # when running in auto-conversion test mode
-        backend_name = config.backend
-        if backend_name != "networkx":
-            networkx.utils.backends._dispatchable._is_testing = True
-            networkx.config.backend_priority.algos = [backend_name]
-            networkx.config.backend_priority.generators = [backend_name]
-            backend = networkx.utils.backends.backends[backend_name].load()
-            if hasattr(backend, "on_start_tests"):
-                getattr(backend, "on_start_tests")(items)
-
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+def pytest_sessionstart(session):
+    available_mem = session.config.getoption('available_memory')
+    if available_mem is not None:
+        os.environ['NPY_AVAILABLE_MEM'] = available_mem
 
 
-# TODO: The warnings below need to be dealt with, but for now we silence them.
-@pytest.fixture(autouse=True)
-def set_warnings():
-    warnings.filterwarnings(
-        "ignore",
-        category=FutureWarning,
-        message="\n\nsingle_target_shortest_path_length",
-    )
-    warnings.filterwarnings(
-        "ignore",
-        category=FutureWarning,
-        message="\n\nshortest_path",
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nThe `normalized`"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nall_triplets"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nrandom_triad"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="minimal_d_separator"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="d_separated"
-    )
-    warnings.filterwarnings("ignore", category=DeprecationWarning, message="\n\nk_core")
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nk_shell"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nk_crust"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\nk_corona"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\ntotal_spanning_tree_weight"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message=r"\n\nThe 'create=matrix'"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="\n\n`compute_v_structures"
-    )
-    warnings.filterwarnings(
-        "ignore", category=DeprecationWarning, message="Keyword argument 'link'"
-    )
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    if NOGIL_BUILD and not gil_enabled_at_start and sys._is_gil_enabled():
+        tr = terminalreporter
+        tr.ensure_newline()
+        tr.section("GIL re-enabled", sep="=", red=True, bold=True)
+        tr.line("The GIL was re-enabled at runtime during the tests.")
+        tr.line("This can happen with no test failures if the RuntimeWarning")
+        tr.line("raised by Python when this happens is filtered by a test.")
+        tr.line("")
+        tr.line("Please ensure all new C modules declare support for running")
+        tr.line("without the GIL. Any new tests that intentionally imports ")
+        tr.line("code that re-enables the GIL should do so in a subprocess.")
+        pytest.exit("GIL re-enabled during tests", returncode=1)
+
+#FIXME when yield tests are gone.
+@pytest.hookimpl()
+def pytest_itemcollected(item):
+    """
+    Check FPU precision mode was not changed during test collection.
+
+    The clumsy way we do it here is mainly necessary because numpy
+    still uses yield tests, which can execute code at test collection
+    time.
+    """
+    global _old_fpu_mode
+
+    mode = get_fpu_mode()
+
+    if _old_fpu_mode is None:
+        _old_fpu_mode = mode
+    elif mode != _old_fpu_mode:
+        _collect_results[item] = (_old_fpu_mode, mode)
+        _old_fpu_mode = mode
+
+
+@pytest.fixture(scope="function", autouse=True)
+def check_fpu_mode(request):
+    """
+    Check FPU precision mode was not changed during the test.
+    """
+    old_mode = get_fpu_mode()
+    yield
+    new_mode = get_fpu_mode()
+
+    if old_mode != new_mode:
+        raise AssertionError("FPU precision mode changed from {0:#x} to {1:#x}"
+                             " during the test".format(old_mode, new_mode))
+
+    collect_result = _collect_results.get(request.node)
+    if collect_result is not None:
+        old_mode, new_mode = collect_result
+        raise AssertionError("FPU precision mode changed from {0:#x} to {1:#x}"
+                             " when collecting the test".format(old_mode,
+                                                                new_mode))
 
 
 @pytest.fixture(autouse=True)
-def add_nx(doctest_namespace):
-    doctest_namespace["nx"] = networkx
+def add_np(doctest_namespace):
+    doctest_namespace['np'] = numpy
+
+@pytest.fixture(autouse=True)
+def env_setup(monkeypatch):
+    monkeypatch.setenv('PYTHONHASHSEED', '0')
 
 
-# What dependencies are installed?
+@pytest.fixture(params=[True, False])
+def weak_promotion(request):
+    """
+    Fixture to ensure "legacy" promotion state or change it to use the new
+    weak promotion (plus warning).  `old_promotion` should be used as a
+    parameter in the function.
+    """
+    state = numpy._get_promotion_state()
+    if request.param:
+        numpy._set_promotion_state("weak_and_warn")
+    else:
+        numpy._set_promotion_state("legacy")
 
-try:
-    import numpy
-
-    has_numpy = True
-except ImportError:
-    has_numpy = False
-
-try:
-    import scipy
-
-    has_scipy = True
-except ImportError:
-    has_scipy = False
-
-try:
-    import matplotlib
-
-    has_matplotlib = True
-except ImportError:
-    has_matplotlib = False
-
-try:
-    import pandas
-
-    has_pandas = True
-except ImportError:
-    has_pandas = False
-
-try:
-    import pygraphviz
-
-    has_pygraphviz = True
-except ImportError:
-    has_pygraphviz = False
-
-try:
-    import pydot
-
-    has_pydot = True
-except ImportError:
-    has_pydot = False
-
-try:
-    import sympy
-
-    has_sympy = True
-except ImportError:
-    has_sympy = False
+    yield request.param
+    numpy._set_promotion_state(state)
 
 
-# List of files that pytest should ignore
+if HAVE_SCPDT:
 
-collect_ignore = []
+    @contextmanager
+    def warnings_errors_and_rng(test=None):
+        """Filter out the wall of DeprecationWarnings.
+        """
+        msgs = ["The numpy.linalg.linalg",
+                "The numpy.fft.helper",
+                "dep_util",
+                "pkg_resources",
+                "numpy.core.umath",
+                "msvccompiler",
+                "Deprecated call",
+                "numpy.core",
+                "`np.compat`",
+                "Importing from numpy.matlib",
+                "This function is deprecated.",    # random_integers
+                "Data type alias 'a'",     # numpy.rec.fromfile
+                "Arrays of 2-dimensional vectors",   # matlib.cross
+                "`in1d` is deprecated", ]
+        msg = "|".join(msgs)
 
-needs_numpy = [
-    "algorithms/approximation/traveling_salesman.py",
-    "algorithms/centrality/current_flow_closeness.py",
-    "algorithms/centrality/laplacian.py",
-    "algorithms/node_classification.py",
-    "algorithms/non_randomness.py",
-    "algorithms/polynomials.py",
-    "algorithms/shortest_paths/dense.py",
-    "algorithms/tree/mst.py",
-    "drawing/nx_latex.py",
-    "generators/expanders.py",
-    "linalg/bethehessianmatrix.py",
-    "linalg/laplacianmatrix.py",
-    "utils/misc.py",
-]
-needs_scipy = [
-    "algorithms/approximation/traveling_salesman.py",
-    "algorithms/assortativity/correlation.py",
-    "algorithms/assortativity/mixing.py",
-    "algorithms/assortativity/pairs.py",
-    "algorithms/bipartite/matrix.py",
-    "algorithms/bipartite/spectral.py",
-    "algorithms/centrality/current_flow_betweenness.py",
-    "algorithms/centrality/current_flow_betweenness_subset.py",
-    "algorithms/centrality/eigenvector.py",
-    "algorithms/centrality/katz.py",
-    "algorithms/centrality/laplacian.py",
-    "algorithms/centrality/second_order.py",
-    "algorithms/centrality/subgraph_alg.py",
-    "algorithms/communicability_alg.py",
-    "algorithms/community/divisive.py",
-    "algorithms/distance_measures.py",
-    "algorithms/link_analysis/hits_alg.py",
-    "algorithms/link_analysis/pagerank_alg.py",
-    "algorithms/node_classification.py",
-    "algorithms/similarity.py",
-    "algorithms/tree/mst.py",
-    "algorithms/walks.py",
-    "convert_matrix.py",
-    "drawing/layout.py",
-    "drawing/nx_pylab.py",
-    "generators/spectral_graph_forge.py",
-    "generators/expanders.py",
-    "linalg/algebraicconnectivity.py",
-    "linalg/attrmatrix.py",
-    "linalg/bethehessianmatrix.py",
-    "linalg/graphmatrix.py",
-    "linalg/laplacianmatrix.py",
-    "linalg/modularitymatrix.py",
-    "linalg/spectrum.py",
-    "utils/rcm.py",
-]
-needs_matplotlib = ["drawing/nx_pylab.py", "generators/classic.py"]
-needs_pandas = ["convert_matrix.py"]
-needs_pygraphviz = ["drawing/nx_agraph.py"]
-needs_pydot = ["drawing/nx_pydot.py"]
-needs_sympy = ["algorithms/polynomials.py"]
+        msgs_r = [
+            "invalid value encountered",
+            "divide by zero encountered"
+        ]
+        msg_r = "|".join(msgs_r)
 
-if not has_numpy:
-    collect_ignore += needs_numpy
-if not has_scipy:
-    collect_ignore += needs_scipy
-if not has_matplotlib:
-    collect_ignore += needs_matplotlib
-if not has_pandas:
-    collect_ignore += needs_pandas
-if not has_pygraphviz:
-    collect_ignore += needs_pygraphviz
-if not has_pydot:
-    collect_ignore += needs_pydot
-if not has_sympy:
-    collect_ignore += needs_sympy
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore', category=DeprecationWarning, message=msg
+            )
+            warnings.filterwarnings(
+                'ignore', category=RuntimeWarning, message=msg_r
+            )
+            yield
+
+    # find and check doctests under this context manager
+    dt_config.user_context_mgr = warnings_errors_and_rng
+
+    # numpy specific tweaks from refguide-check
+    dt_config.rndm_markers.add('#uninitialized')
+    dt_config.rndm_markers.add('# uninitialized')
+
+    import doctest
+    dt_config.optionflags = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
+
+    # recognize the StringDType repr
+    dt_config.check_namespace['StringDType'] = numpy.dtypes.StringDType
+
+    # temporary skips
+    dt_config.skiplist = set([
+        'numpy.savez',    # unclosed file
+        'numpy.matlib.savez',
+        'numpy.__array_namespace_info__',
+        'numpy.matlib.__array_namespace_info__',
+    ])
+
+    # xfail problematic tutorials
+    dt_config.pytest_extra_xfail = {
+        'how-to-verify-bug.rst': '',
+        'c-info.ufunc-tutorial.rst': '',
+        'basics.interoperability.rst': 'needs pandas',
+        'basics.dispatch.rst': 'errors out in /testing/overrides.py',
+        'basics.subclassing.rst': '.. testcode:: admonitions not understood',
+        'misc.rst': 'manipulates warnings',
+    }
+
+    # ignores are for things fail doctest collection (optionals etc)
+    dt_config.pytest_extra_ignore = [
+        'numpy/distutils',
+        'numpy/_core/cversions.py',
+        'numpy/_pyinstaller',
+        'numpy/random/_examples',
+        'numpy/compat',
+        'numpy/f2py/_backends/_distutils.py',
+    ]
+
