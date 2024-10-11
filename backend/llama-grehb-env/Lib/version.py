@@ -1,5 +1,9 @@
-__version__ = '0.19.1+cpu'
-git_version = '61943691d3390bd3148a7003b4a501f0e2b7ac6e'
-from torchvision.extension import _check_cuda_version
-if _check_cuda_version() > 0:
-    cuda = _check_cuda_version()
+"""`tqdm` version detector. Precedence: installed dist, git, 'UNKNOWN'."""
+try:
+    from ._dist_ver import __version__
+except ImportError:
+    try:
+        from setuptools_scm import get_version
+        __version__ = get_version(root='..', relative_to=__file__)
+    except (ImportError, LookupError):
+        __version__ = "UNKNOWN"
