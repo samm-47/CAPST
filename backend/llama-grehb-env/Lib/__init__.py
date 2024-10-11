@@ -1,211 +1,390 @@
-"""
-Python HTTP library with thread-safe connection pooling, file post support, user friendly, and more
-"""
 
-from __future__ import annotations
+from .error import *
 
-# Set default logging handler to avoid "No handler found" warnings.
-import logging
-import sys
-import typing
-import warnings
-from logging import NullHandler
+from .tokens import *
+from .events import *
+from .nodes import *
 
-from . import exceptions
-from ._base_connection import _TYPE_BODY
-from ._collections import HTTPHeaderDict
-from ._version import __version__
-from .connectionpool import HTTPConnectionPool, HTTPSConnectionPool, connection_from_url
-from .filepost import _TYPE_FIELDS, encode_multipart_formdata
-from .poolmanager import PoolManager, ProxyManager, proxy_from_url
-from .response import BaseHTTPResponse, HTTPResponse
-from .util.request import make_headers
-from .util.retry import Retry
-from .util.timeout import Timeout
+from .loader import *
+from .dumper import *
 
-# Ensure that Python is compiled with OpenSSL 1.1.1+
-# If the 'ssl' module isn't available at all that's
-# fine, we only care if the module is available.
+__version__ = '6.0.2'
 try:
-    import ssl
+    from .cyaml import *
+    __with_libyaml__ = True
 except ImportError:
-    pass
-else:
-    if not ssl.OPENSSL_VERSION.startswith("OpenSSL "):  # Defensive:
-        warnings.warn(
-            "urllib3 v2 only supports OpenSSL 1.1.1+, currently "
-            f"the 'ssl' module is compiled with {ssl.OPENSSL_VERSION!r}. "
-            "See: https://github.com/urllib3/urllib3/issues/3020",
-            exceptions.NotOpenSSLWarning,
-        )
-    elif ssl.OPENSSL_VERSION_INFO < (1, 1, 1):  # Defensive:
-        raise ImportError(
-            "urllib3 v2 only supports OpenSSL 1.1.1+, currently "
-            f"the 'ssl' module is compiled with {ssl.OPENSSL_VERSION!r}. "
-            "See: https://github.com/urllib3/urllib3/issues/2168"
-        )
+    __with_libyaml__ = False
 
-__author__ = "Andrey Petrov (andrey.petrov@shazow.net)"
-__license__ = "MIT"
-__version__ = __version__
+import io
 
-__all__ = (
-    "HTTPConnectionPool",
-    "HTTPHeaderDict",
-    "HTTPSConnectionPool",
-    "PoolManager",
-    "ProxyManager",
-    "HTTPResponse",
-    "Retry",
-    "Timeout",
-    "add_stderr_logger",
-    "connection_from_url",
-    "disable_warnings",
-    "encode_multipart_formdata",
-    "make_headers",
-    "proxy_from_url",
-    "request",
-    "BaseHTTPResponse",
-)
+#------------------------------------------------------------------------------
+# XXX "Warnings control" is now deprecated. Leaving in the API function to not
+# break code that uses it.
+#------------------------------------------------------------------------------
+def warnings(settings=None):
+    if settings is None:
+        return {}
 
-logging.getLogger(__name__).addHandler(NullHandler())
-
-
-def add_stderr_logger(
-    level: int = logging.DEBUG,
-) -> logging.StreamHandler[typing.TextIO]:
+#------------------------------------------------------------------------------
+def scan(stream, Loader=Loader):
     """
-    Helper for quickly adding a StreamHandler to the logger. Useful for
-    debugging.
-
-    Returns the handler after adding it.
+    Scan a YAML stream and produce scanning tokens.
     """
-    # This method needs to be in this __init__.py to get the __name__ correct
-    # even if urllib3 is vendored within another package.
-    logger = logging.getLogger(__name__)
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-    logger.addHandler(handler)
-    logger.setLevel(level)
-    logger.debug("Added a stderr logging handler to logger: %s", __name__)
-    return handler
+    loader = Loader(stream)
+    try:
+        while loader.check_token():
+            yield loader.get_token()
+    finally:
+        loader.dispose()
 
-
-# ... Clean up.
-del NullHandler
-
-
-# All warning filters *must* be appended unless you're really certain that they
-# shouldn't be: otherwise, it's very hard for users to use most Python
-# mechanisms to silence them.
-# SecurityWarning's always go off by default.
-warnings.simplefilter("always", exceptions.SecurityWarning, append=True)
-# InsecurePlatformWarning's don't vary between requests, so we keep it default.
-warnings.simplefilter("default", exceptions.InsecurePlatformWarning, append=True)
-
-
-def disable_warnings(category: type[Warning] = exceptions.HTTPWarning) -> None:
+def parse(stream, Loader=Loader):
     """
-    Helper for quickly disabling all urllib3 warnings.
+    Parse a YAML stream and produce parsing events.
     """
-    warnings.simplefilter("ignore", category)
+    loader = Loader(stream)
+    try:
+        while loader.check_event():
+            yield loader.get_event()
+    finally:
+        loader.dispose()
 
-
-_DEFAULT_POOL = PoolManager()
-
-
-def request(
-    method: str,
-    url: str,
-    *,
-    body: _TYPE_BODY | None = None,
-    fields: _TYPE_FIELDS | None = None,
-    headers: typing.Mapping[str, str] | None = None,
-    preload_content: bool | None = True,
-    decode_content: bool | None = True,
-    redirect: bool | None = True,
-    retries: Retry | bool | int | None = None,
-    timeout: Timeout | float | int | None = 3,
-    json: typing.Any | None = None,
-) -> BaseHTTPResponse:
+def compose(stream, Loader=Loader):
     """
-    A convenience, top-level request method. It uses a module-global ``PoolManager`` instance.
-    Therefore, its side effects could be shared across dependencies relying on it.
-    To avoid side effects create a new ``PoolManager`` instance and use it instead.
-    The method does not accept low-level ``**urlopen_kw`` keyword arguments.
+    Parse the first YAML document in a stream
+    and produce the corresponding representation tree.
+    """
+    loader = Loader(stream)
+    try:
+        return loader.get_single_node()
+    finally:
+        loader.dispose()
 
-    :param method:
-        HTTP request method (such as GET, POST, PUT, etc.)
+def compose_all(stream, Loader=Loader):
+    """
+    Parse all YAML documents in a stream
+    and produce corresponding representation trees.
+    """
+    loader = Loader(stream)
+    try:
+        while loader.check_node():
+            yield loader.get_node()
+    finally:
+        loader.dispose()
 
-    :param url:
-        The URL to perform the request on.
+def load(stream, Loader):
+    """
+    Parse the first YAML document in a stream
+    and produce the corresponding Python object.
+    """
+    loader = Loader(stream)
+    try:
+        return loader.get_single_data()
+    finally:
+        loader.dispose()
 
-    :param body:
-        Data to send in the request body, either :class:`str`, :class:`bytes`,
-        an iterable of :class:`str`/:class:`bytes`, or a file-like object.
+def load_all(stream, Loader):
+    """
+    Parse all YAML documents in a stream
+    and produce corresponding Python objects.
+    """
+    loader = Loader(stream)
+    try:
+        while loader.check_data():
+            yield loader.get_data()
+    finally:
+        loader.dispose()
 
-    :param fields:
-        Data to encode and send in the request body.
+def full_load(stream):
+    """
+    Parse the first YAML document in a stream
+    and produce the corresponding Python object.
 
-    :param headers:
-        Dictionary of custom headers to send, such as User-Agent,
-        If-None-Match, etc.
+    Resolve all tags except those known to be
+    unsafe on untrusted input.
+    """
+    return load(stream, FullLoader)
 
-    :param bool preload_content:
-        If True, the response's body will be preloaded into memory.
+def full_load_all(stream):
+    """
+    Parse all YAML documents in a stream
+    and produce corresponding Python objects.
 
-    :param bool decode_content:
-        If True, will attempt to decode the body based on the
-        'content-encoding' header.
+    Resolve all tags except those known to be
+    unsafe on untrusted input.
+    """
+    return load_all(stream, FullLoader)
 
-    :param redirect:
-        If True, automatically handle redirects (status codes 301, 302,
-        303, 307, 308). Each redirect counts as a retry. Disabling retries
-        will disable redirect, too.
+def safe_load(stream):
+    """
+    Parse the first YAML document in a stream
+    and produce the corresponding Python object.
 
-    :param retries:
-        Configure the number of retries to allow before raising a
-        :class:`~urllib3.exceptions.MaxRetryError` exception.
+    Resolve only basic YAML tags. This is known
+    to be safe for untrusted input.
+    """
+    return load(stream, SafeLoader)
 
-        If ``None`` (default) will retry 3 times, see ``Retry.DEFAULT``. Pass a
-        :class:`~urllib3.util.retry.Retry` object for fine-grained control
-        over different types of retries.
-        Pass an integer number to retry connection errors that many times,
-        but no other types of errors. Pass zero to never retry.
+def safe_load_all(stream):
+    """
+    Parse all YAML documents in a stream
+    and produce corresponding Python objects.
 
-        If ``False``, then retries are disabled and any exception is raised
-        immediately. Also, instead of raising a MaxRetryError on redirects,
-        the redirect response will be returned.
+    Resolve only basic YAML tags. This is known
+    to be safe for untrusted input.
+    """
+    return load_all(stream, SafeLoader)
 
-    :type retries: :class:`~urllib3.util.retry.Retry`, False, or an int.
+def unsafe_load(stream):
+    """
+    Parse the first YAML document in a stream
+    and produce the corresponding Python object.
 
-    :param timeout:
-        If specified, overrides the default timeout for this one
-        request. It may be a float (in seconds) or an instance of
-        :class:`urllib3.util.Timeout`.
+    Resolve all tags, even those known to be
+    unsafe on untrusted input.
+    """
+    return load(stream, UnsafeLoader)
 
-    :param json:
-        Data to encode and send as JSON with UTF-encoded in the request body.
-        The ``"Content-Type"`` header will be set to ``"application/json"``
-        unless specified otherwise.
+def unsafe_load_all(stream):
+    """
+    Parse all YAML documents in a stream
+    and produce corresponding Python objects.
+
+    Resolve all tags, even those known to be
+    unsafe on untrusted input.
+    """
+    return load_all(stream, UnsafeLoader)
+
+def emit(events, stream=None, Dumper=Dumper,
+        canonical=None, indent=None, width=None,
+        allow_unicode=None, line_break=None):
+    """
+    Emit YAML parsing events into a stream.
+    If stream is None, return the produced string instead.
+    """
+    getvalue = None
+    if stream is None:
+        stream = io.StringIO()
+        getvalue = stream.getvalue
+    dumper = Dumper(stream, canonical=canonical, indent=indent, width=width,
+            allow_unicode=allow_unicode, line_break=line_break)
+    try:
+        for event in events:
+            dumper.emit(event)
+    finally:
+        dumper.dispose()
+    if getvalue:
+        return getvalue()
+
+def serialize_all(nodes, stream=None, Dumper=Dumper,
+        canonical=None, indent=None, width=None,
+        allow_unicode=None, line_break=None,
+        encoding=None, explicit_start=None, explicit_end=None,
+        version=None, tags=None):
+    """
+    Serialize a sequence of representation trees into a YAML stream.
+    If stream is None, return the produced string instead.
+    """
+    getvalue = None
+    if stream is None:
+        if encoding is None:
+            stream = io.StringIO()
+        else:
+            stream = io.BytesIO()
+        getvalue = stream.getvalue
+    dumper = Dumper(stream, canonical=canonical, indent=indent, width=width,
+            allow_unicode=allow_unicode, line_break=line_break,
+            encoding=encoding, version=version, tags=tags,
+            explicit_start=explicit_start, explicit_end=explicit_end)
+    try:
+        dumper.open()
+        for node in nodes:
+            dumper.serialize(node)
+        dumper.close()
+    finally:
+        dumper.dispose()
+    if getvalue:
+        return getvalue()
+
+def serialize(node, stream=None, Dumper=Dumper, **kwds):
+    """
+    Serialize a representation tree into a YAML stream.
+    If stream is None, return the produced string instead.
+    """
+    return serialize_all([node], stream, Dumper=Dumper, **kwds)
+
+def dump_all(documents, stream=None, Dumper=Dumper,
+        default_style=None, default_flow_style=False,
+        canonical=None, indent=None, width=None,
+        allow_unicode=None, line_break=None,
+        encoding=None, explicit_start=None, explicit_end=None,
+        version=None, tags=None, sort_keys=True):
+    """
+    Serialize a sequence of Python objects into a YAML stream.
+    If stream is None, return the produced string instead.
+    """
+    getvalue = None
+    if stream is None:
+        if encoding is None:
+            stream = io.StringIO()
+        else:
+            stream = io.BytesIO()
+        getvalue = stream.getvalue
+    dumper = Dumper(stream, default_style=default_style,
+            default_flow_style=default_flow_style,
+            canonical=canonical, indent=indent, width=width,
+            allow_unicode=allow_unicode, line_break=line_break,
+            encoding=encoding, version=version, tags=tags,
+            explicit_start=explicit_start, explicit_end=explicit_end, sort_keys=sort_keys)
+    try:
+        dumper.open()
+        for data in documents:
+            dumper.represent(data)
+        dumper.close()
+    finally:
+        dumper.dispose()
+    if getvalue:
+        return getvalue()
+
+def dump(data, stream=None, Dumper=Dumper, **kwds):
+    """
+    Serialize a Python object into a YAML stream.
+    If stream is None, return the produced string instead.
+    """
+    return dump_all([data], stream, Dumper=Dumper, **kwds)
+
+def safe_dump_all(documents, stream=None, **kwds):
+    """
+    Serialize a sequence of Python objects into a YAML stream.
+    Produce only basic YAML tags.
+    If stream is None, return the produced string instead.
+    """
+    return dump_all(documents, stream, Dumper=SafeDumper, **kwds)
+
+def safe_dump(data, stream=None, **kwds):
+    """
+    Serialize a Python object into a YAML stream.
+    Produce only basic YAML tags.
+    If stream is None, return the produced string instead.
+    """
+    return dump_all([data], stream, Dumper=SafeDumper, **kwds)
+
+def add_implicit_resolver(tag, regexp, first=None,
+        Loader=None, Dumper=Dumper):
+    """
+    Add an implicit scalar detector.
+    If an implicit scalar value matches the given regexp,
+    the corresponding tag is assigned to the scalar.
+    first is a sequence of possible initial characters or None.
+    """
+    if Loader is None:
+        loader.Loader.add_implicit_resolver(tag, regexp, first)
+        loader.FullLoader.add_implicit_resolver(tag, regexp, first)
+        loader.UnsafeLoader.add_implicit_resolver(tag, regexp, first)
+    else:
+        Loader.add_implicit_resolver(tag, regexp, first)
+    Dumper.add_implicit_resolver(tag, regexp, first)
+
+def add_path_resolver(tag, path, kind=None, Loader=None, Dumper=Dumper):
+    """
+    Add a path based resolver for the given tag.
+    A path is a list of keys that forms a path
+    to a node in the representation tree.
+    Keys can be string values, integers, or None.
+    """
+    if Loader is None:
+        loader.Loader.add_path_resolver(tag, path, kind)
+        loader.FullLoader.add_path_resolver(tag, path, kind)
+        loader.UnsafeLoader.add_path_resolver(tag, path, kind)
+    else:
+        Loader.add_path_resolver(tag, path, kind)
+    Dumper.add_path_resolver(tag, path, kind)
+
+def add_constructor(tag, constructor, Loader=None):
+    """
+    Add a constructor for the given tag.
+    Constructor is a function that accepts a Loader instance
+    and a node object and produces the corresponding Python object.
+    """
+    if Loader is None:
+        loader.Loader.add_constructor(tag, constructor)
+        loader.FullLoader.add_constructor(tag, constructor)
+        loader.UnsafeLoader.add_constructor(tag, constructor)
+    else:
+        Loader.add_constructor(tag, constructor)
+
+def add_multi_constructor(tag_prefix, multi_constructor, Loader=None):
+    """
+    Add a multi-constructor for the given tag prefix.
+    Multi-constructor is called for a node if its tag starts with tag_prefix.
+    Multi-constructor accepts a Loader instance, a tag suffix,
+    and a node object and produces the corresponding Python object.
+    """
+    if Loader is None:
+        loader.Loader.add_multi_constructor(tag_prefix, multi_constructor)
+        loader.FullLoader.add_multi_constructor(tag_prefix, multi_constructor)
+        loader.UnsafeLoader.add_multi_constructor(tag_prefix, multi_constructor)
+    else:
+        Loader.add_multi_constructor(tag_prefix, multi_constructor)
+
+def add_representer(data_type, representer, Dumper=Dumper):
+    """
+    Add a representer for the given type.
+    Representer is a function accepting a Dumper instance
+    and an instance of the given data type
+    and producing the corresponding representation node.
+    """
+    Dumper.add_representer(data_type, representer)
+
+def add_multi_representer(data_type, multi_representer, Dumper=Dumper):
+    """
+    Add a representer for the given type.
+    Multi-representer is a function accepting a Dumper instance
+    and an instance of the given data type or subtype
+    and producing the corresponding representation node.
+    """
+    Dumper.add_multi_representer(data_type, multi_representer)
+
+class YAMLObjectMetaclass(type):
+    """
+    The metaclass for YAMLObject.
+    """
+    def __init__(cls, name, bases, kwds):
+        super(YAMLObjectMetaclass, cls).__init__(name, bases, kwds)
+        if 'yaml_tag' in kwds and kwds['yaml_tag'] is not None:
+            if isinstance(cls.yaml_loader, list):
+                for loader in cls.yaml_loader:
+                    loader.add_constructor(cls.yaml_tag, cls.from_yaml)
+            else:
+                cls.yaml_loader.add_constructor(cls.yaml_tag, cls.from_yaml)
+
+            cls.yaml_dumper.add_representer(cls, cls.to_yaml)
+
+class YAMLObject(metaclass=YAMLObjectMetaclass):
+    """
+    An object that can dump itself to a YAML stream
+    and load itself from a YAML stream.
     """
 
-    return _DEFAULT_POOL.request(
-        method,
-        url,
-        body=body,
-        fields=fields,
-        headers=headers,
-        preload_content=preload_content,
-        decode_content=decode_content,
-        redirect=redirect,
-        retries=retries,
-        timeout=timeout,
-        json=json,
-    )
+    __slots__ = ()  # no direct instantiation, so allow immutable subclasses
 
+    yaml_loader = [Loader, FullLoader, UnsafeLoader]
+    yaml_dumper = Dumper
 
-if sys.platform == "emscripten":
-    from .contrib.emscripten import inject_into_urllib3  # noqa: 401
+    yaml_tag = None
+    yaml_flow_style = None
 
-    inject_into_urllib3()
+    @classmethod
+    def from_yaml(cls, loader, node):
+        """
+        Convert a representation node to a Python object.
+        """
+        return loader.construct_yaml_object(node, cls)
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        """
+        Convert a Python object to a representation node.
+        """
+        return dumper.represent_yaml_object(cls.yaml_tag, data, cls,
+                flow_style=cls.yaml_flow_style)
+
