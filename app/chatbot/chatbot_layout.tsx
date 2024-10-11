@@ -46,7 +46,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         >
           Calculator
         </Link>
-        {/* Add a link to the Calculator page */}
+        {/* Add a link to the Chatbot page */}
         <Link
           href="/chatbot"
           className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
