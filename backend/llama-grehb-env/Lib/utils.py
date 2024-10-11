@@ -1,737 +1,755 @@
-from __future__ import annotations
-
-import contextlib
-import logging
-import math
+import enum
+import json
 import os
-import pathlib
 import re
-import sys
-import tempfile
-from functools import partial
-from hashlib import md5
-from importlib.metadata import version
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    Iterator,
-    Sequence,
-    TypeVar,
-)
-from urllib.parse import urlsplit
+import typing as t
+from collections import abc
+from collections import deque
+from random import choice
+from random import randrange
+from threading import Lock
+from types import CodeType
+from urllib.parse import quote_from_bytes
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
+import markupsafe
 
-    from fsspec.spec import AbstractFileSystem
+if t.TYPE_CHECKING:
+    import typing_extensions as te
 
+F = t.TypeVar("F", bound=t.Callable[..., t.Any])
 
-DEFAULT_BLOCK_SIZE = 5 * 2**20
+# special singleton representing missing values for the runtime
+missing: t.Any = type("MissingType", (), {"__repr__": lambda x: "missing"})()
 
-T = TypeVar("T")
+internal_code: t.MutableSet[CodeType] = set()
+
+concat = "".join
 
 
-def infer_storage_options(
-    urlpath: str, inherit_storage_options: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    """Infer storage options from URL path and merge it with existing storage
-    options.
+def pass_context(f: F) -> F:
+    """Pass the :class:`~jinja2.runtime.Context` as the first argument
+    to the decorated function when called while rendering a template.
 
-    Parameters
-    ----------
-    urlpath: str or unicode
-        Either local absolute file path or URL (hdfs://namenode:8020/file.csv)
-    inherit_storage_options: dict (optional)
-        Its contents will get merged with the inferred information from the
-        given path
+    Can be used on functions, filters, and tests.
 
-    Returns
-    -------
-    Storage options dict.
+    If only ``Context.eval_context`` is needed, use
+    :func:`pass_eval_context`. If only ``Context.environment`` is
+    needed, use :func:`pass_environment`.
 
-    Examples
-    --------
-    >>> infer_storage_options('/mnt/datasets/test.csv')  # doctest: +SKIP
-    {"protocol": "file", "path", "/mnt/datasets/test.csv"}
-    >>> infer_storage_options(
-    ...     'hdfs://username:pwd@node:123/mnt/datasets/test.csv?q=1',
-    ...     inherit_storage_options={'extra': 'value'},
-    ... )  # doctest: +SKIP
-    {"protocol": "hdfs", "username": "username", "password": "pwd",
-    "host": "node", "port": 123, "path": "/mnt/datasets/test.csv",
-    "url_query": "q=1", "extra": "value"}
+    .. versionadded:: 3.0.0
+        Replaces ``contextfunction`` and ``contextfilter``.
     """
-    # Handle Windows paths including disk name in this special case
-    if (
-        re.match(r"^[a-zA-Z]:[\\/]", urlpath)
-        or re.match(r"^[a-zA-Z0-9]+://", urlpath) is None
-    ):
-        return {"protocol": "file", "path": urlpath}
-
-    parsed_path = urlsplit(urlpath)
-    protocol = parsed_path.scheme or "file"
-    if parsed_path.fragment:
-        path = "#".join([parsed_path.path, parsed_path.fragment])
-    else:
-        path = parsed_path.path
-    if protocol == "file":
-        # Special case parsing file protocol URL on Windows according to:
-        # https://msdn.microsoft.com/en-us/library/jj710207.aspx
-        windows_path = re.match(r"^/([a-zA-Z])[:|]([\\/].*)$", path)
-        if windows_path:
-            path = "%s:%s" % windows_path.groups()
-
-    if protocol in ["http", "https"]:
-        # for HTTP, we don't want to parse, as requests will anyway
-        return {"protocol": protocol, "path": urlpath}
-
-    options: dict[str, Any] = {"protocol": protocol, "path": path}
-
-    if parsed_path.netloc:
-        # Parse `hostname` from netloc manually because `parsed_path.hostname`
-        # lowercases the hostname which is not always desirable (e.g. in S3):
-        # https://github.com/dask/dask/issues/1417
-        options["host"] = parsed_path.netloc.rsplit("@", 1)[-1].rsplit(":", 1)[0]
-
-        if protocol in ("s3", "s3a", "gcs", "gs"):
-            options["path"] = options["host"] + options["path"]
-        else:
-            options["host"] = options["host"]
-        if parsed_path.port:
-            options["port"] = parsed_path.port
-        if parsed_path.username:
-            options["username"] = parsed_path.username
-        if parsed_path.password:
-            options["password"] = parsed_path.password
-
-    if parsed_path.query:
-        options["url_query"] = parsed_path.query
-    if parsed_path.fragment:
-        options["url_fragment"] = parsed_path.fragment
-
-    if inherit_storage_options:
-        update_storage_options(options, inherit_storage_options)
-
-    return options
+    f.jinja_pass_arg = _PassArg.context  # type: ignore
+    return f
 
 
-def update_storage_options(
-    options: dict[str, Any], inherited: dict[str, Any] | None = None
-) -> None:
-    if not inherited:
-        inherited = {}
-    collisions = set(options) & set(inherited)
-    if collisions:
-        for collision in collisions:
-            if options.get(collision) != inherited.get(collision):
-                raise KeyError(
-                    f"Collision between inferred and specified storage "
-                    f"option:\n{collision}"
-                )
-    options.update(inherited)
+def pass_eval_context(f: F) -> F:
+    """Pass the :class:`~jinja2.nodes.EvalContext` as the first argument
+    to the decorated function when called while rendering a template.
+    See :ref:`eval-context`.
 
+    Can be used on functions, filters, and tests.
 
-# Compression extensions registered via fsspec.compression.register_compression
-compressions: dict[str, str] = {}
+    If only ``EvalContext.environment`` is needed, use
+    :func:`pass_environment`.
 
-
-def infer_compression(filename: str) -> str | None:
-    """Infer compression, if available, from filename.
-
-    Infer a named compression type, if registered and available, from filename
-    extension. This includes builtin (gz, bz2, zip) compressions, as well as
-    optional compressions. See fsspec.compression.register_compression.
+    .. versionadded:: 3.0.0
+        Replaces ``evalcontextfunction`` and ``evalcontextfilter``.
     """
-    extension = os.path.splitext(filename)[-1].strip(".").lower()
-    if extension in compressions:
-        return compressions[extension]
-    return None
+    f.jinja_pass_arg = _PassArg.eval_context  # type: ignore
+    return f
 
 
-def build_name_function(max_int: float) -> Callable[[int], str]:
-    """Returns a function that receives a single integer
-    and returns it as a string padded by enough zero characters
-    to align with maximum possible integer
+def pass_environment(f: F) -> F:
+    """Pass the :class:`~jinja2.Environment` as the first argument to
+    the decorated function when called while rendering a template.
 
-    >>> name_f = build_name_function(57)
+    Can be used on functions, filters, and tests.
 
-    >>> name_f(7)
-    '07'
-    >>> name_f(31)
-    '31'
-    >>> build_name_function(1000)(42)
-    '0042'
-    >>> build_name_function(999)(42)
-    '042'
-    >>> build_name_function(0)(0)
-    '0'
+    .. versionadded:: 3.0.0
+        Replaces ``environmentfunction`` and ``environmentfilter``.
     """
-    # handle corner cases max_int is 0 or exact power of 10
-    max_int += 1e-8
-
-    pad_length = int(math.ceil(math.log10(max_int)))
-
-    def name_function(i: int) -> str:
-        return str(i).zfill(pad_length)
-
-    return name_function
+    f.jinja_pass_arg = _PassArg.environment  # type: ignore
+    return f
 
 
-def seek_delimiter(file: IO[bytes], delimiter: bytes, blocksize: int) -> bool:
-    r"""Seek current file to file start, file end, or byte after delimiter seq.
+class _PassArg(enum.Enum):
+    context = enum.auto()
+    eval_context = enum.auto()
+    environment = enum.auto()
 
-    Seeks file to next chunk delimiter, where chunks are defined on file start,
-    a delimiting sequence, and file end. Use file.tell() to see location afterwards.
-    Note that file start is a valid split, so must be at offset > 0 to seek for
-    delimiter.
+    @classmethod
+    def from_obj(cls, obj: F) -> t.Optional["_PassArg"]:
+        if hasattr(obj, "jinja_pass_arg"):
+            return obj.jinja_pass_arg  # type: ignore
 
-    Parameters
-    ----------
-    file: a file
-    delimiter: bytes
-        a delimiter like ``b'\n'`` or message sentinel, matching file .read() type
-    blocksize: int
-        Number of bytes to read from the file at once.
-
-
-    Returns
-    -------
-    Returns True if a delimiter was found, False if at file start or end.
-
-    """
-
-    if file.tell() == 0:
-        # beginning-of-file, return without seek
-        return False
-
-    # Interface is for binary IO, with delimiter as bytes, but initialize last
-    # with result of file.read to preserve compatibility with text IO.
-    last: bytes | None = None
-    while True:
-        current = file.read(blocksize)
-        if not current:
-            # end-of-file without delimiter
-            return False
-        full = last + current if last else current
-        try:
-            if delimiter in full:
-                i = full.index(delimiter)
-                file.seek(file.tell() - (len(full) - i) + len(delimiter))
-                return True
-            elif len(current) < blocksize:
-                # end-of-file without delimiter
-                return False
-        except (OSError, ValueError):
-            pass
-        last = full[-len(delimiter) :]
-
-
-def read_block(
-    f: IO[bytes],
-    offset: int,
-    length: int | None,
-    delimiter: bytes | None = None,
-    split_before: bool = False,
-) -> bytes:
-    """Read a block of bytes from a file
-
-    Parameters
-    ----------
-    f: File
-        Open file
-    offset: int
-        Byte offset to start read
-    length: int
-        Number of bytes to read, read through end of file if None
-    delimiter: bytes (optional)
-        Ensure reading starts and stops at delimiter bytestring
-    split_before: bool (optional)
-        Start/stop read *before* delimiter bytestring.
-
-
-    If using the ``delimiter=`` keyword argument we ensure that the read
-    starts and stops at delimiter boundaries that follow the locations
-    ``offset`` and ``offset + length``.  If ``offset`` is zero then we
-    start at zero, regardless of delimiter.  The bytestring returned WILL
-    include the terminating delimiter string.
-
-    Examples
-    --------
-
-    >>> from io import BytesIO  # doctest: +SKIP
-    >>> f = BytesIO(b'Alice, 100\\nBob, 200\\nCharlie, 300')  # doctest: +SKIP
-    >>> read_block(f, 0, 13)  # doctest: +SKIP
-    b'Alice, 100\\nBo'
-
-    >>> read_block(f, 0, 13, delimiter=b'\\n')  # doctest: +SKIP
-    b'Alice, 100\\nBob, 200\\n'
-
-    >>> read_block(f, 10, 10, delimiter=b'\\n')  # doctest: +SKIP
-    b'Bob, 200\\nCharlie, 300'
-    """
-    if delimiter:
-        f.seek(offset)
-        found_start_delim = seek_delimiter(f, delimiter, 2**16)
-        if length is None:
-            return f.read()
-        start = f.tell()
-        length -= start - offset
-
-        f.seek(start + length)
-        found_end_delim = seek_delimiter(f, delimiter, 2**16)
-        end = f.tell()
-
-        # Adjust split location to before delimiter if seek found the
-        # delimiter sequence, not start or end of file.
-        if found_start_delim and split_before:
-            start -= len(delimiter)
-
-        if found_end_delim and split_before:
-            end -= len(delimiter)
-
-        offset = start
-        length = end - start
-
-    f.seek(offset)
-
-    # TODO: allow length to be None and read to the end of the file?
-    assert length is not None
-    b = f.read(length)
-    return b
-
-
-def tokenize(*args: Any, **kwargs: Any) -> str:
-    """Deterministic token
-
-    (modified from dask.base)
-
-    >>> tokenize([1, 2, '3'])
-    '9d71491b50023b06fc76928e6eddb952'
-
-    >>> tokenize('Hello') == tokenize('Hello')
-    True
-    """
-    if kwargs:
-        args += (kwargs,)
-    try:
-        h = md5(str(args).encode())
-    except ValueError:
-        # FIPS systems: https://github.com/fsspec/filesystem_spec/issues/380
-        h = md5(str(args).encode(), usedforsecurity=False)
-    return h.hexdigest()
-
-
-def stringify_path(filepath: str | os.PathLike[str] | pathlib.Path) -> str:
-    """Attempt to convert a path-like object to a string.
-
-    Parameters
-    ----------
-    filepath: object to be converted
-
-    Returns
-    -------
-    filepath_str: maybe a string version of the object
-
-    Notes
-    -----
-    Objects supporting the fspath protocol are coerced according to its
-    __fspath__ method.
-
-    For backwards compatibility with older Python version, pathlib.Path
-    objects are specially coerced.
-
-    Any other object is passed through unchanged, which includes bytes,
-    strings, buffers, or anything else that's not even path-like.
-    """
-    if isinstance(filepath, str):
-        return filepath
-    elif hasattr(filepath, "__fspath__"):
-        return filepath.__fspath__()
-    elif hasattr(filepath, "path"):
-        return filepath.path
-    else:
-        return filepath  # type: ignore[return-value]
-
-
-def make_instance(
-    cls: Callable[..., T], args: Sequence[Any], kwargs: dict[str, Any]
-) -> T:
-    inst = cls(*args, **kwargs)
-    inst._determine_worker()  # type: ignore[attr-defined]
-    return inst
-
-
-def common_prefix(paths: Iterable[str]) -> str:
-    """For a list of paths, find the shortest prefix common to all"""
-    parts = [p.split("/") for p in paths]
-    lmax = min(len(p) for p in parts)
-    end = 0
-    for i in range(lmax):
-        end = all(p[i] == parts[0][i] for p in parts)
-        if not end:
-            break
-    i += end
-    return "/".join(parts[0][:i])
-
-
-def other_paths(
-    paths: list[str],
-    path2: str | list[str],
-    exists: bool = False,
-    flatten: bool = False,
-) -> list[str]:
-    """In bulk file operations, construct a new file tree from a list of files
-
-    Parameters
-    ----------
-    paths: list of str
-        The input file tree
-    path2: str or list of str
-        Root to construct the new list in. If this is already a list of str, we just
-        assert it has the right number of elements.
-    exists: bool (optional)
-        For a str destination, it is already exists (and is a dir), files should
-        end up inside.
-    flatten: bool (optional)
-        Whether to flatten the input directory tree structure so that the output files
-        are in the same directory.
-
-    Returns
-    -------
-    list of str
-    """
-
-    if isinstance(path2, str):
-        path2 = path2.rstrip("/")
-
-        if flatten:
-            path2 = ["/".join((path2, p.split("/")[-1])) for p in paths]
-        else:
-            cp = common_prefix(paths)
-            if exists:
-                cp = cp.rsplit("/", 1)[0]
-            if not cp and all(not s.startswith("/") for s in paths):
-                path2 = ["/".join([path2, p]) for p in paths]
-            else:
-                path2 = [p.replace(cp, path2, 1) for p in paths]
-    else:
-        assert len(paths) == len(path2)
-    return path2
-
-
-def is_exception(obj: Any) -> bool:
-    return isinstance(obj, BaseException)
-
-
-def isfilelike(f: Any) -> TypeGuard[IO[bytes]]:
-    return all(hasattr(f, attr) for attr in ["read", "close", "tell"])
-
-
-def get_protocol(url: str) -> str:
-    url = stringify_path(url)
-    parts = re.split(r"(\:\:|\://)", url, maxsplit=1)
-    if len(parts) > 1:
-        return parts[0]
-    return "file"
-
-
-def can_be_local(path: str) -> bool:
-    """Can the given URL be used with open_local?"""
-    from fsspec import get_filesystem_class
-
-    try:
-        return getattr(get_filesystem_class(get_protocol(path)), "local_file", False)
-    except (ValueError, ImportError):
-        # not in registry or import failed
-        return False
-
-
-def get_package_version_without_import(name: str) -> str | None:
-    """For given package name, try to find the version without importing it
-
-    Import and package.__version__ is still the backup here, so an import
-    *might* happen.
-
-    Returns either the version string, or None if the package
-    or the version was not readily  found.
-    """
-    if name in sys.modules:
-        mod = sys.modules[name]
-        if hasattr(mod, "__version__"):
-            return mod.__version__
-    try:
-        return version(name)
-    except:  # noqa: E722
-        pass
-    try:
-        import importlib
-
-        mod = importlib.import_module(name)
-        return mod.__version__
-    except (ImportError, AttributeError):
         return None
 
 
-def setup_logging(
-    logger: logging.Logger | None = None,
-    logger_name: str | None = None,
-    level: str = "DEBUG",
-    clear: bool = True,
-) -> logging.Logger:
-    if logger is None and logger_name is None:
-        raise ValueError("Provide either logger object or logger name")
-    logger = logger or logging.getLogger(logger_name)
-    handle = logging.StreamHandler()
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s -- %(message)s"
-    )
-    handle.setFormatter(formatter)
-    if clear:
-        logger.handlers.clear()
-    logger.addHandler(handle)
-    logger.setLevel(level)
-    return logger
+def internalcode(f: F) -> F:
+    """Marks the function as internally used"""
+    internal_code.add(f.__code__)
+    return f
 
 
-def _unstrip_protocol(name: str, fs: AbstractFileSystem) -> str:
-    return fs.unstrip_protocol(name)
+def is_undefined(obj: t.Any) -> bool:
+    """Check if the object passed is undefined.  This does nothing more than
+    performing an instance check against :class:`Undefined` but looks nicer.
+    This can be used for custom filters or tests that want to react to
+    undefined variables.  For example a custom default filter can look like
+    this::
 
-
-def mirror_from(
-    origin_name: str, methods: Iterable[str]
-) -> Callable[[type[T]], type[T]]:
-    """Mirror attributes and methods from the given
-    origin_name attribute of the instance to the
-    decorated class"""
-
-    def origin_getter(method: str, self: Any) -> Any:
-        origin = getattr(self, origin_name)
-        return getattr(origin, method)
-
-    def wrapper(cls: type[T]) -> type[T]:
-        for method in methods:
-            wrapped_method = partial(origin_getter, method)
-            setattr(cls, method, property(wrapped_method))
-        return cls
-
-    return wrapper
-
-
-@contextlib.contextmanager
-def nullcontext(obj: T) -> Iterator[T]:
-    yield obj
-
-
-def merge_offset_ranges(
-    paths: list[str],
-    starts: list[int] | int,
-    ends: list[int] | int,
-    max_gap: int = 0,
-    max_block: int | None = None,
-    sort: bool = True,
-) -> tuple[list[str], list[int], list[int]]:
-    """Merge adjacent byte-offset ranges when the inter-range
-    gap is <= `max_gap`, and when the merged byte range does not
-    exceed `max_block` (if specified). By default, this function
-    will re-order the input paths and byte ranges to ensure sorted
-    order. If the user can guarantee that the inputs are already
-    sorted, passing `sort=False` will skip the re-ordering.
+        def default(var, default=''):
+            if is_undefined(var):
+                return default
+            return var
     """
-    # Check input
-    if not isinstance(paths, list):
-        raise TypeError
-    if not isinstance(starts, list):
-        starts = [starts] * len(paths)
-    if not isinstance(ends, list):
-        ends = [ends] * len(paths)
-    if len(starts) != len(paths) or len(ends) != len(paths):
-        raise ValueError
+    from .runtime import Undefined
 
-    # Early Return
-    if len(starts) <= 1:
-        return paths, starts, ends
-
-    starts = [s or 0 for s in starts]
-    # Sort by paths and then ranges if `sort=True`
-    if sort:
-        paths, starts, ends = (
-            list(v)
-            for v in zip(
-                *sorted(
-                    zip(paths, starts, ends),
-                )
-            )
-        )
-
-    if paths:
-        # Loop through the coupled `paths`, `starts`, and
-        # `ends`, and merge adjacent blocks when appropriate
-        new_paths = paths[:1]
-        new_starts = starts[:1]
-        new_ends = ends[:1]
-        for i in range(1, len(paths)):
-            if paths[i] == paths[i - 1] and new_ends[-1] is None:
-                continue
-            elif (
-                paths[i] != paths[i - 1]
-                or ((starts[i] - new_ends[-1]) > max_gap)
-                or (max_block is not None and (ends[i] - new_starts[-1]) > max_block)
-            ):
-                # Cannot merge with previous block.
-                # Add new `paths`, `starts`, and `ends` elements
-                new_paths.append(paths[i])
-                new_starts.append(starts[i])
-                new_ends.append(ends[i])
-            else:
-                # Merge with previous block by updating the
-                # last element of `ends`
-                new_ends[-1] = ends[i]
-        return new_paths, new_starts, new_ends
-
-    # `paths` is empty. Just return input lists
-    return paths, starts, ends
+    return isinstance(obj, Undefined)
 
 
-def file_size(filelike: IO[bytes]) -> int:
-    """Find length of any open read-mode file-like"""
-    pos = filelike.tell()
+def consume(iterable: t.Iterable[t.Any]) -> None:
+    """Consumes an iterable without doing anything with it."""
+    for _ in iterable:
+        pass
+
+
+def clear_caches() -> None:
+    """Jinja keeps internal caches for environments and lexers.  These are
+    used so that Jinja doesn't have to recreate environments and lexers all
+    the time.  Normally you don't have to care about that but if you are
+    measuring memory consumption you may want to clean the caches.
+    """
+    from .environment import get_spontaneous_environment
+    from .lexer import _lexer_cache
+
+    get_spontaneous_environment.cache_clear()
+    _lexer_cache.clear()
+
+
+def import_string(import_name: str, silent: bool = False) -> t.Any:
+    """Imports an object based on a string.  This is useful if you want to
+    use import paths as endpoints or something similar.  An import path can
+    be specified either in dotted notation (``xml.sax.saxutils.escape``)
+    or with a colon as object delimiter (``xml.sax.saxutils:escape``).
+
+    If the `silent` is True the return value will be `None` if the import
+    fails.
+
+    :return: imported object
+    """
     try:
-        return filelike.seek(0, 2)
-    finally:
-        filelike.seek(pos)
-
-
-@contextlib.contextmanager
-def atomic_write(path: str, mode: str = "wb"):
-    """
-    A context manager that opens a temporary file next to `path` and, on exit,
-    replaces `path` with the temporary file, thereby updating `path`
-    atomically.
-    """
-    fd, fn = tempfile.mkstemp(
-        dir=os.path.dirname(path), prefix=os.path.basename(path) + "-"
-    )
-    try:
-        with open(fd, mode) as fp:
-            yield fp
-    except BaseException:
-        with contextlib.suppress(FileNotFoundError):
-            os.unlink(fn)
-        raise
-    else:
-        os.replace(fn, path)
-
-
-def _translate(pat, STAR, QUESTION_MARK):
-    # Copied from: https://github.com/python/cpython/pull/106703.
-    res: list[str] = []
-    add = res.append
-    i, n = 0, len(pat)
-    while i < n:
-        c = pat[i]
-        i = i + 1
-        if c == "*":
-            # compress consecutive `*` into one
-            if (not res) or res[-1] is not STAR:
-                add(STAR)
-        elif c == "?":
-            add(QUESTION_MARK)
-        elif c == "[":
-            j = i
-            if j < n and pat[j] == "!":
-                j = j + 1
-            if j < n and pat[j] == "]":
-                j = j + 1
-            while j < n and pat[j] != "]":
-                j = j + 1
-            if j >= n:
-                add("\\[")
-            else:
-                stuff = pat[i:j]
-                if "-" not in stuff:
-                    stuff = stuff.replace("\\", r"\\")
-                else:
-                    chunks = []
-                    k = i + 2 if pat[i] == "!" else i + 1
-                    while True:
-                        k = pat.find("-", k, j)
-                        if k < 0:
-                            break
-                        chunks.append(pat[i:k])
-                        i = k + 1
-                        k = k + 3
-                    chunk = pat[i:j]
-                    if chunk:
-                        chunks.append(chunk)
-                    else:
-                        chunks[-1] += "-"
-                    # Remove empty ranges -- invalid in RE.
-                    for k in range(len(chunks) - 1, 0, -1):
-                        if chunks[k - 1][-1] > chunks[k][0]:
-                            chunks[k - 1] = chunks[k - 1][:-1] + chunks[k][1:]
-                            del chunks[k]
-                    # Escape backslashes and hyphens for set difference (--).
-                    # Hyphens that create ranges shouldn't be escaped.
-                    stuff = "-".join(
-                        s.replace("\\", r"\\").replace("-", r"\-") for s in chunks
-                    )
-                # Escape set operations (&&, ~~ and ||).
-                stuff = re.sub(r"([&~|])", r"\\\1", stuff)
-                i = j + 1
-                if not stuff:
-                    # Empty range: never match.
-                    add("(?!)")
-                elif stuff == "!":
-                    # Negated empty range: match any character.
-                    add(".")
-                else:
-                    if stuff[0] == "!":
-                        stuff = "^" + stuff[1:]
-                    elif stuff[0] in ("^", "["):
-                        stuff = "\\" + stuff
-                    add(f"[{stuff}]")
+        if ":" in import_name:
+            module, obj = import_name.split(":", 1)
+        elif "." in import_name:
+            module, _, obj = import_name.rpartition(".")
         else:
-            add(re.escape(c))
-    assert i == n
-    return res
+            return __import__(import_name)
+        return getattr(__import__(module, None, None, [obj]), obj)
+    except (ImportError, AttributeError):
+        if not silent:
+            raise
 
 
-def glob_translate(pat):
-    # Copied from: https://github.com/python/cpython/pull/106703.
-    # The keyword parameters' values are fixed to:
-    # recursive=True, include_hidden=True, seps=None
-    """Translate a pathname with shell wildcards to a regular expression."""
-    if os.path.altsep:
-        seps = os.path.sep + os.path.altsep
+def open_if_exists(filename: str, mode: str = "rb") -> t.Optional[t.IO[t.Any]]:
+    """Returns a file descriptor for the filename if that file exists,
+    otherwise ``None``.
+    """
+    if not os.path.isfile(filename):
+        return None
+
+    return open(filename, mode)
+
+
+def object_type_repr(obj: t.Any) -> str:
+    """Returns the name of the object's type.  For some recognized
+    singletons the name of the object is returned instead. (For
+    example for `None` and `Ellipsis`).
+    """
+    if obj is None:
+        return "None"
+    elif obj is Ellipsis:
+        return "Ellipsis"
+
+    cls = type(obj)
+
+    if cls.__module__ == "builtins":
+        return f"{cls.__name__} object"
+
+    return f"{cls.__module__}.{cls.__name__} object"
+
+
+def pformat(obj: t.Any) -> str:
+    """Format an object using :func:`pprint.pformat`."""
+    from pprint import pformat
+
+    return pformat(obj)
+
+
+_http_re = re.compile(
+    r"""
+    ^
+    (
+        (https?://|www\.)  # scheme or www
+        (([\w%-]+\.)+)?  # subdomain
+        (
+            [a-z]{2,63}  # basic tld
+        |
+            xn--[\w%]{2,59}  # idna tld
+        )
+    |
+        ([\w%-]{2,63}\.)+  # basic domain
+        (com|net|int|edu|gov|org|info|mil)  # basic tld
+    |
+        (https?://)  # scheme
+        (
+            (([\d]{1,3})(\.[\d]{1,3}){3})  # IPv4
+        |
+            (\[([\da-f]{0,4}:){2}([\da-f]{0,4}:?){1,6}])  # IPv6
+        )
+    )
+    (?::[\d]{1,5})?  # port
+    (?:[/?#]\S*)?  # path, query, and fragment
+    $
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+_email_re = re.compile(r"^\S+@\w[\w.-]*\.\w+$")
+
+
+def urlize(
+    text: str,
+    trim_url_limit: t.Optional[int] = None,
+    rel: t.Optional[str] = None,
+    target: t.Optional[str] = None,
+    extra_schemes: t.Optional[t.Iterable[str]] = None,
+) -> str:
+    """Convert URLs in text into clickable links.
+
+    This may not recognize links in some situations. Usually, a more
+    comprehensive formatter, such as a Markdown library, is a better
+    choice.
+
+    Works on ``http://``, ``https://``, ``www.``, ``mailto:``, and email
+    addresses. Links with trailing punctuation (periods, commas, closing
+    parentheses) and leading punctuation (opening parentheses) are
+    recognized excluding the punctuation. Email addresses that include
+    header fields are not recognized (for example,
+    ``mailto:address@example.com?cc=copy@example.com``).
+
+    :param text: Original text containing URLs to link.
+    :param trim_url_limit: Shorten displayed URL values to this length.
+    :param target: Add the ``target`` attribute to links.
+    :param rel: Add the ``rel`` attribute to links.
+    :param extra_schemes: Recognize URLs that start with these schemes
+        in addition to the default behavior.
+
+    .. versionchanged:: 3.0
+        The ``extra_schemes`` parameter was added.
+
+    .. versionchanged:: 3.0
+        Generate ``https://`` links for URLs without a scheme.
+
+    .. versionchanged:: 3.0
+        The parsing rules were updated. Recognize email addresses with
+        or without the ``mailto:`` scheme. Validate IP addresses. Ignore
+        parentheses and brackets in more cases.
+    """
+    if trim_url_limit is not None:
+
+        def trim_url(x: str) -> str:
+            if len(x) > trim_url_limit:
+                return f"{x[:trim_url_limit]}..."
+
+            return x
+
     else:
-        seps = os.path.sep
-    escaped_seps = "".join(map(re.escape, seps))
-    any_sep = f"[{escaped_seps}]" if len(seps) > 1 else escaped_seps
-    not_sep = f"[^{escaped_seps}]"
-    one_last_segment = f"{not_sep}+"
-    one_segment = f"{one_last_segment}{any_sep}"
-    any_segments = f"(?:.+{any_sep})?"
-    any_last_segments = ".*"
-    results = []
-    parts = re.split(any_sep, pat)
-    last_part_idx = len(parts) - 1
-    for idx, part in enumerate(parts):
-        if part == "*":
-            results.append(one_segment if idx < last_part_idx else one_last_segment)
-            continue
-        if part == "**":
-            results.append(any_segments if idx < last_part_idx else any_last_segments)
-            continue
-        elif "**" in part:
-            raise ValueError(
-                "Invalid pattern: '**' can only be an entire path component"
-            )
-        if part:
-            results.extend(_translate(part, f"{not_sep}*", not_sep))
-        if idx < last_part_idx:
-            results.append(any_sep)
-    res = "".join(results)
-    return rf"(?s:{res})\Z"
+
+        def trim_url(x: str) -> str:
+            return x
+
+    words = re.split(r"(\s+)", str(markupsafe.escape(text)))
+    rel_attr = f' rel="{markupsafe.escape(rel)}"' if rel else ""
+    target_attr = f' target="{markupsafe.escape(target)}"' if target else ""
+
+    for i, word in enumerate(words):
+        head, middle, tail = "", word, ""
+        match = re.match(r"^([(<]|&lt;)+", middle)
+
+        if match:
+            head = match.group()
+            middle = middle[match.end() :]
+
+        # Unlike lead, which is anchored to the start of the string,
+        # need to check that the string ends with any of the characters
+        # before trying to match all of them, to avoid backtracking.
+        if middle.endswith((")", ">", ".", ",", "\n", "&gt;")):
+            match = re.search(r"([)>.,\n]|&gt;)+$", middle)
+
+            if match:
+                tail = match.group()
+                middle = middle[: match.start()]
+
+        # Prefer balancing parentheses in URLs instead of ignoring a
+        # trailing character.
+        for start_char, end_char in ("(", ")"), ("<", ">"), ("&lt;", "&gt;"):
+            start_count = middle.count(start_char)
+
+            if start_count <= middle.count(end_char):
+                # Balanced, or lighter on the left
+                continue
+
+            # Move as many as possible from the tail to balance
+            for _ in range(min(start_count, tail.count(end_char))):
+                end_index = tail.index(end_char) + len(end_char)
+                # Move anything in the tail before the end char too
+                middle += tail[:end_index]
+                tail = tail[end_index:]
+
+        if _http_re.match(middle):
+            if middle.startswith("https://") or middle.startswith("http://"):
+                middle = (
+                    f'<a href="{middle}"{rel_attr}{target_attr}>{trim_url(middle)}</a>'
+                )
+            else:
+                middle = (
+                    f'<a href="https://{middle}"{rel_attr}{target_attr}>'
+                    f"{trim_url(middle)}</a>"
+                )
+
+        elif middle.startswith("mailto:") and _email_re.match(middle[7:]):
+            middle = f'<a href="{middle}">{middle[7:]}</a>'
+
+        elif (
+            "@" in middle
+            and not middle.startswith("www.")
+            and ":" not in middle
+            and _email_re.match(middle)
+        ):
+            middle = f'<a href="mailto:{middle}">{middle}</a>'
+
+        elif extra_schemes is not None:
+            for scheme in extra_schemes:
+                if middle != scheme and middle.startswith(scheme):
+                    middle = f'<a href="{middle}"{rel_attr}{target_attr}>{middle}</a>'
+
+        words[i] = f"{head}{middle}{tail}"
+
+    return "".join(words)
+
+
+def generate_lorem_ipsum(
+    n: int = 5, html: bool = True, min: int = 20, max: int = 100
+) -> str:
+    """Generate some lorem ipsum for the template."""
+    from .constants import LOREM_IPSUM_WORDS
+
+    words = LOREM_IPSUM_WORDS.split()
+    result = []
+
+    for _ in range(n):
+        next_capitalized = True
+        last_comma = last_fullstop = 0
+        word = None
+        last = None
+        p = []
+
+        # each paragraph contains out of 20 to 100 words.
+        for idx, _ in enumerate(range(randrange(min, max))):
+            while True:
+                word = choice(words)
+                if word != last:
+                    last = word
+                    break
+            if next_capitalized:
+                word = word.capitalize()
+                next_capitalized = False
+            # add commas
+            if idx - randrange(3, 8) > last_comma:
+                last_comma = idx
+                last_fullstop += 2
+                word += ","
+            # add end of sentences
+            if idx - randrange(10, 20) > last_fullstop:
+                last_comma = last_fullstop = idx
+                word += "."
+                next_capitalized = True
+            p.append(word)
+
+        # ensure that the paragraph ends with a dot.
+        p_str = " ".join(p)
+
+        if p_str.endswith(","):
+            p_str = p_str[:-1] + "."
+        elif not p_str.endswith("."):
+            p_str += "."
+
+        result.append(p_str)
+
+    if not html:
+        return "\n\n".join(result)
+    return markupsafe.Markup(
+        "\n".join(f"<p>{markupsafe.escape(x)}</p>" for x in result)
+    )
+
+
+def url_quote(obj: t.Any, charset: str = "utf-8", for_qs: bool = False) -> str:
+    """Quote a string for use in a URL using the given charset.
+
+    :param obj: String or bytes to quote. Other types are converted to
+        string then encoded to bytes using the given charset.
+    :param charset: Encode text to bytes using this charset.
+    :param for_qs: Quote "/" and use "+" for spaces.
+    """
+    if not isinstance(obj, bytes):
+        if not isinstance(obj, str):
+            obj = str(obj)
+
+        obj = obj.encode(charset)
+
+    safe = b"" if for_qs else b"/"
+    rv = quote_from_bytes(obj, safe)
+
+    if for_qs:
+        rv = rv.replace("%20", "+")
+
+    return rv
+
+
+@abc.MutableMapping.register
+class LRUCache:
+    """A simple LRU Cache implementation."""
+
+    # this is fast for small capacities (something below 1000) but doesn't
+    # scale.  But as long as it's only used as storage for templates this
+    # won't do any harm.
+
+    def __init__(self, capacity: int) -> None:
+        self.capacity = capacity
+        self._mapping: t.Dict[t.Any, t.Any] = {}
+        self._queue: "te.Deque[t.Any]" = deque()
+        self._postinit()
+
+    def _postinit(self) -> None:
+        # alias all queue methods for faster lookup
+        self._popleft = self._queue.popleft
+        self._pop = self._queue.pop
+        self._remove = self._queue.remove
+        self._wlock = Lock()
+        self._append = self._queue.append
+
+    def __getstate__(self) -> t.Mapping[str, t.Any]:
+        return {
+            "capacity": self.capacity,
+            "_mapping": self._mapping,
+            "_queue": self._queue,
+        }
+
+    def __setstate__(self, d: t.Mapping[str, t.Any]) -> None:
+        self.__dict__.update(d)
+        self._postinit()
+
+    def __getnewargs__(self) -> t.Tuple[t.Any, ...]:
+        return (self.capacity,)
+
+    def copy(self) -> "LRUCache":
+        """Return a shallow copy of the instance."""
+        rv = self.__class__(self.capacity)
+        rv._mapping.update(self._mapping)
+        rv._queue.extend(self._queue)
+        return rv
+
+    def get(self, key: t.Any, default: t.Any = None) -> t.Any:
+        """Return an item from the cache dict or `default`"""
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def setdefault(self, key: t.Any, default: t.Any = None) -> t.Any:
+        """Set `default` if the key is not in the cache otherwise
+        leave unchanged. Return the value of this key.
+        """
+        try:
+            return self[key]
+        except KeyError:
+            self[key] = default
+            return default
+
+    def clear(self) -> None:
+        """Clear the cache."""
+        with self._wlock:
+            self._mapping.clear()
+            self._queue.clear()
+
+    def __contains__(self, key: t.Any) -> bool:
+        """Check if a key exists in this cache."""
+        return key in self._mapping
+
+    def __len__(self) -> int:
+        """Return the current size of the cache."""
+        return len(self._mapping)
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} {self._mapping!r}>"
+
+    def __getitem__(self, key: t.Any) -> t.Any:
+        """Get an item from the cache. Moves the item up so that it has the
+        highest priority then.
+
+        Raise a `KeyError` if it does not exist.
+        """
+        with self._wlock:
+            rv = self._mapping[key]
+
+            if self._queue[-1] != key:
+                try:
+                    self._remove(key)
+                except ValueError:
+                    # if something removed the key from the container
+                    # when we read, ignore the ValueError that we would
+                    # get otherwise.
+                    pass
+
+                self._append(key)
+
+            return rv
+
+    def __setitem__(self, key: t.Any, value: t.Any) -> None:
+        """Sets the value for an item. Moves the item up so that it
+        has the highest priority then.
+        """
+        with self._wlock:
+            if key in self._mapping:
+                self._remove(key)
+            elif len(self._mapping) == self.capacity:
+                del self._mapping[self._popleft()]
+
+            self._append(key)
+            self._mapping[key] = value
+
+    def __delitem__(self, key: t.Any) -> None:
+        """Remove an item from the cache dict.
+        Raise a `KeyError` if it does not exist.
+        """
+        with self._wlock:
+            del self._mapping[key]
+
+            try:
+                self._remove(key)
+            except ValueError:
+                pass
+
+    def items(self) -> t.Iterable[t.Tuple[t.Any, t.Any]]:
+        """Return a list of items."""
+        result = [(key, self._mapping[key]) for key in list(self._queue)]
+        result.reverse()
+        return result
+
+    def values(self) -> t.Iterable[t.Any]:
+        """Return a list of all values."""
+        return [x[1] for x in self.items()]
+
+    def keys(self) -> t.Iterable[t.Any]:
+        """Return a list of all keys ordered by most recent usage."""
+        return list(self)
+
+    def __iter__(self) -> t.Iterator[t.Any]:
+        return reversed(tuple(self._queue))
+
+    def __reversed__(self) -> t.Iterator[t.Any]:
+        """Iterate over the keys in the cache dict, oldest items
+        coming first.
+        """
+        return iter(tuple(self._queue))
+
+    __copy__ = copy
+
+
+def select_autoescape(
+    enabled_extensions: t.Collection[str] = ("html", "htm", "xml"),
+    disabled_extensions: t.Collection[str] = (),
+    default_for_string: bool = True,
+    default: bool = False,
+) -> t.Callable[[t.Optional[str]], bool]:
+    """Intelligently sets the initial value of autoescaping based on the
+    filename of the template.  This is the recommended way to configure
+    autoescaping if you do not want to write a custom function yourself.
+
+    If you want to enable it for all templates created from strings or
+    for all templates with `.html` and `.xml` extensions::
+
+        from jinja2 import Environment, select_autoescape
+        env = Environment(autoescape=select_autoescape(
+            enabled_extensions=('html', 'xml'),
+            default_for_string=True,
+        ))
+
+    Example configuration to turn it on at all times except if the template
+    ends with `.txt`::
+
+        from jinja2 import Environment, select_autoescape
+        env = Environment(autoescape=select_autoescape(
+            disabled_extensions=('txt',),
+            default_for_string=True,
+            default=True,
+        ))
+
+    The `enabled_extensions` is an iterable of all the extensions that
+    autoescaping should be enabled for.  Likewise `disabled_extensions` is
+    a list of all templates it should be disabled for.  If a template is
+    loaded from a string then the default from `default_for_string` is used.
+    If nothing matches then the initial value of autoescaping is set to the
+    value of `default`.
+
+    For security reasons this function operates case insensitive.
+
+    .. versionadded:: 2.9
+    """
+    enabled_patterns = tuple(f".{x.lstrip('.').lower()}" for x in enabled_extensions)
+    disabled_patterns = tuple(f".{x.lstrip('.').lower()}" for x in disabled_extensions)
+
+    def autoescape(template_name: t.Optional[str]) -> bool:
+        if template_name is None:
+            return default_for_string
+        template_name = template_name.lower()
+        if template_name.endswith(enabled_patterns):
+            return True
+        if template_name.endswith(disabled_patterns):
+            return False
+        return default
+
+    return autoescape
+
+
+def htmlsafe_json_dumps(
+    obj: t.Any, dumps: t.Optional[t.Callable[..., str]] = None, **kwargs: t.Any
+) -> markupsafe.Markup:
+    """Serialize an object to a string of JSON with :func:`json.dumps`,
+    then replace HTML-unsafe characters with Unicode escapes and mark
+    the result safe with :class:`~markupsafe.Markup`.
+
+    This is available in templates as the ``|tojson`` filter.
+
+    The following characters are escaped: ``<``, ``>``, ``&``, ``'``.
+
+    The returned string is safe to render in HTML documents and
+    ``<script>`` tags. The exception is in HTML attributes that are
+    double quoted; either use single quotes or the ``|forceescape``
+    filter.
+
+    :param obj: The object to serialize to JSON.
+    :param dumps: The ``dumps`` function to use. Defaults to
+        ``env.policies["json.dumps_function"]``, which defaults to
+        :func:`json.dumps`.
+    :param kwargs: Extra arguments to pass to ``dumps``. Merged onto
+        ``env.policies["json.dumps_kwargs"]``.
+
+    .. versionchanged:: 3.0
+        The ``dumper`` parameter is renamed to ``dumps``.
+
+    .. versionadded:: 2.9
+    """
+    if dumps is None:
+        dumps = json.dumps
+
+    return markupsafe.Markup(
+        dumps(obj, **kwargs)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+        .replace("'", "\\u0027")
+    )
+
+
+class Cycler:
+    """Cycle through values by yield them one at a time, then restarting
+    once the end is reached. Available as ``cycler`` in templates.
+
+    Similar to ``loop.cycle``, but can be used outside loops or across
+    multiple loops. For example, render a list of folders and files in a
+    list, alternating giving them "odd" and "even" classes.
+
+    .. code-block:: html+jinja
+
+        {% set row_class = cycler("odd", "even") %}
+        <ul class="browser">
+        {% for folder in folders %}
+          <li class="folder {{ row_class.next() }}">{{ folder }}
+        {% endfor %}
+        {% for file in files %}
+          <li class="file {{ row_class.next() }}">{{ file }}
+        {% endfor %}
+        </ul>
+
+    :param items: Each positional argument will be yielded in the order
+        given for each cycle.
+
+    .. versionadded:: 2.1
+    """
+
+    def __init__(self, *items: t.Any) -> None:
+        if not items:
+            raise RuntimeError("at least one item has to be provided")
+        self.items = items
+        self.pos = 0
+
+    def reset(self) -> None:
+        """Resets the current item to the first item."""
+        self.pos = 0
+
+    @property
+    def current(self) -> t.Any:
+        """Return the current item. Equivalent to the item that will be
+        returned next time :meth:`next` is called.
+        """
+        return self.items[self.pos]
+
+    def next(self) -> t.Any:
+        """Return the current item, then advance :attr:`current` to the
+        next item.
+        """
+        rv = self.current
+        self.pos = (self.pos + 1) % len(self.items)
+        return rv
+
+    __next__ = next
+
+
+class Joiner:
+    """A joining helper for templates."""
+
+    def __init__(self, sep: str = ", ") -> None:
+        self.sep = sep
+        self.used = False
+
+    def __call__(self) -> str:
+        if not self.used:
+            self.used = True
+            return ""
+        return self.sep
+
+
+class Namespace:
+    """A namespace object that can hold arbitrary attributes.  It may be
+    initialized from a dictionary or with keyword arguments."""
+
+    def __init__(*args: t.Any, **kwargs: t.Any) -> None:  # noqa: B902
+        self, args = args[0], args[1:]
+        self.__attrs = dict(*args, **kwargs)
+
+    def __getattribute__(self, name: str) -> t.Any:
+        # __class__ is needed for the awaitable check in async mode
+        if name in {"_Namespace__attrs", "__class__"}:
+            return object.__getattribute__(self, name)
+        try:
+            return self.__attrs[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+    def __setitem__(self, name: str, value: t.Any) -> None:
+        self.__attrs[name] = value
+
+    def __repr__(self) -> str:
+        return f"<Namespace {self.__attrs!r}>"

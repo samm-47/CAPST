@@ -1,968 +1,556 @@
-# Copyright 2020 The HuggingFace Team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+"""
+NumPy
+=====
 
-# ***********
-# `huggingface_hub` init has 2 modes:
-# - Normal usage:
-#       If imported to use it, all modules and functions are lazy-loaded. This means
-#       they exist at top level in module but are imported only the first time they are
-#       used. This way, `from huggingface_hub import something` will import `something`
-#       quickly without the hassle of importing all the features from `huggingface_hub`.
-# - Static check:
-#       If statically analyzed, all modules and functions are loaded normally. This way
-#       static typing check works properly as well as autocomplete in text editors and
-#       IDEs.
-#
-# The static model imports are done inside the `if TYPE_CHECKING:` statement at
-# the bottom of this file. Since module/functions imports are duplicated, it is
-# mandatory to make sure to add them twice when adding one. This is checked in the
-# `make quality` command.
-#
-# To update the static imports, please run the following command and commit the changes.
-# ```
-# # Use script
-# python utils/check_static_imports.py --update-file
-#
-# # Or run style on codebase
-# make style
-# ```
-#
-# ***********
-# Lazy loader vendored from https://github.com/scientific-python/lazy_loader
-import importlib
+Provides
+  1. An array object of arbitrary homogeneous items
+  2. Fast mathematical operations over arrays
+  3. Linear Algebra, Fourier Transforms, Random Number Generation
+
+How to use the documentation
+----------------------------
+Documentation is available in two forms: docstrings provided
+with the code, and a loose standing reference guide, available from
+`the NumPy homepage <https://numpy.org>`_.
+
+We recommend exploring the docstrings using
+`IPython <https://ipython.org>`_, an advanced Python shell with
+TAB-completion and introspection capabilities.  See below for further
+instructions.
+
+The docstring examples assume that `numpy` has been imported as ``np``::
+
+  >>> import numpy as np
+
+Code snippets are indicated by three greater-than signs::
+
+  >>> x = 42
+  >>> x = x + 1
+
+Use the built-in ``help`` function to view a function's docstring::
+
+  >>> help(np.sort)
+  ... # doctest: +SKIP
+
+For some objects, ``np.info(obj)`` may provide additional help.  This is
+particularly true if you see the line "Help on ufunc object:" at the top
+of the help() page.  Ufuncs are implemented in C, not Python, for speed.
+The native Python help() does not know how to view their help, but our
+np.info() function does.
+
+Available subpackages
+---------------------
+lib
+    Basic functions used by several sub-packages.
+random
+    Core Random Tools
+linalg
+    Core Linear Algebra Tools
+fft
+    Core FFT routines
+polynomial
+    Polynomial tools
+testing
+    NumPy testing tools
+distutils
+    Enhancements to distutils with support for
+    Fortran compilers support and more (for Python <= 3.11)
+
+Utilities
+---------
+test
+    Run numpy unittests
+show_config
+    Show numpy build configuration
+__version__
+    NumPy version string
+
+Viewing documentation using IPython
+-----------------------------------
+
+Start IPython and import `numpy` usually under the alias ``np``: `import
+numpy as np`.  Then, directly past or use the ``%cpaste`` magic to paste
+examples into the shell.  To see which functions are available in `numpy`,
+type ``np.<TAB>`` (where ``<TAB>`` refers to the TAB key), or use
+``np.*cos*?<ENTER>`` (where ``<ENTER>`` refers to the ENTER key) to narrow
+down the list.  To view the docstring for a function, use
+``np.cos?<ENTER>`` (to view the docstring) and ``np.cos??<ENTER>`` (to view
+the source code).
+
+Copies vs. in-place operation
+-----------------------------
+Most of the functions in `numpy` return a copy of the array argument
+(e.g., `np.sort`).  In-place versions of these functions are often
+available as array methods, i.e. ``x = np.array([1,2,3]); x.sort()``.
+Exceptions to this rule are documented.
+
+"""
+
+
+# start delvewheel patch
+def _delvewheel_patch_1_8_2():
+    import os
+    libs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'numpy.libs'))
+    if os.path.isdir(libs_dir):
+        os.add_dll_directory(libs_dir)
+
+
+_delvewheel_patch_1_8_2()
+del _delvewheel_patch_1_8_2
+# end delvewheel patch
+
 import os
 import sys
-from typing import TYPE_CHECKING
+import warnings
+
+from ._globals import _NoValue, _CopyMode
+from ._expired_attrs_2_0 import __expired_attributes__
 
 
-__version__ = "0.25.2"
+# If a version with git hash was stored, use that instead
+from . import version
+from .version import __version__
 
-# Alphabetical order of definitions is ensured in tests
-# WARNING: any comment added in this dictionary definition will be lost when
-# re-generating the file !
-_SUBMOD_ATTRS = {
-    "_commit_scheduler": [
-        "CommitScheduler",
-    ],
-    "_inference_endpoints": [
-        "InferenceEndpoint",
-        "InferenceEndpointError",
-        "InferenceEndpointStatus",
-        "InferenceEndpointTimeoutError",
-        "InferenceEndpointType",
-    ],
-    "_login": [
-        "interpreter_login",
-        "login",
-        "logout",
-        "notebook_login",
-    ],
-    "_multi_commits": [
-        "MultiCommitException",
-        "plan_multi_commits",
-    ],
-    "_snapshot_download": [
-        "snapshot_download",
-    ],
-    "_space_api": [
-        "SpaceHardware",
-        "SpaceRuntime",
-        "SpaceStage",
-        "SpaceStorage",
-        "SpaceVariable",
-    ],
-    "_tensorboard_logger": [
-        "HFSummaryWriter",
-    ],
-    "_webhooks_payload": [
-        "WebhookPayload",
-        "WebhookPayloadComment",
-        "WebhookPayloadDiscussion",
-        "WebhookPayloadDiscussionChanges",
-        "WebhookPayloadEvent",
-        "WebhookPayloadMovedTo",
-        "WebhookPayloadRepo",
-        "WebhookPayloadUrl",
-        "WebhookPayloadWebhook",
-    ],
-    "_webhooks_server": [
-        "WebhooksServer",
-        "webhook_endpoint",
-    ],
-    "community": [
-        "Discussion",
-        "DiscussionComment",
-        "DiscussionCommit",
-        "DiscussionEvent",
-        "DiscussionStatusChange",
-        "DiscussionTitleChange",
-        "DiscussionWithDetails",
-    ],
-    "constants": [
-        "CONFIG_NAME",
-        "FLAX_WEIGHTS_NAME",
-        "HUGGINGFACE_CO_URL_HOME",
-        "HUGGINGFACE_CO_URL_TEMPLATE",
-        "PYTORCH_WEIGHTS_NAME",
-        "REPO_TYPE_DATASET",
-        "REPO_TYPE_MODEL",
-        "REPO_TYPE_SPACE",
-        "TF2_WEIGHTS_NAME",
-        "TF_WEIGHTS_NAME",
-    ],
-    "fastai_utils": [
-        "_save_pretrained_fastai",
-        "from_pretrained_fastai",
-        "push_to_hub_fastai",
-    ],
-    "file_download": [
-        "HfFileMetadata",
-        "_CACHED_NO_EXIST",
-        "cached_download",
-        "get_hf_file_metadata",
-        "hf_hub_download",
-        "hf_hub_url",
-        "try_to_load_from_cache",
-    ],
-    "hf_api": [
-        "Collection",
-        "CollectionItem",
-        "CommitInfo",
-        "CommitOperation",
-        "CommitOperationAdd",
-        "CommitOperationCopy",
-        "CommitOperationDelete",
-        "DatasetInfo",
-        "GitCommitInfo",
-        "GitRefInfo",
-        "GitRefs",
-        "HfApi",
-        "ModelInfo",
-        "RepoUrl",
-        "SpaceInfo",
-        "User",
-        "UserLikes",
-        "WebhookInfo",
-        "WebhookWatchedItem",
-        "accept_access_request",
-        "add_collection_item",
-        "add_space_secret",
-        "add_space_variable",
-        "auth_check",
-        "cancel_access_request",
-        "change_discussion_status",
-        "comment_discussion",
-        "create_branch",
-        "create_collection",
-        "create_commit",
-        "create_commits_on_pr",
-        "create_discussion",
-        "create_inference_endpoint",
-        "create_pull_request",
-        "create_repo",
-        "create_tag",
-        "create_webhook",
-        "dataset_info",
-        "delete_branch",
-        "delete_collection",
-        "delete_collection_item",
-        "delete_file",
-        "delete_folder",
-        "delete_inference_endpoint",
-        "delete_repo",
-        "delete_space_secret",
-        "delete_space_storage",
-        "delete_space_variable",
-        "delete_tag",
-        "delete_webhook",
-        "disable_webhook",
-        "duplicate_space",
-        "edit_discussion_comment",
-        "enable_webhook",
-        "file_exists",
-        "get_collection",
-        "get_dataset_tags",
-        "get_discussion_details",
-        "get_full_repo_name",
-        "get_inference_endpoint",
-        "get_model_tags",
-        "get_paths_info",
-        "get_repo_discussions",
-        "get_safetensors_metadata",
-        "get_space_runtime",
-        "get_space_variables",
-        "get_token_permission",
-        "get_user_overview",
-        "get_webhook",
-        "grant_access",
-        "like",
-        "list_accepted_access_requests",
-        "list_collections",
-        "list_datasets",
-        "list_inference_endpoints",
-        "list_liked_repos",
-        "list_metrics",
-        "list_models",
-        "list_organization_members",
-        "list_pending_access_requests",
-        "list_rejected_access_requests",
-        "list_repo_commits",
-        "list_repo_files",
-        "list_repo_likers",
-        "list_repo_refs",
-        "list_repo_tree",
-        "list_spaces",
-        "list_user_followers",
-        "list_user_following",
-        "list_webhooks",
-        "merge_pull_request",
-        "model_info",
-        "move_repo",
-        "parse_safetensors_file_metadata",
-        "pause_inference_endpoint",
-        "pause_space",
-        "preupload_lfs_files",
-        "reject_access_request",
-        "rename_discussion",
-        "repo_exists",
-        "repo_info",
-        "repo_type_and_id_from_hf_id",
-        "request_space_hardware",
-        "request_space_storage",
-        "restart_space",
-        "resume_inference_endpoint",
-        "revision_exists",
-        "run_as_future",
-        "scale_to_zero_inference_endpoint",
-        "set_space_sleep_time",
-        "space_info",
-        "super_squash_history",
-        "unlike",
-        "update_collection_item",
-        "update_collection_metadata",
-        "update_inference_endpoint",
-        "update_repo_settings",
-        "update_repo_visibility",
-        "update_webhook",
-        "upload_file",
-        "upload_folder",
-        "upload_large_folder",
-        "whoami",
-    ],
-    "hf_file_system": [
-        "HfFileSystem",
-        "HfFileSystemFile",
-        "HfFileSystemResolvedPath",
-        "HfFileSystemStreamFile",
-    ],
-    "hub_mixin": [
-        "ModelHubMixin",
-        "PyTorchModelHubMixin",
-    ],
-    "inference._client": [
-        "InferenceClient",
-        "InferenceTimeoutError",
-    ],
-    "inference._generated._async_client": [
-        "AsyncInferenceClient",
-    ],
-    "inference._generated.types": [
-        "AudioClassificationInput",
-        "AudioClassificationOutputElement",
-        "AudioClassificationParameters",
-        "AudioToAudioInput",
-        "AudioToAudioOutputElement",
-        "AutomaticSpeechRecognitionGenerationParameters",
-        "AutomaticSpeechRecognitionInput",
-        "AutomaticSpeechRecognitionOutput",
-        "AutomaticSpeechRecognitionOutputChunk",
-        "AutomaticSpeechRecognitionParameters",
-        "ChatCompletionInput",
-        "ChatCompletionInputFunctionDefinition",
-        "ChatCompletionInputFunctionName",
-        "ChatCompletionInputGrammarType",
-        "ChatCompletionInputMessage",
-        "ChatCompletionInputMessageChunk",
-        "ChatCompletionInputTool",
-        "ChatCompletionInputToolTypeClass",
-        "ChatCompletionInputURL",
-        "ChatCompletionOutput",
-        "ChatCompletionOutputComplete",
-        "ChatCompletionOutputFunctionDefinition",
-        "ChatCompletionOutputLogprob",
-        "ChatCompletionOutputLogprobs",
-        "ChatCompletionOutputMessage",
-        "ChatCompletionOutputToolCall",
-        "ChatCompletionOutputTopLogprob",
-        "ChatCompletionOutputUsage",
-        "ChatCompletionStreamOutput",
-        "ChatCompletionStreamOutputChoice",
-        "ChatCompletionStreamOutputDelta",
-        "ChatCompletionStreamOutputDeltaToolCall",
-        "ChatCompletionStreamOutputFunction",
-        "ChatCompletionStreamOutputLogprob",
-        "ChatCompletionStreamOutputLogprobs",
-        "ChatCompletionStreamOutputTopLogprob",
-        "DepthEstimationInput",
-        "DepthEstimationOutput",
-        "DocumentQuestionAnsweringInput",
-        "DocumentQuestionAnsweringInputData",
-        "DocumentQuestionAnsweringOutputElement",
-        "DocumentQuestionAnsweringParameters",
-        "FeatureExtractionInput",
-        "FillMaskInput",
-        "FillMaskOutputElement",
-        "FillMaskParameters",
-        "ImageClassificationInput",
-        "ImageClassificationOutputElement",
-        "ImageClassificationParameters",
-        "ImageSegmentationInput",
-        "ImageSegmentationOutputElement",
-        "ImageSegmentationParameters",
-        "ImageToImageInput",
-        "ImageToImageOutput",
-        "ImageToImageParameters",
-        "ImageToImageTargetSize",
-        "ImageToTextGenerationParameters",
-        "ImageToTextInput",
-        "ImageToTextOutput",
-        "ImageToTextParameters",
-        "ObjectDetectionBoundingBox",
-        "ObjectDetectionInput",
-        "ObjectDetectionOutputElement",
-        "ObjectDetectionParameters",
-        "QuestionAnsweringInput",
-        "QuestionAnsweringInputData",
-        "QuestionAnsweringOutputElement",
-        "QuestionAnsweringParameters",
-        "SentenceSimilarityInput",
-        "SentenceSimilarityInputData",
-        "SummarizationGenerationParameters",
-        "SummarizationInput",
-        "SummarizationOutput",
-        "TableQuestionAnsweringInput",
-        "TableQuestionAnsweringInputData",
-        "TableQuestionAnsweringOutputElement",
-        "Text2TextGenerationInput",
-        "Text2TextGenerationOutput",
-        "Text2TextGenerationParameters",
-        "TextClassificationInput",
-        "TextClassificationOutputElement",
-        "TextClassificationParameters",
-        "TextGenerationInput",
-        "TextGenerationInputGenerateParameters",
-        "TextGenerationInputGrammarType",
-        "TextGenerationOutput",
-        "TextGenerationOutputBestOfSequence",
-        "TextGenerationOutputDetails",
-        "TextGenerationOutputPrefillToken",
-        "TextGenerationOutputToken",
-        "TextGenerationStreamOutput",
-        "TextGenerationStreamOutputStreamDetails",
-        "TextGenerationStreamOutputToken",
-        "TextToAudioGenerationParameters",
-        "TextToAudioInput",
-        "TextToAudioOutput",
-        "TextToAudioParameters",
-        "TextToImageInput",
-        "TextToImageOutput",
-        "TextToImageParameters",
-        "TextToImageTargetSize",
-        "TokenClassificationInput",
-        "TokenClassificationOutputElement",
-        "TokenClassificationParameters",
-        "TranslationGenerationParameters",
-        "TranslationInput",
-        "TranslationOutput",
-        "VideoClassificationInput",
-        "VideoClassificationOutputElement",
-        "VideoClassificationParameters",
-        "VisualQuestionAnsweringInput",
-        "VisualQuestionAnsweringInputData",
-        "VisualQuestionAnsweringOutputElement",
-        "VisualQuestionAnsweringParameters",
-        "ZeroShotClassificationInput",
-        "ZeroShotClassificationInputData",
-        "ZeroShotClassificationOutputElement",
-        "ZeroShotClassificationParameters",
-        "ZeroShotImageClassificationInput",
-        "ZeroShotImageClassificationInputData",
-        "ZeroShotImageClassificationOutputElement",
-        "ZeroShotImageClassificationParameters",
-        "ZeroShotObjectDetectionBoundingBox",
-        "ZeroShotObjectDetectionInput",
-        "ZeroShotObjectDetectionInputData",
-        "ZeroShotObjectDetectionOutputElement",
-    ],
-    "inference_api": [
-        "InferenceApi",
-    ],
-    "keras_mixin": [
-        "KerasModelHubMixin",
-        "from_pretrained_keras",
-        "push_to_hub_keras",
-        "save_pretrained_keras",
-    ],
-    "repocard": [
-        "DatasetCard",
-        "ModelCard",
-        "RepoCard",
-        "SpaceCard",
-        "metadata_eval_result",
-        "metadata_load",
-        "metadata_save",
-        "metadata_update",
-    ],
-    "repocard_data": [
-        "CardData",
-        "DatasetCardData",
-        "EvalResult",
-        "ModelCardData",
-        "SpaceCardData",
-    ],
-    "repository": [
-        "Repository",
-    ],
-    "serialization": [
-        "StateDictSplit",
-        "get_tf_storage_size",
-        "get_torch_storage_id",
-        "get_torch_storage_size",
-        "save_torch_model",
-        "save_torch_state_dict",
-        "split_state_dict_into_shards_factory",
-        "split_tf_state_dict_into_shards",
-        "split_torch_state_dict_into_shards",
-    ],
-    "utils": [
-        "CacheNotFound",
-        "CachedFileInfo",
-        "CachedRepoInfo",
-        "CachedRevisionInfo",
-        "CorruptedCacheException",
-        "DeleteCacheStrategy",
-        "HFCacheInfo",
-        "HfFolder",
-        "cached_assets_path",
-        "configure_http_backend",
-        "dump_environment_info",
-        "get_session",
-        "get_token",
-        "logging",
-        "scan_cache_dir",
-    ],
-}
+# We first need to detect if we're being called as part of the numpy setup
+# procedure itself in a reliable manner.
+try:
+    __NUMPY_SETUP__
+except NameError:
+    __NUMPY_SETUP__ = False
 
+if __NUMPY_SETUP__:
+    sys.stderr.write('Running from numpy source directory.\n')
+else:
+    # Allow distributors to run custom init code before importing numpy._core
+    from . import _distributor_init
 
-def _attach(package_name, submodules=None, submod_attrs=None):
-    """Attach lazily loaded submodules, functions, or other attributes.
+    try:
+        from numpy.__config__ import show as show_config
+    except ImportError as e:
+        msg = """Error importing numpy: you should not try to import numpy from
+        its source directory; please exit the numpy source tree, and relaunch
+        your python interpreter from there."""
+        raise ImportError(msg) from e
 
-    Typically, modules import submodules and attributes as follows:
-
-    ```py
-    import mysubmodule
-    import anothersubmodule
-
-    from .foo import someattr
-    ```
-
-    The idea is to replace a package's `__getattr__`, `__dir__`, and
-    `__all__`, such that all imports work exactly the way they would
-    with normal imports, except that the import occurs upon first use.
-
-    The typical way to call this function, replacing the above imports, is:
-
-    ```python
-    __getattr__, __dir__, __all__ = lazy.attach(
-        __name__,
-        ['mysubmodule', 'anothersubmodule'],
-        {'foo': ['someattr']}
+    from . import _core
+    from ._core import (
+        False_, ScalarType, True_, _get_promotion_state, _no_nep50_warning,
+        _set_promotion_state, abs, absolute, acos, acosh, add, all, allclose,
+        amax, amin, any, arange, arccos, arccosh, arcsin, arcsinh,
+        arctan, arctan2, arctanh, argmax, argmin, argpartition, argsort,
+        argwhere, around, array, array2string, array_equal, array_equiv,
+        array_repr, array_str, asanyarray, asarray, ascontiguousarray,
+        asfortranarray, asin, asinh, atan, atanh, atan2, astype, atleast_1d,
+        atleast_2d, atleast_3d, base_repr, binary_repr, bitwise_and,
+        bitwise_count, bitwise_invert, bitwise_left_shift, bitwise_not,
+        bitwise_or, bitwise_right_shift, bitwise_xor, block, bool, bool_,
+        broadcast, busday_count, busday_offset, busdaycalendar, byte, bytes_,
+        can_cast, cbrt, cdouble, ceil, character, choose, clip, clongdouble,
+        complex128, complex64, complexfloating, compress, concat, concatenate,
+        conj, conjugate, convolve, copysign, copyto, correlate, cos, cosh,
+        count_nonzero, cross, csingle, cumprod, cumsum, cumulative_prod,
+        cumulative_sum, datetime64, datetime_as_string, datetime_data,
+        deg2rad, degrees, diagonal, divide, divmod, dot, double, dtype, e,
+        einsum, einsum_path, empty, empty_like, equal, errstate, euler_gamma,
+        exp, exp2, expm1, fabs, finfo, flatiter, flatnonzero, flexible,
+        float16, float32, float64, float_power, floating, floor, floor_divide,
+        fmax, fmin, fmod, format_float_positional, format_float_scientific,
+        frexp, from_dlpack, frombuffer, fromfile, fromfunction, fromiter,
+        frompyfunc, fromstring, full, full_like, gcd, generic, geomspace,
+        get_printoptions, getbufsize, geterr, geterrcall, greater,
+        greater_equal, half, heaviside, hstack, hypot, identity, iinfo, iinfo,
+        indices, inexact, inf, inner, int16, int32, int64, int8, int_, intc,
+        integer, intp, invert, is_busday, isclose, isdtype, isfinite,
+        isfortran, isinf, isnan, isnat, isscalar, issubdtype, lcm, ldexp,
+        left_shift, less, less_equal, lexsort, linspace, little_endian, log,
+        log10, log1p, log2, logaddexp, logaddexp2, logical_and, logical_not,
+        logical_or, logical_xor, logspace, long, longdouble, longlong, matmul,
+        matrix_transpose, max, maximum, may_share_memory, mean, memmap, min,
+        min_scalar_type, minimum, mod, modf, moveaxis, multiply, nan, ndarray,
+        ndim, nditer, negative, nested_iters, newaxis, nextafter, nonzero,
+        not_equal, number, object_, ones, ones_like, outer, partition,
+        permute_dims, pi, positive, pow, power, printoptions, prod,
+        promote_types, ptp, put, putmask, rad2deg, radians, ravel, recarray,
+        reciprocal, record, remainder, repeat, require, reshape, resize,
+        result_type, right_shift, rint, roll, rollaxis, round, sctypeDict,
+        searchsorted, set_printoptions, setbufsize, seterr, seterrcall, shape,
+        shares_memory, short, sign, signbit, signedinteger, sin, single, sinh,
+        size, sort, spacing, sqrt, square, squeeze, stack, std,
+        str_, subtract, sum, swapaxes, take, tan, tanh, tensordot,
+        timedelta64, trace, transpose, true_divide, trunc, typecodes, ubyte,
+        ufunc, uint, uint16, uint32, uint64, uint8, uintc, uintp, ulong,
+        ulonglong, unsignedinteger, unstack, ushort, var, vdot, vecdot, void,
+        vstack, where, zeros, zeros_like
     )
-    ```
-    This functionality requires Python 3.7 or higher.
 
-    Args:
-        package_name (`str`):
-            Typically use `__name__`.
-        submodules (`set`):
-            List of submodules to attach.
-        submod_attrs (`dict`):
-            Dictionary of submodule -> list of attributes / functions.
-            These attributes are imported as they are used.
+    # NOTE: It's still under discussion whether these aliases 
+    # should be removed.
+    for ta in ["float96", "float128", "complex192", "complex256"]:
+        try:
+            globals()[ta] = getattr(_core, ta)
+        except AttributeError:
+            pass
+    del ta
 
-    Returns:
-        __getattr__, __dir__, __all__
+    from . import lib
+    from .lib import scimath as emath
+    from .lib._histograms_impl import (
+        histogram, histogram_bin_edges, histogramdd
+    )
+    from .lib._nanfunctions_impl import (
+        nanargmax, nanargmin, nancumprod, nancumsum, nanmax, nanmean, 
+        nanmedian, nanmin, nanpercentile, nanprod, nanquantile, nanstd,
+        nansum, nanvar
+    )
+    from .lib._function_base_impl import (
+        select, piecewise, trim_zeros, copy, iterable, percentile, diff, 
+        gradient, angle, unwrap, sort_complex, flip, rot90, extract, place,
+        vectorize, asarray_chkfinite, average, bincount, digitize, cov,
+        corrcoef, median, sinc, hamming, hanning, bartlett, blackman,
+        kaiser, trapezoid, trapz, i0, meshgrid, delete, insert, append,
+        interp, quantile
+    )
+    from .lib._twodim_base_impl import (
+        diag, diagflat, eye, fliplr, flipud, tri, triu, tril, vander, 
+        histogram2d, mask_indices, tril_indices, tril_indices_from, 
+        triu_indices, triu_indices_from
+    )
+    from .lib._shape_base_impl import (
+        apply_over_axes, apply_along_axis, array_split, column_stack, dsplit,
+        dstack, expand_dims, hsplit, kron, put_along_axis, row_stack, split,
+        take_along_axis, tile, vsplit
+    )
+    from .lib._type_check_impl import (
+        iscomplexobj, isrealobj, imag, iscomplex, isreal, nan_to_num, real, 
+        real_if_close, typename, mintypecode, common_type
+    )
+    from .lib._arraysetops_impl import (
+        ediff1d, in1d, intersect1d, isin, setdiff1d, setxor1d, union1d,
+        unique, unique_all, unique_counts, unique_inverse, unique_values
+    )
+    from .lib._ufunclike_impl import fix, isneginf, isposinf
+    from .lib._arraypad_impl import pad
+    from .lib._utils_impl import (
+        show_runtime, get_include, info
+    )
+    from .lib._stride_tricks_impl import (
+        broadcast_arrays, broadcast_shapes, broadcast_to
+    )
+    from .lib._polynomial_impl import (
+        poly, polyint, polyder, polyadd, polysub, polymul, polydiv, polyval,
+        polyfit, poly1d, roots
+    )
+    from .lib._npyio_impl import (
+        savetxt, loadtxt, genfromtxt, load, save, savez, packbits,
+        savez_compressed, unpackbits, fromregex
+    )
+    from .lib._index_tricks_impl import (
+        diag_indices_from, diag_indices, fill_diagonal, ndindex, ndenumerate,
+        ix_, c_, r_, s_, ogrid, mgrid, unravel_index, ravel_multi_index, 
+        index_exp
+    )
 
-    """
-    if submod_attrs is None:
-        submod_attrs = {}
+    from . import matrixlib as _mat
+    from .matrixlib import (
+        asmatrix, bmat, matrix
+    )
 
-    if submodules is None:
-        submodules = set()
-    else:
-        submodules = set(submodules)
+    # public submodules are imported lazily, therefore are accessible from
+    # __getattr__. Note that `distutils` (deprecated) and `array_api`
+    # (experimental label) are not added here, because `from numpy import *`
+    # must not raise any warnings - that's too disruptive.
+    __numpy_submodules__ = {
+        "linalg", "fft", "dtypes", "random", "polynomial", "ma", 
+        "exceptions", "lib", "ctypeslib", "testing", "typing",
+        "f2py", "test", "rec", "char", "core", "strings",
+    }
 
-    attr_to_modules = {attr: mod for mod, attrs in submod_attrs.items() for attr in attrs}
+    # We build warning messages for former attributes
+    _msg = (
+        "module 'numpy' has no attribute '{n}'.\n"
+        "`np.{n}` was a deprecated alias for the builtin `{n}`. "
+        "To avoid this error in existing code, use `{n}` by itself. "
+        "Doing this will not modify any behavior and is safe. {extended_msg}\n"
+        "The aliases was originally deprecated in NumPy 1.20; for more "
+        "details and guidance see the original release note at:\n"
+        "    https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations")
 
-    __all__ = list(submodules | attr_to_modules.keys())
+    _specific_msg = (
+        "If you specifically wanted the numpy scalar type, use `np.{}` here.")
 
-    def __getattr__(name):
-        if name in submodules:
-            try:
-                return importlib.import_module(f"{package_name}.{name}")
-            except Exception as e:
-                print(f"Error importing {package_name}.{name}: {e}")
-                raise
-        elif name in attr_to_modules:
-            submod_path = f"{package_name}.{attr_to_modules[name]}"
-            try:
-                submod = importlib.import_module(submod_path)
-            except Exception as e:
-                print(f"Error importing {submod_path}: {e}")
-                raise
-            attr = getattr(submod, name)
+    _int_extended_msg = (
+        "When replacing `np.{}`, you may wish to use e.g. `np.int64` "
+        "or `np.int32` to specify the precision. If you wish to review "
+        "your current use, check the release note link for "
+        "additional information.")
 
-            # If the attribute lives in a file (module) with the same
-            # name as the attribute, ensure that the attribute and *not*
-            # the module is accessible on the package.
-            if name == attr_to_modules[name]:
-                pkg = sys.modules[package_name]
-                pkg.__dict__[name] = attr
+    _type_info = [
+        ("object", ""),  # The NumPy scalar only exists by name.
+        ("float", _specific_msg.format("float64")),
+        ("complex", _specific_msg.format("complex128")),
+        ("str", _specific_msg.format("str_")),
+        ("int", _int_extended_msg.format("int"))]
 
-            return attr
-        else:
-            raise AttributeError(f"No {package_name} attribute {name}")
+    __former_attrs__ = {
+         n: _msg.format(n=n, extended_msg=extended_msg)
+         for n, extended_msg in _type_info
+     }
+
+
+    # Some of these could be defined right away, but most were aliases to
+    # the Python objects and only removed in NumPy 1.24.  Defining them should
+    # probably wait for NumPy 1.26 or 2.0.
+    # When defined, these should possibly not be added to `__all__` to avoid
+    # import with `from numpy import *`.
+    __future_scalars__ = {"str", "bytes", "object"}
+
+    __array_api_version__ = "2023.12"
+
+    from ._array_api_info import __array_namespace_info__
+
+    # now that numpy core module is imported, can initialize limits
+    _core.getlimits._register_known_types()
+
+    __all__ = list(
+        __numpy_submodules__ |
+        set(_core.__all__) |
+        set(_mat.__all__) |
+        set(lib._histograms_impl.__all__) |
+        set(lib._nanfunctions_impl.__all__) |
+        set(lib._function_base_impl.__all__) |
+        set(lib._twodim_base_impl.__all__) |
+        set(lib._shape_base_impl.__all__) |
+        set(lib._type_check_impl.__all__) |
+        set(lib._arraysetops_impl.__all__) |
+        set(lib._ufunclike_impl.__all__) |
+        set(lib._arraypad_impl.__all__) |
+        set(lib._utils_impl.__all__) |
+        set(lib._stride_tricks_impl.__all__) |
+        set(lib._polynomial_impl.__all__) |
+        set(lib._npyio_impl.__all__) |
+        set(lib._index_tricks_impl.__all__) |
+        {"emath", "show_config", "__version__", "__array_namespace_info__"}
+    )
+
+    # Filter out Cython harmless warnings
+    warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+    warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+    warnings.filterwarnings("ignore", message="numpy.ndarray size changed")
+
+    def __getattr__(attr):
+        # Warn for expired attributes
+        import warnings
+
+        if attr == "linalg":
+            import numpy.linalg as linalg
+            return linalg
+        elif attr == "fft":
+            import numpy.fft as fft
+            return fft
+        elif attr == "dtypes":
+            import numpy.dtypes as dtypes
+            return dtypes
+        elif attr == "random":
+            import numpy.random as random
+            return random
+        elif attr == "polynomial":
+            import numpy.polynomial as polynomial
+            return polynomial
+        elif attr == "ma":
+            import numpy.ma as ma
+            return ma
+        elif attr == "ctypeslib":
+            import numpy.ctypeslib as ctypeslib
+            return ctypeslib
+        elif attr == "exceptions":
+            import numpy.exceptions as exceptions
+            return exceptions
+        elif attr == "testing":
+            import numpy.testing as testing
+            return testing
+        elif attr == "matlib":
+            import numpy.matlib as matlib
+            return matlib
+        elif attr == "f2py":
+            import numpy.f2py as f2py
+            return f2py
+        elif attr == "typing":
+            import numpy.typing as typing
+            return typing
+        elif attr == "rec":
+            import numpy.rec as rec
+            return rec
+        elif attr == "char":
+            import numpy.char as char
+            return char
+        elif attr == "array_api":
+            raise AttributeError("`numpy.array_api` is not available from "
+                                 "numpy 2.0 onwards", name=None)
+        elif attr == "core":
+            import numpy.core as core
+            return core
+        elif attr == "strings":
+            import numpy.strings as strings
+            return strings
+        elif attr == "distutils":
+            if 'distutils' in __numpy_submodules__:
+                import numpy.distutils as distutils
+                return distutils
+            else:
+                raise AttributeError("`numpy.distutils` is not available from "
+                                     "Python 3.12 onwards", name=None)
+
+        if attr in __future_scalars__:
+            # And future warnings for those that will change, but also give
+            # the AttributeError
+            warnings.warn(
+                f"In the future `np.{attr}` will be defined as the "
+                "corresponding NumPy scalar.", FutureWarning, stacklevel=2)
+
+        if attr in __former_attrs__:
+            raise AttributeError(__former_attrs__[attr], name=None)
+        
+        if attr in __expired_attributes__:
+            raise AttributeError(
+                f"`np.{attr}` was removed in the NumPy 2.0 release. "
+                f"{__expired_attributes__[attr]}",
+                name=None
+            )
+
+        if attr == "chararray":
+            warnings.warn(
+                "`np.chararray` is deprecated and will be removed from "
+                "the main namespace in the future. Use an array with a string "
+                "or bytes dtype instead.", DeprecationWarning, stacklevel=2)
+            import numpy.char as char
+            return char.chararray
+
+        raise AttributeError("module {!r} has no attribute "
+                             "{!r}".format(__name__, attr))
 
     def __dir__():
-        return __all__
+        public_symbols = (
+            globals().keys() | __numpy_submodules__
+        )
+        public_symbols -= {
+            "matrixlib", "matlib", "tests", "conftest", "version", 
+            "compat", "distutils", "array_api"
+        }
+        return list(public_symbols)
 
-    return __getattr__, __dir__, list(__all__)
+    # Pytest testing
+    from numpy._pytesttester import PytestTester
+    test = PytestTester(__name__)
+    del PytestTester
+
+    def _sanity_check():
+        """
+        Quick sanity checks for common bugs caused by environment.
+        There are some cases e.g. with wrong BLAS ABI that cause wrong
+        results under specific runtime conditions that are not necessarily
+        achieved during test suite runs, and it is useful to catch those early.
+
+        See https://github.com/numpy/numpy/issues/8577 and other
+        similar bug reports.
+
+        """
+        try:
+            x = ones(2, dtype=float32)
+            if not abs(x.dot(x) - float32(2.0)) < 1e-5:
+                raise AssertionError()
+        except AssertionError:
+            msg = ("The current Numpy installation ({!r}) fails to "
+                   "pass simple sanity checks. This can be caused for example "
+                   "by incorrect BLAS library being linked in, or by mixing "
+                   "package managers (pip, conda, apt, ...). Search closed "
+                   "numpy issues for similar problems.")
+            raise RuntimeError(msg.format(__file__)) from None
+
+    _sanity_check()
+    del _sanity_check
+
+    def _mac_os_check():
+        """
+        Quick Sanity check for Mac OS look for accelerate build bugs.
+        Testing numpy polyfit calls init_dgelsd(LAPACK)
+        """
+        try:
+            c = array([3., 2., 1.])
+            x = linspace(0, 2, 5)
+            y = polyval(c, x)
+            _ = polyfit(x, y, 2, cov=True)
+        except ValueError:
+            pass
+
+    if sys.platform == "darwin":
+        from . import exceptions
+        with warnings.catch_warnings(record=True) as w:
+            _mac_os_check()
+            # Throw runtime error, if the test failed Check for warning and error_message
+            if len(w) > 0:
+                for _wn in w:
+                    if _wn.category is exceptions.RankWarning:
+                        # Ignore other warnings, they may not be relevant (see gh-25433).
+                        error_message = f"{_wn.category.__name__}: {str(_wn.message)}"
+                        msg = (
+                            "Polyfit sanity test emitted a warning, most likely due "
+                            "to using a buggy Accelerate backend."
+                            "\nIf you compiled yourself, more information is available at:"
+                            "\nhttps://numpy.org/devdocs/building/index.html"
+                            "\nOtherwise report this to the vendor "
+                            "that provided NumPy.\n\n{}\n".format(error_message))
+                        raise RuntimeError(msg)
+                del _wn
+            del w
+    del _mac_os_check
+
+    def hugepage_setup():
+        """
+        We usually use madvise hugepages support, but on some old kernels it
+        is slow and thus better avoided. Specifically kernel version 4.6 
+        had a bug fix which probably fixed this:
+        https://github.com/torvalds/linux/commit/7cf91a98e607c2f935dbcc177d70011e95b8faff
+        """
+        use_hugepage = os.environ.get("NUMPY_MADVISE_HUGEPAGE", None)
+        if sys.platform == "linux" and use_hugepage is None:
+            # If there is an issue with parsing the kernel version,
+            # set use_hugepage to 0. Usage of LooseVersion will handle
+            # the kernel version parsing better, but avoided since it
+            # will increase the import time. 
+            # See: #16679 for related discussion.
+            try:
+                use_hugepage = 1
+                kernel_version = os.uname().release.split(".")[:2]
+                kernel_version = tuple(int(v) for v in kernel_version)
+                if kernel_version < (4, 6):
+                    use_hugepage = 0
+            except ValueError:
+                use_hugepage = 0
+        elif use_hugepage is None:
+            # This is not Linux, so it should not matter, just enable anyway
+            use_hugepage = 1
+        else:
+            use_hugepage = int(use_hugepage)
+        return use_hugepage
+
+    # Note that this will currently only make a difference on Linux
+    _core.multiarray._set_madvise_hugepage(hugepage_setup())
+    del hugepage_setup
+
+    # Give a warning if NumPy is reloaded or imported on a sub-interpreter
+    # We do this from python, since the C-module may not be reloaded and
+    # it is tidier organized.
+    _core.multiarray._multiarray_umath._reload_guard()
+
+    # TODO: Remove the environment variable entirely now that it is "weak"
+    _core._set_promotion_state(
+        os.environ.get("NPY_PROMOTION_STATE", "weak"))
+
+    # Tell PyInstaller where to find hook-numpy.py
+    def _pyinstaller_hooks_dir():
+        from pathlib import Path
+        return [str(Path(__file__).with_name("_pyinstaller").resolve())]
 
 
-__getattr__, __dir__, __all__ = _attach(__name__, submodules=[], submod_attrs=_SUBMOD_ATTRS)
-
-if os.environ.get("EAGER_IMPORT", ""):
-    for attr in __all__:
-        __getattr__(attr)
-
-# WARNING: any content below this statement is generated automatically. Any manual edit
-# will be lost when re-generating this file !
-#
-# To update the static imports, please run the following command and commit the changes.
-# ```
-# # Use script
-# python utils/check_static_imports.py --update-file
-#
-# # Or run style on codebase
-# make style
-# ```
-if TYPE_CHECKING:  # pragma: no cover
-    from ._commit_scheduler import CommitScheduler  # noqa: F401
-    from ._inference_endpoints import (
-        InferenceEndpoint,  # noqa: F401
-        InferenceEndpointError,  # noqa: F401
-        InferenceEndpointStatus,  # noqa: F401
-        InferenceEndpointTimeoutError,  # noqa: F401
-        InferenceEndpointType,  # noqa: F401
-    )
-    from ._login import (
-        interpreter_login,  # noqa: F401
-        login,  # noqa: F401
-        logout,  # noqa: F401
-        notebook_login,  # noqa: F401
-    )
-    from ._multi_commits import (
-        MultiCommitException,  # noqa: F401
-        plan_multi_commits,  # noqa: F401
-    )
-    from ._snapshot_download import snapshot_download  # noqa: F401
-    from ._space_api import (
-        SpaceHardware,  # noqa: F401
-        SpaceRuntime,  # noqa: F401
-        SpaceStage,  # noqa: F401
-        SpaceStorage,  # noqa: F401
-        SpaceVariable,  # noqa: F401
-    )
-    from ._tensorboard_logger import HFSummaryWriter  # noqa: F401
-    from ._webhooks_payload import (
-        WebhookPayload,  # noqa: F401
-        WebhookPayloadComment,  # noqa: F401
-        WebhookPayloadDiscussion,  # noqa: F401
-        WebhookPayloadDiscussionChanges,  # noqa: F401
-        WebhookPayloadEvent,  # noqa: F401
-        WebhookPayloadMovedTo,  # noqa: F401
-        WebhookPayloadRepo,  # noqa: F401
-        WebhookPayloadUrl,  # noqa: F401
-        WebhookPayloadWebhook,  # noqa: F401
-    )
-    from ._webhooks_server import (
-        WebhooksServer,  # noqa: F401
-        webhook_endpoint,  # noqa: F401
-    )
-    from .community import (
-        Discussion,  # noqa: F401
-        DiscussionComment,  # noqa: F401
-        DiscussionCommit,  # noqa: F401
-        DiscussionEvent,  # noqa: F401
-        DiscussionStatusChange,  # noqa: F401
-        DiscussionTitleChange,  # noqa: F401
-        DiscussionWithDetails,  # noqa: F401
-    )
-    from .constants import (
-        CONFIG_NAME,  # noqa: F401
-        FLAX_WEIGHTS_NAME,  # noqa: F401
-        HUGGINGFACE_CO_URL_HOME,  # noqa: F401
-        HUGGINGFACE_CO_URL_TEMPLATE,  # noqa: F401
-        PYTORCH_WEIGHTS_NAME,  # noqa: F401
-        REPO_TYPE_DATASET,  # noqa: F401
-        REPO_TYPE_MODEL,  # noqa: F401
-        REPO_TYPE_SPACE,  # noqa: F401
-        TF2_WEIGHTS_NAME,  # noqa: F401
-        TF_WEIGHTS_NAME,  # noqa: F401
-    )
-    from .fastai_utils import (
-        _save_pretrained_fastai,  # noqa: F401
-        from_pretrained_fastai,  # noqa: F401
-        push_to_hub_fastai,  # noqa: F401
-    )
-    from .file_download import (
-        _CACHED_NO_EXIST,  # noqa: F401
-        HfFileMetadata,  # noqa: F401
-        cached_download,  # noqa: F401
-        get_hf_file_metadata,  # noqa: F401
-        hf_hub_download,  # noqa: F401
-        hf_hub_url,  # noqa: F401
-        try_to_load_from_cache,  # noqa: F401
-    )
-    from .hf_api import (
-        Collection,  # noqa: F401
-        CollectionItem,  # noqa: F401
-        CommitInfo,  # noqa: F401
-        CommitOperation,  # noqa: F401
-        CommitOperationAdd,  # noqa: F401
-        CommitOperationCopy,  # noqa: F401
-        CommitOperationDelete,  # noqa: F401
-        DatasetInfo,  # noqa: F401
-        GitCommitInfo,  # noqa: F401
-        GitRefInfo,  # noqa: F401
-        GitRefs,  # noqa: F401
-        HfApi,  # noqa: F401
-        ModelInfo,  # noqa: F401
-        RepoUrl,  # noqa: F401
-        SpaceInfo,  # noqa: F401
-        User,  # noqa: F401
-        UserLikes,  # noqa: F401
-        WebhookInfo,  # noqa: F401
-        WebhookWatchedItem,  # noqa: F401
-        accept_access_request,  # noqa: F401
-        add_collection_item,  # noqa: F401
-        add_space_secret,  # noqa: F401
-        add_space_variable,  # noqa: F401
-        auth_check,  # noqa: F401
-        cancel_access_request,  # noqa: F401
-        change_discussion_status,  # noqa: F401
-        comment_discussion,  # noqa: F401
-        create_branch,  # noqa: F401
-        create_collection,  # noqa: F401
-        create_commit,  # noqa: F401
-        create_commits_on_pr,  # noqa: F401
-        create_discussion,  # noqa: F401
-        create_inference_endpoint,  # noqa: F401
-        create_pull_request,  # noqa: F401
-        create_repo,  # noqa: F401
-        create_tag,  # noqa: F401
-        create_webhook,  # noqa: F401
-        dataset_info,  # noqa: F401
-        delete_branch,  # noqa: F401
-        delete_collection,  # noqa: F401
-        delete_collection_item,  # noqa: F401
-        delete_file,  # noqa: F401
-        delete_folder,  # noqa: F401
-        delete_inference_endpoint,  # noqa: F401
-        delete_repo,  # noqa: F401
-        delete_space_secret,  # noqa: F401
-        delete_space_storage,  # noqa: F401
-        delete_space_variable,  # noqa: F401
-        delete_tag,  # noqa: F401
-        delete_webhook,  # noqa: F401
-        disable_webhook,  # noqa: F401
-        duplicate_space,  # noqa: F401
-        edit_discussion_comment,  # noqa: F401
-        enable_webhook,  # noqa: F401
-        file_exists,  # noqa: F401
-        get_collection,  # noqa: F401
-        get_dataset_tags,  # noqa: F401
-        get_discussion_details,  # noqa: F401
-        get_full_repo_name,  # noqa: F401
-        get_inference_endpoint,  # noqa: F401
-        get_model_tags,  # noqa: F401
-        get_paths_info,  # noqa: F401
-        get_repo_discussions,  # noqa: F401
-        get_safetensors_metadata,  # noqa: F401
-        get_space_runtime,  # noqa: F401
-        get_space_variables,  # noqa: F401
-        get_token_permission,  # noqa: F401
-        get_user_overview,  # noqa: F401
-        get_webhook,  # noqa: F401
-        grant_access,  # noqa: F401
-        like,  # noqa: F401
-        list_accepted_access_requests,  # noqa: F401
-        list_collections,  # noqa: F401
-        list_datasets,  # noqa: F401
-        list_inference_endpoints,  # noqa: F401
-        list_liked_repos,  # noqa: F401
-        list_metrics,  # noqa: F401
-        list_models,  # noqa: F401
-        list_organization_members,  # noqa: F401
-        list_pending_access_requests,  # noqa: F401
-        list_rejected_access_requests,  # noqa: F401
-        list_repo_commits,  # noqa: F401
-        list_repo_files,  # noqa: F401
-        list_repo_likers,  # noqa: F401
-        list_repo_refs,  # noqa: F401
-        list_repo_tree,  # noqa: F401
-        list_spaces,  # noqa: F401
-        list_user_followers,  # noqa: F401
-        list_user_following,  # noqa: F401
-        list_webhooks,  # noqa: F401
-        merge_pull_request,  # noqa: F401
-        model_info,  # noqa: F401
-        move_repo,  # noqa: F401
-        parse_safetensors_file_metadata,  # noqa: F401
-        pause_inference_endpoint,  # noqa: F401
-        pause_space,  # noqa: F401
-        preupload_lfs_files,  # noqa: F401
-        reject_access_request,  # noqa: F401
-        rename_discussion,  # noqa: F401
-        repo_exists,  # noqa: F401
-        repo_info,  # noqa: F401
-        repo_type_and_id_from_hf_id,  # noqa: F401
-        request_space_hardware,  # noqa: F401
-        request_space_storage,  # noqa: F401
-        restart_space,  # noqa: F401
-        resume_inference_endpoint,  # noqa: F401
-        revision_exists,  # noqa: F401
-        run_as_future,  # noqa: F401
-        scale_to_zero_inference_endpoint,  # noqa: F401
-        set_space_sleep_time,  # noqa: F401
-        space_info,  # noqa: F401
-        super_squash_history,  # noqa: F401
-        unlike,  # noqa: F401
-        update_collection_item,  # noqa: F401
-        update_collection_metadata,  # noqa: F401
-        update_inference_endpoint,  # noqa: F401
-        update_repo_settings,  # noqa: F401
-        update_repo_visibility,  # noqa: F401
-        update_webhook,  # noqa: F401
-        upload_file,  # noqa: F401
-        upload_folder,  # noqa: F401
-        upload_large_folder,  # noqa: F401
-        whoami,  # noqa: F401
-    )
-    from .hf_file_system import (
-        HfFileSystem,  # noqa: F401
-        HfFileSystemFile,  # noqa: F401
-        HfFileSystemResolvedPath,  # noqa: F401
-        HfFileSystemStreamFile,  # noqa: F401
-    )
-    from .hub_mixin import (
-        ModelHubMixin,  # noqa: F401
-        PyTorchModelHubMixin,  # noqa: F401
-    )
-    from .inference._client import (
-        InferenceClient,  # noqa: F401
-        InferenceTimeoutError,  # noqa: F401
-    )
-    from .inference._generated._async_client import AsyncInferenceClient  # noqa: F401
-    from .inference._generated.types import (
-        AudioClassificationInput,  # noqa: F401
-        AudioClassificationOutputElement,  # noqa: F401
-        AudioClassificationParameters,  # noqa: F401
-        AudioToAudioInput,  # noqa: F401
-        AudioToAudioOutputElement,  # noqa: F401
-        AutomaticSpeechRecognitionGenerationParameters,  # noqa: F401
-        AutomaticSpeechRecognitionInput,  # noqa: F401
-        AutomaticSpeechRecognitionOutput,  # noqa: F401
-        AutomaticSpeechRecognitionOutputChunk,  # noqa: F401
-        AutomaticSpeechRecognitionParameters,  # noqa: F401
-        ChatCompletionInput,  # noqa: F401
-        ChatCompletionInputFunctionDefinition,  # noqa: F401
-        ChatCompletionInputFunctionName,  # noqa: F401
-        ChatCompletionInputGrammarType,  # noqa: F401
-        ChatCompletionInputMessage,  # noqa: F401
-        ChatCompletionInputMessageChunk,  # noqa: F401
-        ChatCompletionInputTool,  # noqa: F401
-        ChatCompletionInputToolTypeClass,  # noqa: F401
-        ChatCompletionInputURL,  # noqa: F401
-        ChatCompletionOutput,  # noqa: F401
-        ChatCompletionOutputComplete,  # noqa: F401
-        ChatCompletionOutputFunctionDefinition,  # noqa: F401
-        ChatCompletionOutputLogprob,  # noqa: F401
-        ChatCompletionOutputLogprobs,  # noqa: F401
-        ChatCompletionOutputMessage,  # noqa: F401
-        ChatCompletionOutputToolCall,  # noqa: F401
-        ChatCompletionOutputTopLogprob,  # noqa: F401
-        ChatCompletionOutputUsage,  # noqa: F401
-        ChatCompletionStreamOutput,  # noqa: F401
-        ChatCompletionStreamOutputChoice,  # noqa: F401
-        ChatCompletionStreamOutputDelta,  # noqa: F401
-        ChatCompletionStreamOutputDeltaToolCall,  # noqa: F401
-        ChatCompletionStreamOutputFunction,  # noqa: F401
-        ChatCompletionStreamOutputLogprob,  # noqa: F401
-        ChatCompletionStreamOutputLogprobs,  # noqa: F401
-        ChatCompletionStreamOutputTopLogprob,  # noqa: F401
-        DepthEstimationInput,  # noqa: F401
-        DepthEstimationOutput,  # noqa: F401
-        DocumentQuestionAnsweringInput,  # noqa: F401
-        DocumentQuestionAnsweringInputData,  # noqa: F401
-        DocumentQuestionAnsweringOutputElement,  # noqa: F401
-        DocumentQuestionAnsweringParameters,  # noqa: F401
-        FeatureExtractionInput,  # noqa: F401
-        FillMaskInput,  # noqa: F401
-        FillMaskOutputElement,  # noqa: F401
-        FillMaskParameters,  # noqa: F401
-        ImageClassificationInput,  # noqa: F401
-        ImageClassificationOutputElement,  # noqa: F401
-        ImageClassificationParameters,  # noqa: F401
-        ImageSegmentationInput,  # noqa: F401
-        ImageSegmentationOutputElement,  # noqa: F401
-        ImageSegmentationParameters,  # noqa: F401
-        ImageToImageInput,  # noqa: F401
-        ImageToImageOutput,  # noqa: F401
-        ImageToImageParameters,  # noqa: F401
-        ImageToImageTargetSize,  # noqa: F401
-        ImageToTextGenerationParameters,  # noqa: F401
-        ImageToTextInput,  # noqa: F401
-        ImageToTextOutput,  # noqa: F401
-        ImageToTextParameters,  # noqa: F401
-        ObjectDetectionBoundingBox,  # noqa: F401
-        ObjectDetectionInput,  # noqa: F401
-        ObjectDetectionOutputElement,  # noqa: F401
-        ObjectDetectionParameters,  # noqa: F401
-        QuestionAnsweringInput,  # noqa: F401
-        QuestionAnsweringInputData,  # noqa: F401
-        QuestionAnsweringOutputElement,  # noqa: F401
-        QuestionAnsweringParameters,  # noqa: F401
-        SentenceSimilarityInput,  # noqa: F401
-        SentenceSimilarityInputData,  # noqa: F401
-        SummarizationGenerationParameters,  # noqa: F401
-        SummarizationInput,  # noqa: F401
-        SummarizationOutput,  # noqa: F401
-        TableQuestionAnsweringInput,  # noqa: F401
-        TableQuestionAnsweringInputData,  # noqa: F401
-        TableQuestionAnsweringOutputElement,  # noqa: F401
-        Text2TextGenerationInput,  # noqa: F401
-        Text2TextGenerationOutput,  # noqa: F401
-        Text2TextGenerationParameters,  # noqa: F401
-        TextClassificationInput,  # noqa: F401
-        TextClassificationOutputElement,  # noqa: F401
-        TextClassificationParameters,  # noqa: F401
-        TextGenerationInput,  # noqa: F401
-        TextGenerationInputGenerateParameters,  # noqa: F401
-        TextGenerationInputGrammarType,  # noqa: F401
-        TextGenerationOutput,  # noqa: F401
-        TextGenerationOutputBestOfSequence,  # noqa: F401
-        TextGenerationOutputDetails,  # noqa: F401
-        TextGenerationOutputPrefillToken,  # noqa: F401
-        TextGenerationOutputToken,  # noqa: F401
-        TextGenerationStreamOutput,  # noqa: F401
-        TextGenerationStreamOutputStreamDetails,  # noqa: F401
-        TextGenerationStreamOutputToken,  # noqa: F401
-        TextToAudioGenerationParameters,  # noqa: F401
-        TextToAudioInput,  # noqa: F401
-        TextToAudioOutput,  # noqa: F401
-        TextToAudioParameters,  # noqa: F401
-        TextToImageInput,  # noqa: F401
-        TextToImageOutput,  # noqa: F401
-        TextToImageParameters,  # noqa: F401
-        TextToImageTargetSize,  # noqa: F401
-        TokenClassificationInput,  # noqa: F401
-        TokenClassificationOutputElement,  # noqa: F401
-        TokenClassificationParameters,  # noqa: F401
-        TranslationGenerationParameters,  # noqa: F401
-        TranslationInput,  # noqa: F401
-        TranslationOutput,  # noqa: F401
-        VideoClassificationInput,  # noqa: F401
-        VideoClassificationOutputElement,  # noqa: F401
-        VideoClassificationParameters,  # noqa: F401
-        VisualQuestionAnsweringInput,  # noqa: F401
-        VisualQuestionAnsweringInputData,  # noqa: F401
-        VisualQuestionAnsweringOutputElement,  # noqa: F401
-        VisualQuestionAnsweringParameters,  # noqa: F401
-        ZeroShotClassificationInput,  # noqa: F401
-        ZeroShotClassificationInputData,  # noqa: F401
-        ZeroShotClassificationOutputElement,  # noqa: F401
-        ZeroShotClassificationParameters,  # noqa: F401
-        ZeroShotImageClassificationInput,  # noqa: F401
-        ZeroShotImageClassificationInputData,  # noqa: F401
-        ZeroShotImageClassificationOutputElement,  # noqa: F401
-        ZeroShotImageClassificationParameters,  # noqa: F401
-        ZeroShotObjectDetectionBoundingBox,  # noqa: F401
-        ZeroShotObjectDetectionInput,  # noqa: F401
-        ZeroShotObjectDetectionInputData,  # noqa: F401
-        ZeroShotObjectDetectionOutputElement,  # noqa: F401
-    )
-    from .inference_api import InferenceApi  # noqa: F401
-    from .keras_mixin import (
-        KerasModelHubMixin,  # noqa: F401
-        from_pretrained_keras,  # noqa: F401
-        push_to_hub_keras,  # noqa: F401
-        save_pretrained_keras,  # noqa: F401
-    )
-    from .repocard import (
-        DatasetCard,  # noqa: F401
-        ModelCard,  # noqa: F401
-        RepoCard,  # noqa: F401
-        SpaceCard,  # noqa: F401
-        metadata_eval_result,  # noqa: F401
-        metadata_load,  # noqa: F401
-        metadata_save,  # noqa: F401
-        metadata_update,  # noqa: F401
-    )
-    from .repocard_data import (
-        CardData,  # noqa: F401
-        DatasetCardData,  # noqa: F401
-        EvalResult,  # noqa: F401
-        ModelCardData,  # noqa: F401
-        SpaceCardData,  # noqa: F401
-    )
-    from .repository import Repository  # noqa: F401
-    from .serialization import (
-        StateDictSplit,  # noqa: F401
-        get_tf_storage_size,  # noqa: F401
-        get_torch_storage_id,  # noqa: F401
-        get_torch_storage_size,  # noqa: F401
-        save_torch_model,  # noqa: F401
-        save_torch_state_dict,  # noqa: F401
-        split_state_dict_into_shards_factory,  # noqa: F401
-        split_tf_state_dict_into_shards,  # noqa: F401
-        split_torch_state_dict_into_shards,  # noqa: F401
-    )
-    from .utils import (
-        CachedFileInfo,  # noqa: F401
-        CachedRepoInfo,  # noqa: F401
-        CachedRevisionInfo,  # noqa: F401
-        CacheNotFound,  # noqa: F401
-        CorruptedCacheException,  # noqa: F401
-        DeleteCacheStrategy,  # noqa: F401
-        HFCacheInfo,  # noqa: F401
-        HfFolder,  # noqa: F401
-        cached_assets_path,  # noqa: F401
-        configure_http_backend,  # noqa: F401
-        dump_environment_info,  # noqa: F401
-        get_session,  # noqa: F401
-        get_token,  # noqa: F401
-        logging,  # noqa: F401
-        scan_cache_dir,  # noqa: F401
-    )
+# Remove symbols imported for internal use
+del os, sys, warnings
