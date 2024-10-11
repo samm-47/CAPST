@@ -1,416 +1,186 @@
-import ast
-import contextlib
-import logging
-import os
+"""
+Matplotlib GUI progressbar decorator for iterators.
+
+Usage:
+>>> from tqdm.gui import trange, tqdm
+>>> for i in trange(10):
+...     ...
+"""
+# future division is important to divide integers and get as
+# a result precise floating numbers (instead of truncated int)
 import re
-from typing import ClassVar, Sequence
+from warnings import warn
 
-import panel as pn
+# to inherit from the tqdm class
+from .std import TqdmExperimentalWarning
+from .std import tqdm as std_tqdm
 
-from .core import OpenFile, get_filesystem_class, split_protocol
-from .registry import known_implementations
+# import compatibility functions and utilities
 
-pn.extension()
-logger = logging.getLogger("fsspec.gui")
-
-
-class SigSlot:
-    """Signal-slot mixin, for Panel event passing
-
-    Include this class in a widget manager's superclasses to be able to
-    register events and callbacks on Panel widgets managed by that class.
-
-    The method ``_register`` should be called as widgets are added, and external
-    code should call ``connect`` to associate callbacks.
-
-    By default, all signals emit a DEBUG logging statement.
-    """
-
-    # names of signals that this class may emit each of which must be
-    # set by _register for any new instance
-    signals: ClassVar[Sequence[str]] = []
-    # names of actions that this class may respond to
-    slots: ClassVar[Sequence[str]] = []
-
-    # each of which must be a method name
-
-    def __init__(self):
-        self._ignoring_events = False
-        self._sigs = {}
-        self._map = {}
-        self._setup()
-
-    def _setup(self):
-        """Create GUI elements and register signals"""
-        self.panel = pn.pane.PaneBase()
-        # no signals to set up in the base class
-
-    def _register(
-        self, widget, name, thing="value", log_level=logging.DEBUG, auto=False
-    ):
-        """Watch the given attribute of a widget and assign it a named event
-
-        This is normally called at the time a widget is instantiated, in the
-        class which owns it.
-
-        Parameters
-        ----------
-        widget : pn.layout.Panel or None
-            Widget to watch. If None, an anonymous signal not associated with
-            any widget.
-        name : str
-            Name of this event
-        thing : str
-            Attribute of the given widget to watch
-        log_level : int
-            When the signal is triggered, a logging event of the given level
-            will be fired in the dfviz logger.
-        auto : bool
-            If True, automatically connects with a method in this class of the
-            same name.
-        """
-        if name not in self.signals:
-            raise ValueError(f"Attempt to assign an undeclared signal: {name}")
-        self._sigs[name] = {
-            "widget": widget,
-            "callbacks": [],
-            "thing": thing,
-            "log": log_level,
-        }
-        wn = "-".join(
-            [
-                getattr(widget, "name", str(widget)) if widget is not None else "none",
-                thing,
-            ]
-        )
-        self._map[wn] = name
-        if widget is not None:
-            widget.param.watch(self._signal, thing, onlychanged=True)
-        if auto and hasattr(self, name):
-            self.connect(name, getattr(self, name))
-
-    def _repr_mimebundle_(self, *args, **kwargs):
-        """Display in a notebook or a server"""
-        try:
-            return self.panel._repr_mimebundle_(*args, **kwargs)
-        except (ValueError, AttributeError) as exc:
-            raise NotImplementedError(
-                "Panel does not seem to be set up properly"
-            ) from exc
-
-    def connect(self, signal, slot):
-        """Associate call back with given event
-
-        The callback must be a function which takes the "new" value of the
-        watched attribute as the only parameter. If the callback return False,
-        this cancels any further processing of the given event.
-
-        Alternatively, the callback can be a string, in which case it means
-        emitting the correspondingly-named event (i.e., connect to self)
-        """
-        self._sigs[signal]["callbacks"].append(slot)
-
-    def _signal(self, event):
-        """This is called by a an action on a widget
-
-        Within an self.ignore_events context, nothing happens.
-
-        Tests can execute this method by directly changing the values of
-        widget components.
-        """
-        if not self._ignoring_events:
-            wn = "-".join([event.obj.name, event.name])
-            if wn in self._map and self._map[wn] in self._sigs:
-                self._emit(self._map[wn], event.new)
-
-    @contextlib.contextmanager
-    def ignore_events(self):
-        """Temporarily turn off events processing in this instance
-
-        (does not propagate to children)
-        """
-        self._ignoring_events = True
-        try:
-            yield
-        finally:
-            self._ignoring_events = False
-
-    def _emit(self, sig, value=None):
-        """An event happened, call its callbacks
-
-        This method can be used in tests to simulate message passing without
-        directly changing visual elements.
-
-        Calling of callbacks will halt whenever one returns False.
-        """
-        logger.log(self._sigs[sig]["log"], f"{sig}: {value}")
-        for callback in self._sigs[sig]["callbacks"]:
-            if isinstance(callback, str):
-                self._emit(callback)
-            else:
-                try:
-                    # running callbacks should not break the interface
-                    ret = callback(value)
-                    if ret is False:
-                        break
-                except Exception as e:
-                    logger.exception(
-                        "Exception (%s) while executing callback for signal: %s",
-                        e,
-                        sig,
-                    )
-
-    def show(self, threads=False):
-        """Open a new browser tab and display this instance's interface"""
-        self.panel.show(threads=threads, verbose=False)
-        return self
+__author__ = {"github.com/": ["casperdcl", "lrq3000"]}
+__all__ = ['tqdm_gui', 'tgrange', 'tqdm', 'trange']
 
 
-class SingleSelect(SigSlot):
-    """A multiselect which only allows you to select one item for an event"""
+class tqdm_gui(std_tqdm):  # pragma: no cover
+    """Experimental Matplotlib GUI version of tqdm!"""
+    # TODO: @classmethod: write() on GUI?
+    def __init__(self, *args, **kwargs):
+        from collections import deque
 
-    signals = ["_selected", "selected"]  # the first is internal
-    slots = ["set_options", "set_selection", "add", "clear", "select"]
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+        kwargs = kwargs.copy()
+        kwargs['gui'] = True
+        colour = kwargs.pop('colour', 'g')
+        super().__init__(*args, **kwargs)
 
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-        super().__init__()
-
-    def _setup(self):
-        self.panel = pn.widgets.MultiSelect(**self.kwargs)
-        self._register(self.panel, "_selected", "value")
-        self._register(None, "selected")
-        self.connect("_selected", self.select_one)
-
-    def _signal(self, *args, **kwargs):
-        super()._signal(*args, **kwargs)
-
-    def select_one(self, *_):
-        with self.ignore_events():
-            val = [self.panel.value[-1]] if self.panel.value else []
-            self.panel.value = val
-        self._emit("selected", self.panel.value)
-
-    def set_options(self, options):
-        self.panel.options = options
-
-    def clear(self):
-        self.panel.options = []
-
-    @property
-    def value(self):
-        return self.panel.value
-
-    def set_selection(self, selection):
-        self.panel.value = [selection]
-
-
-class FileSelector(SigSlot):
-    """Panel-based graphical file selector widget
-
-    Instances of this widget are interactive and can be displayed in jupyter by having
-    them as the output of a cell,  or in a separate browser tab using ``.show()``.
-    """
-
-    signals = [
-        "protocol_changed",
-        "selection_changed",
-        "directory_entered",
-        "home_clicked",
-        "up_clicked",
-        "go_clicked",
-        "filters_changed",
-    ]
-    slots = ["set_filters", "go_home"]
-
-    def __init__(self, url=None, filters=None, ignore=None, kwargs=None):
-        """
-
-        Parameters
-        ----------
-        url : str (optional)
-            Initial value of the URL to populate the dialog; should include protocol
-        filters : list(str) (optional)
-            File endings to include in the listings. If not included, all files are
-            allowed. Does not affect directories.
-            If given, the endings will appear as checkboxes in the interface
-        ignore : list(str) (optional)
-            Regex(s) of file basename patterns to ignore, e.g., "\\." for typical
-            hidden files on posix
-        kwargs : dict (optional)
-            To pass to file system instance
-        """
-        if url:
-            self.init_protocol, url = split_protocol(url)
-        else:
-            self.init_protocol, url = "file", os.getcwd()
-        self.init_url = url
-        self.init_kwargs = (kwargs if isinstance(kwargs, str) else str(kwargs)) or "{}"
-        self.filters = filters
-        self.ignore = [re.compile(i) for i in ignore or []]
-        self._fs = None
-        super().__init__()
-
-    def _setup(self):
-        self.url = pn.widgets.TextInput(
-            name="url",
-            value=self.init_url,
-            align="end",
-            sizing_mode="stretch_width",
-            width_policy="max",
-        )
-        self.protocol = pn.widgets.Select(
-            options=sorted(known_implementations),
-            value=self.init_protocol,
-            name="protocol",
-            align="center",
-        )
-        self.kwargs = pn.widgets.TextInput(
-            name="kwargs", value=self.init_kwargs, align="center"
-        )
-        self.go = pn.widgets.Button(name="⇨", align="end", width=45)
-        self.main = SingleSelect(size=10)
-        self.home = pn.widgets.Button(name="🏠", width=40, height=30, align="end")
-        self.up = pn.widgets.Button(name="‹", width=30, height=30, align="end")
-
-        self._register(self.protocol, "protocol_changed", auto=True)
-        self._register(self.go, "go_clicked", "clicks", auto=True)
-        self._register(self.up, "up_clicked", "clicks", auto=True)
-        self._register(self.home, "home_clicked", "clicks", auto=True)
-        self._register(None, "selection_changed")
-        self.main.connect("selected", self.selection_changed)
-        self._register(None, "directory_entered")
-        self.prev_protocol = self.protocol.value
-        self.prev_kwargs = self.storage_options
-
-        self.filter_sel = pn.widgets.CheckBoxGroup(
-            value=[], options=[], inline=False, align="end", width_policy="min"
-        )
-        self._register(self.filter_sel, "filters_changed", auto=True)
-
-        self.panel = pn.Column(
-            pn.Row(self.protocol, self.kwargs),
-            pn.Row(self.home, self.up, self.url, self.go, self.filter_sel),
-            self.main.panel,
-        )
-        self.set_filters(self.filters)
-        self.go_clicked()
-
-    def set_filters(self, filters=None):
-        self.filters = filters
-        if filters:
-            self.filter_sel.options = filters
-            self.filter_sel.value = filters
-        else:
-            self.filter_sel.options = []
-            self.filter_sel.value = []
-
-    @property
-    def storage_options(self):
-        """Value of the kwargs box as a dictionary"""
-        return ast.literal_eval(self.kwargs.value) or {}
-
-    @property
-    def fs(self):
-        """Current filesystem instance"""
-        if self._fs is None:
-            cls = get_filesystem_class(self.protocol.value)
-            self._fs = cls(**self.storage_options)
-        return self._fs
-
-    @property
-    def urlpath(self):
-        """URL of currently selected item"""
-        return (
-            (f"{self.protocol.value}://{self.main.value[0]}")
-            if self.main.value
-            else None
-        )
-
-    def open_file(self, mode="rb", compression=None, encoding=None):
-        """Create OpenFile instance for the currently selected item
-
-        For example, in a notebook you might do something like
-
-        .. code-block::
-
-            [ ]: sel = FileSelector(); sel
-
-            # user selects their file
-
-            [ ]: with sel.open_file('rb') as f:
-            ...      out = f.read()
-
-        Parameters
-        ----------
-        mode: str (optional)
-            Open mode for the file.
-        compression: str (optional)
-            The interact with the file as compressed. Set to 'infer' to guess
-            compression from the file ending
-        encoding: str (optional)
-            If using text mode, use this encoding; defaults to UTF8.
-        """
-        if self.urlpath is None:
-            raise ValueError("No file selected")
-        return OpenFile(self.fs, self.urlpath, mode, compression, encoding)
-
-    def filters_changed(self, values):
-        self.filters = values
-        self.go_clicked()
-
-    def selection_changed(self, *_):
-        if self.urlpath is None:
+        if self.disable:
             return
-        if self.fs.isdir(self.urlpath):
-            self.url.value = self.fs._strip_protocol(self.urlpath)
-        self.go_clicked()
 
-    def go_clicked(self, *_):
-        if (
-            self.prev_protocol != self.protocol.value
-            or self.prev_kwargs != self.storage_options
-        ):
-            self._fs = None  # causes fs to be recreated
-            self.prev_protocol = self.protocol.value
-            self.prev_kwargs = self.storage_options
-        listing = sorted(
-            self.fs.ls(self.url.value, detail=True), key=lambda x: x["name"]
-        )
-        listing = [
-            l
-            for l in listing
-            if not any(i.match(l["name"].rsplit("/", 1)[-1]) for i in self.ignore)
-        ]
-        folders = {
-            "📁 " + o["name"].rsplit("/", 1)[-1]: o["name"]
-            for o in listing
-            if o["type"] == "directory"
-        }
-        files = {
-            "📄 " + o["name"].rsplit("/", 1)[-1]: o["name"]
-            for o in listing
-            if o["type"] == "file"
-        }
-        if self.filters:
-            files = {
-                k: v
-                for k, v in files.items()
-                if any(v.endswith(ext) for ext in self.filters)
-            }
-        self.main.set_options(dict(**folders, **files))
+        warn("GUI is experimental/alpha", TqdmExperimentalWarning, stacklevel=2)
+        self.mpl = mpl
+        self.plt = plt
 
-    def protocol_changed(self, *_):
-        self._fs = None
-        self.main.options = []
-        self.url.value = ""
+        # Remember if external environment uses toolbars
+        self.toolbar = self.mpl.rcParams['toolbar']
+        self.mpl.rcParams['toolbar'] = 'None'
 
-    def home_clicked(self, *_):
-        self.protocol.value = self.init_protocol
-        self.kwargs.value = self.init_kwargs
-        self.url.value = self.init_url
-        self.go_clicked()
+        self.mininterval = max(self.mininterval, 0.5)
+        self.fig, ax = plt.subplots(figsize=(9, 2.2))
+        # self.fig.subplots_adjust(bottom=0.2)
+        total = self.__len__()  # avoids TypeError on None #971
+        if total is not None:
+            self.xdata = []
+            self.ydata = []
+            self.zdata = []
+        else:
+            self.xdata = deque([])
+            self.ydata = deque([])
+            self.zdata = deque([])
+        self.line1, = ax.plot(self.xdata, self.ydata, color='b')
+        self.line2, = ax.plot(self.xdata, self.zdata, color='k')
+        ax.set_ylim(0, 0.001)
+        if total is not None:
+            ax.set_xlim(0, 100)
+            ax.set_xlabel("percent")
+            self.fig.legend((self.line1, self.line2), ("cur", "est"),
+                            loc='center right')
+            # progressbar
+            self.hspan = plt.axhspan(0, 0.001, xmin=0, xmax=0, color=colour)
+        else:
+            # ax.set_xlim(-60, 0)
+            ax.set_xlim(0, 60)
+            ax.invert_xaxis()
+            ax.set_xlabel("seconds")
+            ax.legend(("cur", "est"), loc='lower left')
+        ax.grid()
+        # ax.set_xlabel('seconds')
+        ax.set_ylabel((self.unit if self.unit else "it") + "/s")
+        if self.unit_scale:
+            plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
+            ax.yaxis.get_offset_text().set_x(-0.15)
 
-    def up_clicked(self, *_):
-        self.url.value = self.fs._parent(self.url.value)
-        self.go_clicked()
+        # Remember if external environment is interactive
+        self.wasion = plt.isinteractive()
+        plt.ion()
+        self.ax = ax
+
+    def close(self):
+        if self.disable:
+            return
+
+        self.disable = True
+
+        with self.get_lock():
+            self._instances.remove(self)
+
+        # Restore toolbars
+        self.mpl.rcParams['toolbar'] = self.toolbar
+        # Return to non-interactive mode
+        if not self.wasion:
+            self.plt.ioff()
+        if self.leave:
+            self.display()
+        else:
+            self.plt.close(self.fig)
+
+    def clear(self, *_, **__):
+        pass
+
+    def display(self, *_, **__):
+        n = self.n
+        cur_t = self._time()
+        elapsed = cur_t - self.start_t
+        delta_it = n - self.last_print_n
+        delta_t = cur_t - self.last_print_t
+
+        # Inline due to multiple calls
+        total = self.total
+        xdata = self.xdata
+        ydata = self.ydata
+        zdata = self.zdata
+        ax = self.ax
+        line1 = self.line1
+        line2 = self.line2
+        # instantaneous rate
+        y = delta_it / delta_t
+        # overall rate
+        z = n / elapsed
+        # update line data
+        xdata.append(n * 100.0 / total if total else cur_t)
+        ydata.append(y)
+        zdata.append(z)
+
+        # Discard old values
+        # xmin, xmax = ax.get_xlim()
+        # if (not total) and elapsed > xmin * 1.1:
+        if (not total) and elapsed > 66:
+            xdata.popleft()
+            ydata.popleft()
+            zdata.popleft()
+
+        ymin, ymax = ax.get_ylim()
+        if y > ymax or z > ymax:
+            ymax = 1.1 * y
+            ax.set_ylim(ymin, ymax)
+            ax.figure.canvas.draw()
+
+        if total:
+            line1.set_data(xdata, ydata)
+            line2.set_data(xdata, zdata)
+            try:
+                poly_lims = self.hspan.get_xy()
+            except AttributeError:
+                self.hspan = self.plt.axhspan(0, 0.001, xmin=0, xmax=0, color='g')
+                poly_lims = self.hspan.get_xy()
+            poly_lims[0, 1] = ymin
+            poly_lims[1, 1] = ymax
+            poly_lims[2] = [n / total, ymax]
+            poly_lims[3] = [poly_lims[2, 0], ymin]
+            if len(poly_lims) > 4:
+                poly_lims[4, 1] = ymin
+            self.hspan.set_xy(poly_lims)
+        else:
+            t_ago = [cur_t - i for i in xdata]
+            line1.set_data(t_ago, ydata)
+            line2.set_data(t_ago, zdata)
+
+        d = self.format_dict
+        # remove {bar}
+        d['bar_format'] = (d['bar_format'] or "{l_bar}<bar/>{r_bar}").replace(
+            "{bar}", "<bar/>")
+        msg = self.format_meter(**d)
+        if '<bar/>' in msg:
+            msg = "".join(re.split(r'\|?<bar/>\|?', msg, maxsplit=1))
+        ax.set_title(msg, fontname="DejaVu Sans Mono", fontsize=11)
+        self.plt.pause(1e-9)
+
+
+def tgrange(*args, **kwargs):
+    """Shortcut for `tqdm.gui.tqdm(range(*args), **kwargs)`."""
+    return tqdm_gui(range(*args), **kwargs)
+
+
+# Aliases
+tqdm = tqdm_gui
+trange = tgrange

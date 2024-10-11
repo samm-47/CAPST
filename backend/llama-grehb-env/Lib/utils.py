@@ -1,1096 +1,658 @@
-"""
-requests.utils
-~~~~~~~~~~~~~~
-
-This module provides utility functions that are used within Requests
-that are also useful for external consumption.
-"""
-
-import codecs
-import contextlib
-import io
-import os
-import re
-import socket
-import struct
-import sys
-import tempfile
+import collections
+import math
+import pathlib
 import warnings
-import zipfile
-from collections import OrderedDict
+from itertools import repeat
+from types import FunctionType
+from typing import Any, BinaryIO, List, Optional, Tuple, Union
 
-from urllib3.util import make_headers, parse_url
-
-from . import certs
-from .__version__ import __version__
-
-# to_native_string is unused here, but imported here for backwards compatibility
-from ._internal_utils import (  # noqa: F401
-    _HEADER_VALIDATORS_BYTE,
-    _HEADER_VALIDATORS_STR,
-    HEADER_VALIDATORS,
-    to_native_string,
-)
-from .compat import (
-    Mapping,
-    basestring,
-    bytes,
-    getproxies,
-    getproxies_environment,
-    integer_types,
-)
-from .compat import parse_http_list as _parse_list_header
-from .compat import (
-    proxy_bypass,
-    proxy_bypass_environment,
-    quote,
-    str,
-    unquote,
-    urlparse,
-    urlunparse,
-)
-from .cookies import cookiejar_from_dict
-from .exceptions import (
-    FileModeWarning,
-    InvalidHeader,
-    InvalidURL,
-    UnrewindableBodyError,
-)
-from .structures import CaseInsensitiveDict
-
-NETRC_FILES = (".netrc", "_netrc")
-
-DEFAULT_CA_BUNDLE_PATH = certs.where()
-
-DEFAULT_PORTS = {"http": 80, "https": 443}
-
-# Ensure that ', ' is used to preserve previous delimiter behavior.
-DEFAULT_ACCEPT_ENCODING = ", ".join(
-    re.split(r",\s*", make_headers(accept_encoding=True)["accept-encoding"])
-)
+import numpy as np
+import torch
+from PIL import Image, ImageColor, ImageDraw, ImageFont
 
 
-if sys.platform == "win32":
-    # provide a proxy_bypass version on Windows without DNS lookups
+__all__ = [
+    "make_grid",
+    "save_image",
+    "draw_bounding_boxes",
+    "draw_segmentation_masks",
+    "draw_keypoints",
+    "flow_to_image",
+]
 
-    def proxy_bypass_registry(host):
-        try:
-            import winreg
-        except ImportError:
-            return False
 
-        try:
-            internetSettings = winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER,
-                r"Software\Microsoft\Windows\CurrentVersion\Internet Settings",
-            )
-            # ProxyEnable could be REG_SZ or REG_DWORD, normalizing it
-            proxyEnable = int(winreg.QueryValueEx(internetSettings, "ProxyEnable")[0])
-            # ProxyOverride is almost always a string
-            proxyOverride = winreg.QueryValueEx(internetSettings, "ProxyOverride")[0]
-        except (OSError, ValueError):
-            return False
-        if not proxyEnable or not proxyOverride:
-            return False
+@torch.no_grad()
+def make_grid(
+    tensor: Union[torch.Tensor, List[torch.Tensor]],
+    nrow: int = 8,
+    padding: int = 2,
+    normalize: bool = False,
+    value_range: Optional[Tuple[int, int]] = None,
+    scale_each: bool = False,
+    pad_value: float = 0.0,
+) -> torch.Tensor:
+    """
+    Make a grid of images.
 
-        # make a check value list from the registry entry: replace the
-        # '<local>' string by the localhost entry and the corresponding
-        # canonical entry.
-        proxyOverride = proxyOverride.split(";")
-        # filter out empty strings to avoid re.match return true in the following code.
-        proxyOverride = filter(None, proxyOverride)
-        # now check if we match one of the registry values.
-        for test in proxyOverride:
-            if test == "<local>":
-                if "." not in host:
-                    return True
-            test = test.replace(".", r"\.")  # mask dots
-            test = test.replace("*", r".*")  # change glob sequence
-            test = test.replace("?", r".")  # change glob char
-            if re.match(test, host, re.I):
-                return True
-        return False
+    Args:
+        tensor (Tensor or list): 4D mini-batch Tensor of shape (B x C x H x W)
+            or a list of images all of the same size.
+        nrow (int, optional): Number of images displayed in each row of the grid.
+            The final grid size is ``(B / nrow, nrow)``. Default: ``8``.
+        padding (int, optional): amount of padding. Default: ``2``.
+        normalize (bool, optional): If True, shift the image to the range (0, 1),
+            by the min and max values specified by ``value_range``. Default: ``False``.
+        value_range (tuple, optional): tuple (min, max) where min and max are numbers,
+            then these numbers are used to normalize the image. By default, min and max
+            are computed from the tensor.
+        scale_each (bool, optional): If ``True``, scale each image in the batch of
+            images separately rather than the (min, max) over all images. Default: ``False``.
+        pad_value (float, optional): Value for the padded pixels. Default: ``0``.
 
-    def proxy_bypass(host):  # noqa
-        """Return True, if the host should be bypassed.
-
-        Checks proxy settings gathered from the environment, if specified,
-        or the registry.
-        """
-        if getproxies_environment():
-            return proxy_bypass_environment(host)
+    Returns:
+        grid (Tensor): the tensor containing grid of images.
+    """
+    if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        _log_api_usage_once(make_grid)
+    if not torch.is_tensor(tensor):
+        if isinstance(tensor, list):
+            for t in tensor:
+                if not torch.is_tensor(t):
+                    raise TypeError(f"tensor or list of tensors expected, got a list containing {type(t)}")
         else:
-            return proxy_bypass_registry(host)
+            raise TypeError(f"tensor or list of tensors expected, got {type(tensor)}")
 
+    # if list of tensors, convert to a 4D mini-batch Tensor
+    if isinstance(tensor, list):
+        tensor = torch.stack(tensor, dim=0)
 
-def dict_to_sequence(d):
-    """Returns an internal sequence dictionary update."""
+    if tensor.dim() == 2:  # single image H x W
+        tensor = tensor.unsqueeze(0)
+    if tensor.dim() == 3:  # single image
+        if tensor.size(0) == 1:  # if single-channel, convert to 3-channel
+            tensor = torch.cat((tensor, tensor, tensor), 0)
+        tensor = tensor.unsqueeze(0)
 
-    if hasattr(d, "items"):
-        d = d.items()
+    if tensor.dim() == 4 and tensor.size(1) == 1:  # single-channel images
+        tensor = torch.cat((tensor, tensor, tensor), 1)
 
-    return d
+    if normalize is True:
+        tensor = tensor.clone()  # avoid modifying tensor in-place
+        if value_range is not None and not isinstance(value_range, tuple):
+            raise TypeError("value_range has to be a tuple (min, max) if specified. min and max are numbers")
 
+        def norm_ip(img, low, high):
+            img.clamp_(min=low, max=high)
+            img.sub_(low).div_(max(high - low, 1e-5))
 
-def super_len(o):
-    total_length = None
-    current_position = 0
+        def norm_range(t, value_range):
+            if value_range is not None:
+                norm_ip(t, value_range[0], value_range[1])
+            else:
+                norm_ip(t, float(t.min()), float(t.max()))
 
-    if isinstance(o, str):
-        o = o.encode("utf-8")
-
-    if hasattr(o, "__len__"):
-        total_length = len(o)
-
-    elif hasattr(o, "len"):
-        total_length = o.len
-
-    elif hasattr(o, "fileno"):
-        try:
-            fileno = o.fileno()
-        except (io.UnsupportedOperation, AttributeError):
-            # AttributeError is a surprising exception, seeing as how we've just checked
-            # that `hasattr(o, 'fileno')`.  It happens for objects obtained via
-            # `Tarfile.extractfile()`, per issue 5229.
-            pass
+        if scale_each is True:
+            for t in tensor:  # loop over mini-batch dimension
+                norm_range(t, value_range)
         else:
-            total_length = os.fstat(fileno).st_size
+            norm_range(tensor, value_range)
 
-            # Having used fstat to determine the file length, we need to
-            # confirm that this file was opened up in binary mode.
-            if "b" not in o.mode:
-                warnings.warn(
-                    (
-                        "Requests has determined the content-length for this "
-                        "request using the binary size of the file: however, the "
-                        "file has been opened in text mode (i.e. without the 'b' "
-                        "flag in the mode). This may lead to an incorrect "
-                        "content-length. In Requests 3.0, support will be removed "
-                        "for files in text mode."
-                    ),
-                    FileModeWarning,
+    if not isinstance(tensor, torch.Tensor):
+        raise TypeError("tensor should be of type torch.Tensor")
+    if tensor.size(0) == 1:
+        return tensor.squeeze(0)
+
+    # make the mini-batch of images into a grid
+    nmaps = tensor.size(0)
+    xmaps = min(nrow, nmaps)
+    ymaps = int(math.ceil(float(nmaps) / xmaps))
+    height, width = int(tensor.size(2) + padding), int(tensor.size(3) + padding)
+    num_channels = tensor.size(1)
+    grid = tensor.new_full((num_channels, height * ymaps + padding, width * xmaps + padding), pad_value)
+    k = 0
+    for y in range(ymaps):
+        for x in range(xmaps):
+            if k >= nmaps:
+                break
+            # Tensor.copy_() is a valid method but seems to be missing from the stubs
+            # https://pytorch.org/docs/stable/tensors.html#torch.Tensor.copy_
+            grid.narrow(1, y * height + padding, height - padding).narrow(  # type: ignore[attr-defined]
+                2, x * width + padding, width - padding
+            ).copy_(tensor[k])
+            k = k + 1
+    return grid
+
+
+@torch.no_grad()
+def save_image(
+    tensor: Union[torch.Tensor, List[torch.Tensor]],
+    fp: Union[str, pathlib.Path, BinaryIO],
+    format: Optional[str] = None,
+    **kwargs,
+) -> None:
+    """
+    Save a given Tensor into an image file.
+
+    Args:
+        tensor (Tensor or list): Image to be saved. If given a mini-batch tensor,
+            saves the tensor as a grid of images by calling ``make_grid``.
+        fp (string or file object): A filename or a file object
+        format(Optional):  If omitted, the format to use is determined from the filename extension.
+            If a file object was used instead of a filename, this parameter should always be used.
+        **kwargs: Other arguments are documented in ``make_grid``.
+    """
+
+    if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        _log_api_usage_once(save_image)
+    grid = make_grid(tensor, **kwargs)
+    # Add 0.5 after unnormalizing to [0, 255] to round to the nearest integer
+    ndarr = grid.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+    im = Image.fromarray(ndarr)
+    im.save(fp, format=format)
+
+
+@torch.no_grad()
+def draw_bounding_boxes(
+    image: torch.Tensor,
+    boxes: torch.Tensor,
+    labels: Optional[List[str]] = None,
+    colors: Optional[Union[List[Union[str, Tuple[int, int, int]]], str, Tuple[int, int, int]]] = None,
+    fill: Optional[bool] = False,
+    width: int = 1,
+    font: Optional[str] = None,
+    font_size: Optional[int] = None,
+) -> torch.Tensor:
+
+    """
+    Draws bounding boxes on given RGB image.
+    The image values should be uint8 in [0, 255] or float in [0, 1].
+    If fill is True, Resulting Tensor should be saved as PNG image.
+
+    Args:
+        image (Tensor): Tensor of shape (C, H, W) and dtype uint8 or float.
+        boxes (Tensor): Tensor of size (N, 4) containing bounding boxes in (xmin, ymin, xmax, ymax) format. Note that
+            the boxes are absolute coordinates with respect to the image. In other words: `0 <= xmin < xmax < W` and
+            `0 <= ymin < ymax < H`.
+        labels (List[str]): List containing the labels of bounding boxes.
+        colors (color or list of colors, optional): List containing the colors
+            of the boxes or single color for all boxes. The color can be represented as
+            PIL strings e.g. "red" or "#FF00FF", or as RGB tuples e.g. ``(240, 10, 157)``.
+            By default, random colors are generated for boxes.
+        fill (bool): If `True` fills the bounding box with specified color.
+        width (int): Width of bounding box.
+        font (str): A filename containing a TrueType font. If the file is not found in this filename, the loader may
+            also search in other directories, such as the `fonts/` directory on Windows or `/Library/Fonts/`,
+            `/System/Library/Fonts/` and `~/Library/Fonts/` on macOS.
+        font_size (int): The requested font size in points.
+
+    Returns:
+        img (Tensor[C, H, W]): Image Tensor of dtype uint8 with bounding boxes plotted.
+    """
+    import torchvision.transforms.v2.functional as F  # noqa
+
+    if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        _log_api_usage_once(draw_bounding_boxes)
+    if not isinstance(image, torch.Tensor):
+        raise TypeError(f"Tensor expected, got {type(image)}")
+    elif not (image.dtype == torch.uint8 or image.is_floating_point()):
+        raise ValueError(f"The image dtype must be uint8 or float, got {image.dtype}")
+    elif image.dim() != 3:
+        raise ValueError("Pass individual images, not batches")
+    elif image.size(0) not in {1, 3}:
+        raise ValueError("Only grayscale and RGB images are supported")
+    elif (boxes[:, 0] > boxes[:, 2]).any() or (boxes[:, 1] > boxes[:, 3]).any():
+        raise ValueError(
+            "Boxes need to be in (xmin, ymin, xmax, ymax) format. Use torchvision.ops.box_convert to convert them"
+        )
+
+    num_boxes = boxes.shape[0]
+
+    if num_boxes == 0:
+        warnings.warn("boxes doesn't contain any box. No box was drawn")
+        return image
+
+    if labels is None:
+        labels: Union[List[str], List[None]] = [None] * num_boxes  # type: ignore[no-redef]
+    elif len(labels) != num_boxes:
+        raise ValueError(
+            f"Number of boxes ({num_boxes}) and labels ({len(labels)}) mismatch. Please specify labels for each box."
+        )
+
+    colors = _parse_colors(colors, num_objects=num_boxes)
+
+    if font is None:
+        if font_size is not None:
+            warnings.warn("Argument 'font_size' will be ignored since 'font' is not set.")
+        txt_font = ImageFont.load_default()
+    else:
+        txt_font = ImageFont.truetype(font=font, size=font_size or 10)
+
+    # Handle Grayscale images
+    if image.size(0) == 1:
+        image = torch.tile(image, (3, 1, 1))
+
+    original_dtype = image.dtype
+    if original_dtype.is_floating_point:
+        image = F.to_dtype(image, dtype=torch.uint8, scale=True)
+
+    img_to_draw = F.to_pil_image(image)
+    img_boxes = boxes.to(torch.int64).tolist()
+
+    if fill:
+        draw = ImageDraw.Draw(img_to_draw, "RGBA")
+    else:
+        draw = ImageDraw.Draw(img_to_draw)
+
+    for bbox, color, label in zip(img_boxes, colors, labels):  # type: ignore[arg-type]
+        if fill:
+            fill_color = color + (100,)
+            draw.rectangle(bbox, width=width, outline=color, fill=fill_color)
+        else:
+            draw.rectangle(bbox, width=width, outline=color)
+
+        if label is not None:
+            margin = width + 1
+            draw.text((bbox[0] + margin, bbox[1] + margin), label, fill=color, font=txt_font)
+
+    out = F.pil_to_tensor(img_to_draw)
+    if original_dtype.is_floating_point:
+        out = F.to_dtype(out, dtype=original_dtype, scale=True)
+    return out
+
+
+@torch.no_grad()
+def draw_segmentation_masks(
+    image: torch.Tensor,
+    masks: torch.Tensor,
+    alpha: float = 0.8,
+    colors: Optional[Union[List[Union[str, Tuple[int, int, int]]], str, Tuple[int, int, int]]] = None,
+) -> torch.Tensor:
+
+    """
+    Draws segmentation masks on given RGB image.
+    The image values should be uint8 in [0, 255] or float in [0, 1].
+
+    Args:
+        image (Tensor): Tensor of shape (3, H, W) and dtype uint8 or float.
+        masks (Tensor): Tensor of shape (num_masks, H, W) or (H, W) and dtype bool.
+        alpha (float): Float number between 0 and 1 denoting the transparency of the masks.
+            0 means full transparency, 1 means no transparency.
+        colors (color or list of colors, optional): List containing the colors
+            of the masks or single color for all masks. The color can be represented as
+            PIL strings e.g. "red" or "#FF00FF", or as RGB tuples e.g. ``(240, 10, 157)``.
+            By default, random colors are generated for each mask.
+
+    Returns:
+        img (Tensor[C, H, W]): Image Tensor, with segmentation masks drawn on top.
+    """
+
+    if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        _log_api_usage_once(draw_segmentation_masks)
+    if not isinstance(image, torch.Tensor):
+        raise TypeError(f"The image must be a tensor, got {type(image)}")
+    elif not (image.dtype == torch.uint8 or image.is_floating_point()):
+        raise ValueError(f"The image dtype must be uint8 or float, got {image.dtype}")
+    elif image.dim() != 3:
+        raise ValueError("Pass individual images, not batches")
+    elif image.size()[0] != 3:
+        raise ValueError("Pass an RGB image. Other Image formats are not supported")
+    if masks.ndim == 2:
+        masks = masks[None, :, :]
+    if masks.ndim != 3:
+        raise ValueError("masks must be of shape (H, W) or (batch_size, H, W)")
+    if masks.dtype != torch.bool:
+        raise ValueError(f"The masks must be of dtype bool. Got {masks.dtype}")
+    if masks.shape[-2:] != image.shape[-2:]:
+        raise ValueError("The image and the masks must have the same height and width")
+
+    num_masks = masks.size()[0]
+    overlapping_masks = masks.sum(dim=0) > 1
+
+    if num_masks == 0:
+        warnings.warn("masks doesn't contain any mask. No mask was drawn")
+        return image
+
+    original_dtype = image.dtype
+    colors = [
+        torch.tensor(color, dtype=original_dtype, device=image.device)
+        for color in _parse_colors(colors, num_objects=num_masks, dtype=original_dtype)
+    ]
+
+    img_to_draw = image.detach().clone()
+    # TODO: There might be a way to vectorize this
+    for mask, color in zip(masks, colors):
+        img_to_draw[:, mask] = color[:, None]
+
+    img_to_draw[:, overlapping_masks] = 0
+
+    out = image * (1 - alpha) + img_to_draw * alpha
+    # Note: at this point, out is a float tensor in [0, 1] or [0, 255] depending on original_dtype
+    return out.to(original_dtype)
+
+
+@torch.no_grad()
+def draw_keypoints(
+    image: torch.Tensor,
+    keypoints: torch.Tensor,
+    connectivity: Optional[List[Tuple[int, int]]] = None,
+    colors: Optional[Union[str, Tuple[int, int, int]]] = None,
+    radius: int = 2,
+    width: int = 3,
+    visibility: Optional[torch.Tensor] = None,
+) -> torch.Tensor:
+
+    """
+    Draws Keypoints on given RGB image.
+    The image values should be uint8 in [0, 255] or float in [0, 1].
+    Keypoints can be drawn for multiple instances at a time.
+
+    This method allows that keypoints and their connectivity are drawn based on the visibility of this keypoint.
+
+    Args:
+        image (Tensor): Tensor of shape (3, H, W) and dtype uint8 or float.
+        keypoints (Tensor): Tensor of shape (num_instances, K, 2) the K keypoint locations for each of the N instances,
+            in the format [x, y].
+        connectivity (List[Tuple[int, int]]]): A List of tuple where each tuple contains a pair of keypoints
+            to be connected.
+            If at least one of the two connected keypoints has a ``visibility`` of False,
+            this specific connection is not drawn.
+            Exclusions due to invisibility are computed per-instance.
+        colors (str, Tuple): The color can be represented as
+            PIL strings e.g. "red" or "#FF00FF", or as RGB tuples e.g. ``(240, 10, 157)``.
+        radius (int): Integer denoting radius of keypoint.
+        width (int): Integer denoting width of line connecting keypoints.
+        visibility (Tensor): Tensor of shape (num_instances, K) specifying the visibility of the K
+            keypoints for each of the N instances.
+            True means that the respective keypoint is visible and should be drawn.
+            False means invisible, so neither the point nor possible connections containing it are drawn.
+            The input tensor will be cast to bool.
+            Default ``None`` means that all the keypoints are visible.
+            For more details, see :ref:`draw_keypoints_with_visibility`.
+
+    Returns:
+        img (Tensor[C, H, W]): Image Tensor with keypoints drawn.
+    """
+
+    if not torch.jit.is_scripting() and not torch.jit.is_tracing():
+        _log_api_usage_once(draw_keypoints)
+    # validate image
+    if not isinstance(image, torch.Tensor):
+        raise TypeError(f"The image must be a tensor, got {type(image)}")
+    elif not (image.dtype == torch.uint8 or image.is_floating_point()):
+        raise ValueError(f"The image dtype must be uint8 or float, got {image.dtype}")
+    elif image.dim() != 3:
+        raise ValueError("Pass individual images, not batches")
+    elif image.size()[0] != 3:
+        raise ValueError("Pass an RGB image. Other Image formats are not supported")
+
+    # validate keypoints
+    if keypoints.ndim != 3:
+        raise ValueError("keypoints must be of shape (num_instances, K, 2)")
+
+    # validate visibility
+    if visibility is None:  # set default
+        visibility = torch.ones(keypoints.shape[:-1], dtype=torch.bool)
+    if visibility.ndim == 3:
+        # If visibility was passed as pred.split([2, 1], dim=-1), it will be of shape (num_instances, K, 1).
+        # We make sure it is of shape (num_instances, K). This isn't documented, we're just being nice.
+        visibility = visibility.squeeze(-1)
+    if visibility.ndim != 2:
+        raise ValueError(f"visibility must be of shape (num_instances, K). Got ndim={visibility.ndim}")
+    if visibility.shape != keypoints.shape[:-1]:
+        raise ValueError(
+            "keypoints and visibility must have the same dimensionality for num_instances and K. "
+            f"Got {visibility.shape = } and {keypoints.shape = }"
+        )
+
+    original_dtype = image.dtype
+    if original_dtype.is_floating_point:
+        from torchvision.transforms.v2.functional import to_dtype  # noqa
+
+        image = to_dtype(image, dtype=torch.uint8, scale=True)
+
+    ndarr = image.permute(1, 2, 0).cpu().numpy()
+    img_to_draw = Image.fromarray(ndarr)
+    draw = ImageDraw.Draw(img_to_draw)
+    img_kpts = keypoints.to(torch.int64).tolist()
+    img_vis = visibility.cpu().bool().tolist()
+
+    for kpt_inst, vis_inst in zip(img_kpts, img_vis):
+        for kpt_coord, kp_vis in zip(kpt_inst, vis_inst):
+            if not kp_vis:
+                continue
+            x1 = kpt_coord[0] - radius
+            x2 = kpt_coord[0] + radius
+            y1 = kpt_coord[1] - radius
+            y2 = kpt_coord[1] + radius
+            draw.ellipse([x1, y1, x2, y2], fill=colors, outline=None, width=0)
+
+        if connectivity:
+            for connection in connectivity:
+                if (not vis_inst[connection[0]]) or (not vis_inst[connection[1]]):
+                    continue
+                start_pt_x = kpt_inst[connection[0]][0]
+                start_pt_y = kpt_inst[connection[0]][1]
+
+                end_pt_x = kpt_inst[connection[1]][0]
+                end_pt_y = kpt_inst[connection[1]][1]
+
+                draw.line(
+                    ((start_pt_x, start_pt_y), (end_pt_x, end_pt_y)),
+                    width=width,
                 )
 
-    if hasattr(o, "tell"):
-        try:
-            current_position = o.tell()
-        except OSError:
-            # This can happen in some weird situations, such as when the file
-            # is actually a special file descriptor like stdin. In this
-            # instance, we don't know what the length is, so set it to zero and
-            # let requests chunk it instead.
-            if total_length is not None:
-                current_position = total_length
-        else:
-            if hasattr(o, "seek") and total_length is None:
-                # StringIO and BytesIO have seek but no usable fileno
-                try:
-                    # seek to end of file
-                    o.seek(0, 2)
-                    total_length = o.tell()
-
-                    # seek back to current position to support
-                    # partially read file-like objects
-                    o.seek(current_position or 0)
-                except OSError:
-                    total_length = 0
-
-    if total_length is None:
-        total_length = 0
-
-    return max(0, total_length - current_position)
+    out = torch.from_numpy(np.array(img_to_draw)).permute(2, 0, 1)
+    if original_dtype.is_floating_point:
+        out = to_dtype(out, dtype=original_dtype, scale=True)
+    return out
 
 
-def get_netrc_auth(url, raise_errors=False):
-    """Returns the Requests tuple auth for a given url from netrc."""
+# Flow visualization code adapted from https://github.com/tomrunia/OpticalFlow_Visualization
+@torch.no_grad()
+def flow_to_image(flow: torch.Tensor) -> torch.Tensor:
 
-    netrc_file = os.environ.get("NETRC")
-    if netrc_file is not None:
-        netrc_locations = (netrc_file,)
-    else:
-        netrc_locations = (f"~/{f}" for f in NETRC_FILES)
-
-    try:
-        from netrc import NetrcParseError, netrc
-
-        netrc_path = None
-
-        for f in netrc_locations:
-            try:
-                loc = os.path.expanduser(f)
-            except KeyError:
-                # os.path.expanduser can fail when $HOME is undefined and
-                # getpwuid fails. See https://bugs.python.org/issue20164 &
-                # https://github.com/psf/requests/issues/1846
-                return
-
-            if os.path.exists(loc):
-                netrc_path = loc
-                break
-
-        # Abort early if there isn't one.
-        if netrc_path is None:
-            return
-
-        ri = urlparse(url)
-
-        # Strip port numbers from netloc. This weird `if...encode`` dance is
-        # used for Python 3.2, which doesn't support unicode literals.
-        splitstr = b":"
-        if isinstance(url, str):
-            splitstr = splitstr.decode("ascii")
-        host = ri.netloc.split(splitstr)[0]
-
-        try:
-            _netrc = netrc(netrc_path).authenticators(host)
-            if _netrc:
-                # Return with login / password
-                login_i = 0 if _netrc[0] else 1
-                return (_netrc[login_i], _netrc[2])
-        except (NetrcParseError, OSError):
-            # If there was a parsing error or a permissions issue reading the file,
-            # we'll just skip netrc auth unless explicitly asked to raise errors.
-            if raise_errors:
-                raise
-
-    # App Engine hackiness.
-    except (ImportError, AttributeError):
-        pass
-
-
-def guess_filename(obj):
-    """Tries to guess the filename of the given object."""
-    name = getattr(obj, "name", None)
-    if name and isinstance(name, basestring) and name[0] != "<" and name[-1] != ">":
-        return os.path.basename(name)
-
-
-def extract_zipped_paths(path):
-    """Replace nonexistent paths that look like they refer to a member of a zip
-    archive with the location of an extracted copy of the target, or else
-    just return the provided path unchanged.
     """
-    if os.path.exists(path):
-        # this is already a valid path, no need to do anything further
-        return path
+    Converts a flow to an RGB image.
 
-    # find the first valid part of the provided path and treat that as a zip archive
-    # assume the rest of the path is the name of a member in the archive
-    archive, member = os.path.split(path)
-    while archive and not os.path.exists(archive):
-        archive, prefix = os.path.split(archive)
-        if not prefix:
-            # If we don't check for an empty prefix after the split (in other words, archive remains unchanged after the split),
-            # we _can_ end up in an infinite loop on a rare corner case affecting a small number of users
-            break
-        member = "/".join([prefix, member])
+    Args:
+        flow (Tensor): Flow of shape (N, 2, H, W) or (2, H, W) and dtype torch.float.
 
-    if not zipfile.is_zipfile(archive):
-        return path
-
-    zip_file = zipfile.ZipFile(archive)
-    if member not in zip_file.namelist():
-        return path
-
-    # we have a valid zip archive and a valid member of that archive
-    tmp = tempfile.gettempdir()
-    extracted_path = os.path.join(tmp, member.split("/")[-1])
-    if not os.path.exists(extracted_path):
-        # use read + write to avoid the creating nested folders, we only want the file, avoids mkdir racing condition
-        with atomic_open(extracted_path) as file_handler:
-            file_handler.write(zip_file.read(member))
-    return extracted_path
-
-
-@contextlib.contextmanager
-def atomic_open(filename):
-    """Write a file to the disk in an atomic fashion"""
-    tmp_descriptor, tmp_name = tempfile.mkstemp(dir=os.path.dirname(filename))
-    try:
-        with os.fdopen(tmp_descriptor, "wb") as tmp_handler:
-            yield tmp_handler
-        os.replace(tmp_name, filename)
-    except BaseException:
-        os.remove(tmp_name)
-        raise
-
-
-def from_key_val_list(value):
-    """Take an object and test to see if it can be represented as a
-    dictionary. Unless it can not be represented as such, return an
-    OrderedDict, e.g.,
-
-    ::
-
-        >>> from_key_val_list([('key', 'val')])
-        OrderedDict([('key', 'val')])
-        >>> from_key_val_list('string')
-        Traceback (most recent call last):
-        ...
-        ValueError: cannot encode objects that are not 2-tuples
-        >>> from_key_val_list({'key': 'val'})
-        OrderedDict([('key', 'val')])
-
-    :rtype: OrderedDict
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, (str, bytes, bool, int)):
-        raise ValueError("cannot encode objects that are not 2-tuples")
-
-    return OrderedDict(value)
-
-
-def to_key_val_list(value):
-    """Take an object and test to see if it can be represented as a
-    dictionary. If it can be, return a list of tuples, e.g.,
-
-    ::
-
-        >>> to_key_val_list([('key', 'val')])
-        [('key', 'val')]
-        >>> to_key_val_list({'key': 'val'})
-        [('key', 'val')]
-        >>> to_key_val_list('string')
-        Traceback (most recent call last):
-        ...
-        ValueError: cannot encode objects that are not 2-tuples
-
-    :rtype: list
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, (str, bytes, bool, int)):
-        raise ValueError("cannot encode objects that are not 2-tuples")
-
-    if isinstance(value, Mapping):
-        value = value.items()
-
-    return list(value)
-
-
-# From mitsuhiko/werkzeug (used with permission).
-def parse_list_header(value):
-    """Parse lists as described by RFC 2068 Section 2.
-
-    In particular, parse comma-separated lists where the elements of
-    the list may include quoted-strings.  A quoted-string could
-    contain a comma.  A non-quoted string could have quotes in the
-    middle.  Quotes are removed automatically after parsing.
-
-    It basically works like :func:`parse_set_header` just that items
-    may appear multiple times and case sensitivity is preserved.
-
-    The return value is a standard :class:`list`:
-
-    >>> parse_list_header('token, "quoted value"')
-    ['token', 'quoted value']
-
-    To create a header from the :class:`list` again, use the
-    :func:`dump_header` function.
-
-    :param value: a string with a list header.
-    :return: :class:`list`
-    :rtype: list
-    """
-    result = []
-    for item in _parse_list_header(value):
-        if item[:1] == item[-1:] == '"':
-            item = unquote_header_value(item[1:-1])
-        result.append(item)
-    return result
-
-
-# From mitsuhiko/werkzeug (used with permission).
-def parse_dict_header(value):
-    """Parse lists of key, value pairs as described by RFC 2068 Section 2 and
-    convert them into a python dict:
-
-    >>> d = parse_dict_header('foo="is a fish", bar="as well"')
-    >>> type(d) is dict
-    True
-    >>> sorted(d.items())
-    [('bar', 'as well'), ('foo', 'is a fish')]
-
-    If there is no value for a key it will be `None`:
-
-    >>> parse_dict_header('key_without_value')
-    {'key_without_value': None}
-
-    To create a header from the :class:`dict` again, use the
-    :func:`dump_header` function.
-
-    :param value: a string with a dict header.
-    :return: :class:`dict`
-    :rtype: dict
-    """
-    result = {}
-    for item in _parse_list_header(value):
-        if "=" not in item:
-            result[item] = None
-            continue
-        name, value = item.split("=", 1)
-        if value[:1] == value[-1:] == '"':
-            value = unquote_header_value(value[1:-1])
-        result[name] = value
-    return result
-
-
-# From mitsuhiko/werkzeug (used with permission).
-def unquote_header_value(value, is_filename=False):
-    r"""Unquotes a header value.  (Reversal of :func:`quote_header_value`).
-    This does not use the real unquoting but what browsers are actually
-    using for quoting.
-
-    :param value: the header value to unquote.
-    :rtype: str
-    """
-    if value and value[0] == value[-1] == '"':
-        # this is not the real unquoting, but fixing this so that the
-        # RFC is met will result in bugs with internet explorer and
-        # probably some other browsers as well.  IE for example is
-        # uploading files with "C:\foo\bar.txt" as filename
-        value = value[1:-1]
-
-        # if this is a filename and the starting characters look like
-        # a UNC path, then just return the value without quotes.  Using the
-        # replace sequence below on a UNC path has the effect of turning
-        # the leading double slash into a single slash and then
-        # _fix_ie_filename() doesn't work correctly.  See #458.
-        if not is_filename or value[:2] != "\\\\":
-            return value.replace("\\\\", "\\").replace('\\"', '"')
-    return value
-
-
-def dict_from_cookiejar(cj):
-    """Returns a key/value dictionary from a CookieJar.
-
-    :param cj: CookieJar object to extract cookies from.
-    :rtype: dict
+    Returns:
+        img (Tensor): Image Tensor of dtype uint8 where each color corresponds
+            to a given flow direction. Shape is (N, 3, H, W) or (3, H, W) depending on the input.
     """
 
-    cookie_dict = {cookie.name: cookie.value for cookie in cj}
-    return cookie_dict
+    if flow.dtype != torch.float:
+        raise ValueError(f"Flow should be of dtype torch.float, got {flow.dtype}.")
+
+    orig_shape = flow.shape
+    if flow.ndim == 3:
+        flow = flow[None]  # Add batch dim
+
+    if flow.ndim != 4 or flow.shape[1] != 2:
+        raise ValueError(f"Input flow should have shape (2, H, W) or (N, 2, H, W), got {orig_shape}.")
+
+    max_norm = torch.sum(flow**2, dim=1).sqrt().max()
+    epsilon = torch.finfo((flow).dtype).eps
+    normalized_flow = flow / (max_norm + epsilon)
+    img = _normalized_flow_to_image(normalized_flow)
+
+    if len(orig_shape) == 3:
+        img = img[0]  # Remove batch dim
+    return img
 
 
-def add_dict_to_cookiejar(cj, cookie_dict):
-    """Returns a CookieJar from a key/value dictionary.
+@torch.no_grad()
+def _normalized_flow_to_image(normalized_flow: torch.Tensor) -> torch.Tensor:
 
-    :param cj: CookieJar to insert cookies into.
-    :param cookie_dict: Dict of key/values to insert into CookieJar.
-    :rtype: CookieJar
+    """
+    Converts a batch of normalized flow to an RGB image.
+
+    Args:
+        normalized_flow (torch.Tensor): Normalized flow tensor of shape (N, 2, H, W)
+    Returns:
+       img (Tensor(N, 3, H, W)): Flow visualization image of dtype uint8.
     """
 
-    return cookiejar_from_dict(cookie_dict, cj)
+    N, _, H, W = normalized_flow.shape
+    device = normalized_flow.device
+    flow_image = torch.zeros((N, 3, H, W), dtype=torch.uint8, device=device)
+    colorwheel = _make_colorwheel().to(device)  # shape [55x3]
+    num_cols = colorwheel.shape[0]
+    norm = torch.sum(normalized_flow**2, dim=1).sqrt()
+    a = torch.atan2(-normalized_flow[:, 1, :, :], -normalized_flow[:, 0, :, :]) / torch.pi
+    fk = (a + 1) / 2 * (num_cols - 1)
+    k0 = torch.floor(fk).to(torch.long)
+    k1 = k0 + 1
+    k1[k1 == num_cols] = 0
+    f = fk - k0
+
+    for c in range(colorwheel.shape[1]):
+        tmp = colorwheel[:, c]
+        col0 = tmp[k0] / 255.0
+        col1 = tmp[k1] / 255.0
+        col = (1 - f) * col0 + f * col1
+        col = 1 - norm * (1 - col)
+        flow_image[:, c, :, :] = torch.floor(255 * col)
+    return flow_image
 
 
-def get_encodings_from_content(content):
-    """Returns encodings from given content string.
-
-    :param content: bytestring to extract encodings from.
+def _make_colorwheel() -> torch.Tensor:
     """
-    warnings.warn(
-        (
-            "In requests 3.0, get_encodings_from_content will be removed. For "
-            "more information, please see the discussion on issue #2266. (This"
-            " warning should only appear once.)"
-        ),
-        DeprecationWarning,
-    )
+    Generates a color wheel for optical flow visualization as presented in:
+    Baker et al. "A Database and Evaluation Methodology for Optical Flow" (ICCV, 2007)
+    URL: http://vision.middlebury.edu/flow/flowEval-iccv07.pdf.
 
-    charset_re = re.compile(r'<meta.*?charset=["\']*(.+?)["\'>]', flags=re.I)
-    pragma_re = re.compile(r'<meta.*?content=["\']*;?charset=(.+?)["\'>]', flags=re.I)
-    xml_re = re.compile(r'^<\?xml.*?encoding=["\']*(.+?)["\'>]')
-
-    return (
-        charset_re.findall(content)
-        + pragma_re.findall(content)
-        + xml_re.findall(content)
-    )
-
-
-def _parse_content_type_header(header):
-    """Returns content type and parameters from given header
-
-    :param header: string
-    :return: tuple containing content type and dictionary of
-         parameters
+    Returns:
+        colorwheel (Tensor[55, 3]): Colorwheel Tensor.
     """
 
-    tokens = header.split(";")
-    content_type, params = tokens[0].strip(), tokens[1:]
-    params_dict = {}
-    items_to_strip = "\"' "
+    RY = 15
+    YG = 6
+    GC = 4
+    CB = 11
+    BM = 13
+    MR = 6
 
-    for param in params:
-        param = param.strip()
-        if param:
-            key, value = param, True
-            index_of_equals = param.find("=")
-            if index_of_equals != -1:
-                key = param[:index_of_equals].strip(items_to_strip)
-                value = param[index_of_equals + 1 :].strip(items_to_strip)
-            params_dict[key.lower()] = value
-    return content_type, params_dict
+    ncols = RY + YG + GC + CB + BM + MR
+    colorwheel = torch.zeros((ncols, 3))
+    col = 0
+
+    # RY
+    colorwheel[0:RY, 0] = 255
+    colorwheel[0:RY, 1] = torch.floor(255 * torch.arange(0, RY) / RY)
+    col = col + RY
+    # YG
+    colorwheel[col : col + YG, 0] = 255 - torch.floor(255 * torch.arange(0, YG) / YG)
+    colorwheel[col : col + YG, 1] = 255
+    col = col + YG
+    # GC
+    colorwheel[col : col + GC, 1] = 255
+    colorwheel[col : col + GC, 2] = torch.floor(255 * torch.arange(0, GC) / GC)
+    col = col + GC
+    # CB
+    colorwheel[col : col + CB, 1] = 255 - torch.floor(255 * torch.arange(CB) / CB)
+    colorwheel[col : col + CB, 2] = 255
+    col = col + CB
+    # BM
+    colorwheel[col : col + BM, 2] = 255
+    colorwheel[col : col + BM, 0] = torch.floor(255 * torch.arange(0, BM) / BM)
+    col = col + BM
+    # MR
+    colorwheel[col : col + MR, 2] = 255 - torch.floor(255 * torch.arange(MR) / MR)
+    colorwheel[col : col + MR, 0] = 255
+    return colorwheel
 
 
-def get_encoding_from_headers(headers):
-    """Returns encodings from given HTTP Header Dict.
+def _generate_color_palette(num_objects: int):
+    palette = torch.tensor([2**25 - 1, 2**15 - 1, 2**21 - 1])
+    return [tuple((i * palette) % 255) for i in range(num_objects)]
 
-    :param headers: dictionary to extract encoding from.
-    :rtype: str
+
+def _parse_colors(
+    colors: Union[None, str, Tuple[int, int, int], List[Union[str, Tuple[int, int, int]]]],
+    *,
+    num_objects: int,
+    dtype: torch.dtype = torch.uint8,
+) -> List[Tuple[int, int, int]]:
     """
+    Parses a specification of colors for a set of objects.
 
-    content_type = headers.get("content-type")
+    Args:
+        colors: A specification of colors for the objects. This can be one of the following:
+            - None: to generate a color palette automatically.
+            - A list of colors: where each color is either a string (specifying a named color) or an RGB tuple.
+            - A string or an RGB tuple: to use the same color for all objects.
 
-    if not content_type:
-        return None
+            If `colors` is a tuple, it should be a 3-tuple specifying the RGB values of the color.
+            If `colors` is a list, it should have at least as many elements as the number of objects to color.
 
-    content_type, params = _parse_content_type_header(content_type)
+        num_objects (int): The number of objects to color.
 
-    if "charset" in params:
-        return params["charset"].strip("'\"")
+    Returns:
+        A list of 3-tuples, specifying the RGB values of the colors.
 
-    if "text" in content_type:
-        return "ISO-8859-1"
-
-    if "application/json" in content_type:
-        # Assume UTF-8 based on RFC 4627: https://www.ietf.org/rfc/rfc4627.txt since the charset was unset
-        return "utf-8"
-
-
-def stream_decode_response_unicode(iterator, r):
-    """Stream decodes an iterator."""
-
-    if r.encoding is None:
-        yield from iterator
-        return
-
-    decoder = codecs.getincrementaldecoder(r.encoding)(errors="replace")
-    for chunk in iterator:
-        rv = decoder.decode(chunk)
-        if rv:
-            yield rv
-    rv = decoder.decode(b"", final=True)
-    if rv:
-        yield rv
-
-
-def iter_slices(string, slice_length):
-    """Iterate over slices of a string."""
-    pos = 0
-    if slice_length is None or slice_length <= 0:
-        slice_length = len(string)
-    while pos < len(string):
-        yield string[pos : pos + slice_length]
-        pos += slice_length
-
-
-def get_unicode_from_response(r):
-    """Returns the requested content back in unicode.
-
-    :param r: Response object to get unicode content from.
-
-    Tried:
-
-    1. charset from content-type
-    2. fall back and replace all unicode characters
-
-    :rtype: str
+    Raises:
+        ValueError: If the number of colors in the list is less than the number of objects to color.
+                    If `colors` is not a list, tuple, string or None.
     """
-    warnings.warn(
-        (
-            "In requests 3.0, get_unicode_from_response will be removed. For "
-            "more information, please see the discussion on issue #2266. (This"
-            " warning should only appear once.)"
-        ),
-        DeprecationWarning,
-    )
-
-    tried_encodings = []
-
-    # Try charset from content-type
-    encoding = get_encoding_from_headers(r.headers)
-
-    if encoding:
-        try:
-            return str(r.content, encoding)
-        except UnicodeError:
-            tried_encodings.append(encoding)
-
-    # Fall back:
-    try:
-        return str(r.content, encoding, errors="replace")
-    except TypeError:
-        return r.content
-
-
-# The unreserved URI characters (RFC 3986)
-UNRESERVED_SET = frozenset(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + "0123456789-._~"
-)
-
-
-def unquote_unreserved(uri):
-    """Un-escape any percent-escape sequences in a URI that are unreserved
-    characters. This leaves all reserved, illegal and non-ASCII bytes encoded.
-
-    :rtype: str
-    """
-    parts = uri.split("%")
-    for i in range(1, len(parts)):
-        h = parts[i][0:2]
-        if len(h) == 2 and h.isalnum():
-            try:
-                c = chr(int(h, 16))
-            except ValueError:
-                raise InvalidURL(f"Invalid percent-escape sequence: '{h}'")
-
-            if c in UNRESERVED_SET:
-                parts[i] = c + parts[i][2:]
-            else:
-                parts[i] = f"%{parts[i]}"
-        else:
-            parts[i] = f"%{parts[i]}"
-    return "".join(parts)
-
-
-def requote_uri(uri):
-    """Re-quote the given URI.
-
-    This function passes the given URI through an unquote/quote cycle to
-    ensure that it is fully and consistently quoted.
-
-    :rtype: str
-    """
-    safe_with_percent = "!#$%&'()*+,/:;=?@[]~"
-    safe_without_percent = "!#$&'()*+,/:;=?@[]~"
-    try:
-        # Unquote only the unreserved characters
-        # Then quote only illegal characters (do not quote reserved,
-        # unreserved, or '%')
-        return quote(unquote_unreserved(uri), safe=safe_with_percent)
-    except InvalidURL:
-        # We couldn't unquote the given URI, so let's try quoting it, but
-        # there may be unquoted '%'s in the URI. We need to make sure they're
-        # properly quoted so they do not cause issues elsewhere.
-        return quote(uri, safe=safe_without_percent)
-
-
-def address_in_network(ip, net):
-    """This function allows you to check if an IP belongs to a network subnet
-
-    Example: returns True if ip = 192.168.1.1 and net = 192.168.1.0/24
-             returns False if ip = 192.168.1.1 and net = 192.168.100.0/24
-
-    :rtype: bool
-    """
-    ipaddr = struct.unpack("=L", socket.inet_aton(ip))[0]
-    netaddr, bits = net.split("/")
-    netmask = struct.unpack("=L", socket.inet_aton(dotted_netmask(int(bits))))[0]
-    network = struct.unpack("=L", socket.inet_aton(netaddr))[0] & netmask
-    return (ipaddr & netmask) == (network & netmask)
-
-
-def dotted_netmask(mask):
-    """Converts mask from /xx format to xxx.xxx.xxx.xxx
-
-    Example: if mask is 24 function returns 255.255.255.0
-
-    :rtype: str
-    """
-    bits = 0xFFFFFFFF ^ (1 << 32 - mask) - 1
-    return socket.inet_ntoa(struct.pack(">I", bits))
-
-
-def is_ipv4_address(string_ip):
-    """
-    :rtype: bool
-    """
-    try:
-        socket.inet_aton(string_ip)
-    except OSError:
-        return False
-    return True
-
-
-def is_valid_cidr(string_network):
-    """
-    Very simple check of the cidr format in no_proxy variable.
-
-    :rtype: bool
-    """
-    if string_network.count("/") == 1:
-        try:
-            mask = int(string_network.split("/")[1])
-        except ValueError:
-            return False
-
-        if mask < 1 or mask > 32:
-            return False
-
-        try:
-            socket.inet_aton(string_network.split("/")[0])
-        except OSError:
-            return False
-    else:
-        return False
-    return True
-
-
-@contextlib.contextmanager
-def set_environ(env_name, value):
-    """Set the environment variable 'env_name' to 'value'
-
-    Save previous value, yield, and then restore the previous value stored in
-    the environment variable 'env_name'.
-
-    If 'value' is None, do nothing"""
-    value_changed = value is not None
-    if value_changed:
-        old_value = os.environ.get(env_name)
-        os.environ[env_name] = value
-    try:
-        yield
-    finally:
-        if value_changed:
-            if old_value is None:
-                del os.environ[env_name]
-            else:
-                os.environ[env_name] = old_value
-
-
-def should_bypass_proxies(url, no_proxy):
-    """
-    Returns whether we should bypass proxies or not.
-
-    :rtype: bool
-    """
-
-    # Prioritize lowercase environment variables over uppercase
-    # to keep a consistent behaviour with other http projects (curl, wget).
-    def get_proxy(key):
-        return os.environ.get(key) or os.environ.get(key.upper())
-
-    # First check whether no_proxy is defined. If it is, check that the URL
-    # we're getting isn't in the no_proxy list.
-    no_proxy_arg = no_proxy
-    if no_proxy is None:
-        no_proxy = get_proxy("no_proxy")
-    parsed = urlparse(url)
-
-    if parsed.hostname is None:
-        # URLs don't always have hostnames, e.g. file:/// urls.
-        return True
-
-    if no_proxy:
-        # We need to check whether we match here. We need to see if we match
-        # the end of the hostname, both with and without the port.
-        no_proxy = (host for host in no_proxy.replace(" ", "").split(",") if host)
-
-        if is_ipv4_address(parsed.hostname):
-            for proxy_ip in no_proxy:
-                if is_valid_cidr(proxy_ip):
-                    if address_in_network(parsed.hostname, proxy_ip):
-                        return True
-                elif parsed.hostname == proxy_ip:
-                    # If no_proxy ip was defined in plain IP notation instead of cidr notation &
-                    # matches the IP of the index
-                    return True
-        else:
-            host_with_port = parsed.hostname
-            if parsed.port:
-                host_with_port += f":{parsed.port}"
-
-            for host in no_proxy:
-                if parsed.hostname.endswith(host) or host_with_port.endswith(host):
-                    # The URL does match something in no_proxy, so we don't want
-                    # to apply the proxies on this URL.
-                    return True
-
-    with set_environ("no_proxy", no_proxy_arg):
-        # parsed.hostname can be `None` in cases such as a file URI.
-        try:
-            bypass = proxy_bypass(parsed.hostname)
-        except (TypeError, socket.gaierror):
-            bypass = False
-
-    if bypass:
-        return True
-
-    return False
-
-
-def get_environ_proxies(url, no_proxy=None):
-    """
-    Return a dict of environment proxies.
-
-    :rtype: dict
-    """
-    if should_bypass_proxies(url, no_proxy=no_proxy):
-        return {}
-    else:
-        return getproxies()
-
-
-def select_proxy(url, proxies):
-    """Select a proxy for the url, if applicable.
-
-    :param url: The url being for the request
-    :param proxies: A dictionary of schemes or schemes and hosts to proxy URLs
-    """
-    proxies = proxies or {}
-    urlparts = urlparse(url)
-    if urlparts.hostname is None:
-        return proxies.get(urlparts.scheme, proxies.get("all"))
-
-    proxy_keys = [
-        urlparts.scheme + "://" + urlparts.hostname,
-        urlparts.scheme,
-        "all://" + urlparts.hostname,
-        "all",
-    ]
-    proxy = None
-    for proxy_key in proxy_keys:
-        if proxy_key in proxies:
-            proxy = proxies[proxy_key]
-            break
-
-    return proxy
-
-
-def resolve_proxies(request, proxies, trust_env=True):
-    """This method takes proxy information from a request and configuration
-    input to resolve a mapping of target proxies. This will consider settings
-    such as NO_PROXY to strip proxy configurations.
-
-    :param request: Request or PreparedRequest
-    :param proxies: A dictionary of schemes or schemes and hosts to proxy URLs
-    :param trust_env: Boolean declaring whether to trust environment configs
-
-    :rtype: dict
-    """
-    proxies = proxies if proxies is not None else {}
-    url = request.url
-    scheme = urlparse(url).scheme
-    no_proxy = proxies.get("no_proxy")
-    new_proxies = proxies.copy()
-
-    if trust_env and not should_bypass_proxies(url, no_proxy=no_proxy):
-        environ_proxies = get_environ_proxies(url, no_proxy=no_proxy)
-
-        proxy = environ_proxies.get(scheme, environ_proxies.get("all"))
-
-        if proxy:
-            new_proxies.setdefault(scheme, proxy)
-    return new_proxies
-
-
-def default_user_agent(name="python-requests"):
-    """
-    Return a string representing the default user agent.
-
-    :rtype: str
-    """
-    return f"{name}/{__version__}"
-
-
-def default_headers():
-    """
-    :rtype: requests.structures.CaseInsensitiveDict
-    """
-    return CaseInsensitiveDict(
-        {
-            "User-Agent": default_user_agent(),
-            "Accept-Encoding": DEFAULT_ACCEPT_ENCODING,
-            "Accept": "*/*",
-            "Connection": "keep-alive",
-        }
-    )
-
-
-def parse_header_links(value):
-    """Return a list of parsed link headers proxies.
-
-    i.e. Link: <http:/.../front.jpeg>; rel=front; type="image/jpeg",<http://.../back.jpeg>; rel=back;type="image/jpeg"
-
-    :rtype: list
-    """
-
-    links = []
-
-    replace_chars = " '\""
-
-    value = value.strip(replace_chars)
-    if not value:
-        return links
-
-    for val in re.split(", *<", value):
-        try:
-            url, params = val.split(";", 1)
-        except ValueError:
-            url, params = val, ""
-
-        link = {"url": url.strip("<> '\"")}
-
-        for param in params.split(";"):
-            try:
-                key, value = param.split("=")
-            except ValueError:
-                break
-
-            link[key.strip(replace_chars)] = value.strip(replace_chars)
-
-        links.append(link)
-
-    return links
-
-
-# Null bytes; no need to recreate these on each call to guess_json_utf
-_null = "\x00".encode("ascii")  # encoding to ASCII for Python 3
-_null2 = _null * 2
-_null3 = _null * 3
-
-
-def guess_json_utf(data):
-    """
-    :rtype: str
-    """
-    # JSON always starts with two ASCII characters, so detection is as
-    # easy as counting the nulls and from their location and count
-    # determine the encoding. Also detect a BOM, if present.
-    sample = data[:4]
-    if sample in (codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE):
-        return "utf-32"  # BOM included
-    if sample[:3] == codecs.BOM_UTF8:
-        return "utf-8-sig"  # BOM included, MS style (discouraged)
-    if sample[:2] in (codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE):
-        return "utf-16"  # BOM included
-    nullcount = sample.count(_null)
-    if nullcount == 0:
-        return "utf-8"
-    if nullcount == 2:
-        if sample[::2] == _null2:  # 1st and 3rd are null
-            return "utf-16-be"
-        if sample[1::2] == _null2:  # 2nd and 4th are null
-            return "utf-16-le"
-        # Did not detect 2 valid UTF-16 ascii-range characters
-    if nullcount == 3:
-        if sample[:3] == _null3:
-            return "utf-32-be"
-        if sample[1:] == _null3:
-            return "utf-32-le"
-        # Did not detect a valid UTF-32 ascii-range character
-    return None
-
-
-def prepend_scheme_if_needed(url, new_scheme):
-    """Given a URL that may or may not have a scheme, prepend the given scheme.
-    Does not replace a present scheme with the one provided as an argument.
-
-    :rtype: str
-    """
-    parsed = parse_url(url)
-    scheme, auth, host, port, path, query, fragment = parsed
-
-    # A defect in urlparse determines that there isn't a netloc present in some
-    # urls. We previously assumed parsing was overly cautious, and swapped the
-    # netloc and path. Due to a lack of tests on the original defect, this is
-    # maintained with parse_url for backwards compatibility.
-    netloc = parsed.netloc
-    if not netloc:
-        netloc, path = path, netloc
-
-    if auth:
-        # parse_url doesn't provide the netloc with auth
-        # so we'll add it ourselves.
-        netloc = "@".join([auth, netloc])
-    if scheme is None:
-        scheme = new_scheme
-    if path is None:
-        path = ""
-
-    return urlunparse((scheme, netloc, path, "", query, fragment))
-
-
-def get_auth_from_url(url):
-    """Given a url with authentication components, extract them into a tuple of
-    username,password.
-
-    :rtype: (str,str)
-    """
-    parsed = urlparse(url)
-
-    try:
-        auth = (unquote(parsed.username), unquote(parsed.password))
-    except (AttributeError, TypeError):
-        auth = ("", "")
-
-    return auth
-
-
-def check_header_validity(header):
-    """Verifies that header parts don't contain leading whitespace
-    reserved characters, or return characters.
-
-    :param header: tuple, in the format (name, value).
-    """
-    name, value = header
-    _validate_header_part(header, name, 0)
-    _validate_header_part(header, value, 1)
-
-
-def _validate_header_part(header, header_part, header_validator_index):
-    if isinstance(header_part, str):
-        validator = _HEADER_VALIDATORS_STR[header_validator_index]
-    elif isinstance(header_part, bytes):
-        validator = _HEADER_VALIDATORS_BYTE[header_validator_index]
-    else:
-        raise InvalidHeader(
-            f"Header part ({header_part!r}) from {header} "
-            f"must be of type str or bytes, not {type(header_part)}"
-        )
-
-    if not validator.match(header_part):
-        header_kind = "name" if header_validator_index == 0 else "value"
-        raise InvalidHeader(
-            f"Invalid leading whitespace, reserved character(s), or return "
-            f"character(s) in header {header_kind}: {header_part!r}"
-        )
-
-
-def urldefragauth(url):
-    """
-    Given a url remove the fragment and the authentication part.
-
-    :rtype: str
-    """
-    scheme, netloc, path, params, query, fragment = urlparse(url)
-
-    # see func:`prepend_scheme_if_needed`
-    if not netloc:
-        netloc, path = path, netloc
-
-    netloc = netloc.rsplit("@", 1)[-1]
-
-    return urlunparse((scheme, netloc, path, params, query, ""))
-
-
-def rewind_body(prepared_request):
-    """Move file pointer back to its recorded starting position
-    so it can be read again on redirect.
-    """
-    body_seek = getattr(prepared_request.body, "seek", None)
-    if body_seek is not None and isinstance(
-        prepared_request._body_position, integer_types
-    ):
-        try:
-            body_seek(prepared_request._body_position)
-        except OSError:
-            raise UnrewindableBodyError(
-                "An error occurred when rewinding request body for redirect."
+    if colors is None:
+        colors = _generate_color_palette(num_objects)
+    elif isinstance(colors, list):
+        if len(colors) < num_objects:
+            raise ValueError(
+                f"Number of colors must be equal or larger than the number of objects, but got {len(colors)} < {num_objects}."
             )
-    else:
-        raise UnrewindableBodyError("Unable to rewind request body for redirect.")
+    elif not isinstance(colors, (tuple, str)):
+        raise ValueError("`colors` must be a tuple or a string, or a list thereof, but got {colors}.")
+    elif isinstance(colors, tuple) and len(colors) != 3:
+        raise ValueError("If passed as tuple, colors should be an RGB triplet, but got {colors}.")
+    else:  # colors specifies a single color for all objects
+        colors = [colors] * num_objects
+
+    colors = [ImageColor.getrgb(color) if isinstance(color, str) else color for color in colors]
+    if dtype.is_floating_point:  # [0, 255] -> [0, 1]
+        colors = [tuple(v / 255 for v in color) for color in colors]
+    return colors
+
+
+def _log_api_usage_once(obj: Any) -> None:
+
+    """
+    Logs API usage(module and name) within an organization.
+    In a large ecosystem, it's often useful to track the PyTorch and
+    TorchVision APIs usage. This API provides the similar functionality to the
+    logging module in the Python stdlib. It can be used for debugging purpose
+    to log which methods are used and by default it is inactive, unless the user
+    manually subscribes a logger via the `SetAPIUsageLogger method <https://github.com/pytorch/pytorch/blob/eb3b9fe719b21fae13c7a7cf3253f970290a573e/c10/util/Logging.cpp#L114>`_.
+    Please note it is triggered only once for the same API call within a process.
+    It does not collect any data from open-source users since it is no-op by default.
+    For more information, please refer to
+    * PyTorch note: https://pytorch.org/docs/stable/notes/large_scale_deployments.html#api-usage-logging;
+    * Logging policy: https://github.com/pytorch/vision/issues/5052;
+
+    Args:
+        obj (class instance or method): an object to extract info from.
+    """
+    module = obj.__module__
+    if not module.startswith("torchvision"):
+        module = f"torchvision.internal.{module}"
+    name = obj.__class__.__name__
+    if isinstance(obj, FunctionType):
+        name = obj.__name__
+    torch._C._log_api_usage_once(f"{module}.{name}")
+
+
+def _make_ntuple(x: Any, n: int) -> Tuple[Any, ...]:
+    """
+    Make n-tuple from input x. If x is an iterable, then we just convert it to tuple.
+    Otherwise, we will make a tuple of length n, all with value of x.
+    reference: https://github.com/pytorch/pytorch/blob/master/torch/nn/modules/utils.py#L8
+
+    Args:
+        x (Any): input value
+        n (int): length of the resulting tuple
+    """
+    if isinstance(x, collections.abc.Iterable):
+        return tuple(x)
+    return tuple(repeat(x, n))

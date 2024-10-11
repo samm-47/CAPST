@@ -1,6 +1,5 @@
-import pkg_resources
-
-try:
-    __version__ = pkg_resources.get_distribution('setuptools').version
-except Exception:
-    __version__ = 'unknown'
+__version__ = '0.19.1+cpu'
+git_version = '61943691d3390bd3148a7003b4a501f0e2b7ac6e'
+from torchvision.extension import _check_cuda_version
+if _check_cuda_version() > 0:
+    cuda = _check_cuda_version()
