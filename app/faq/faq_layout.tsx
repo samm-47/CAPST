@@ -27,23 +27,53 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       {/* Top navigation bar with logo */}
-      <div className="bg-gray-100 h-16 flex items-center justify-center px-8">
+      <div className="bg-white h-16 flex items-center justify-start px-8 sticky top-0 z-50 shadow-md"> {/* z-index deals with what elements eppear on top of others */}
         <Link href="/" passHref>
           <Image
             src="/green_expectations_logo.png"
             alt="Green Expectations Logo"
-            width={50}
-            height={50}
-            className="transition hover:grayscale hover:brightness-90"
+            width={35}
+            height={35}
+            className="ml-8 transition hover:filer-coffee-green hover:brightness-90"
             priority
           />
+        </Link>
+
+        {/* Add a link to the Calculator page */}
+        <Link
+          href="/calculator"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+        >
+          Calculator
+        </Link>
+        {/* Add a link to the Calculator page */}
+        <Link
+          href="/chatbot"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+        >
+          Chatbot
+        </Link>
+        {/* Add a link to the FAQ page */}
+        <Link
+          href="/faq"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green border-b-2 border-coffee-green"
+          
+        >
+          FAQ
+        </Link>
+                {/* Add a link to the GreenExpecations website */}
+                <Link
+          href="https://greenexpectations.us/"
+          className="ml-auto font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+          // Used to open website in a new tab
+          target="_blank" rel="noopener noreferrer"        
+        >
+          GreenExpectations.US
         </Link>
       </div>
 
       {/* Main content area */}
-      <main>
-        {children}
-      </main>
+      <main>{children}</main>
     </div>
   );
 }

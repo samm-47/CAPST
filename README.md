@@ -7,6 +7,17 @@ npm run dev
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Any images or icons to be used put in the public folder and then refer to with /icon_name.filetype
+for grabbing icons for the main Font Awesome is used and works well within the client-side pages follow
+
+the use effect hook in the Chatbot layout.tsx and also go to Fontawesome.com to find icons and call them
+
+using i tags within the code the necessary i tag should be given through Font awesome to copy
+
+for Server-side icons copy icon i tag from FontAwesome but change 'class' to 'classname' 
+
+
+
+
 ## Getting Started
 
 First, run the development server:

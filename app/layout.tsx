@@ -18,6 +18,12 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="description" content="Green Expectations website" />
         <link rel="icon" href="/green_expectations_logo.png" />
+
+        {/* Add the Font Awesome CSS link */}
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        />
       </head>
       <body>
         {/* Global structure that wraps all pages */}

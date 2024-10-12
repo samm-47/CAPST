@@ -14,8 +14,10 @@ const CalculatorPage = () => {
   const calculateScore = () => {
     console.log("Button called");
     const susScore = document.getElementById("susScoreValue");
+    const energyInputElement = document.getElementById("energyConsumption") as HTMLInputElement;
+    const x = energyInputElement.value;
     if (susScore) {
-      susScore.textContent = "Sustainable!";
+      susScore.textContent = "Sustainable!" + "\nx = " + x.toString();
     }
     else {
       console.error("Sustainability score calculation error: No element found.");
@@ -36,6 +38,7 @@ const CalculatorPage = () => {
             <form>
               <label htmlFor="energyConsumption">Energy Consumption (kWh): </label>
               <input type="number" id="energyConsumption" name="energyConsumption" step="any"></input>
+              {/* Fix invalid inputs containing characters besides 0-9 */}
             </form>
             <form>
               <label htmlFor="waterUsage">Water Usage (L): </label>
@@ -61,14 +64,6 @@ const CalculatorPage = () => {
             <label htmlFor= "susScoreLabel">Sustainability Score: </label>
             <label htmlFor= "susScoreValue" id="susScoreValue"> </label>
           </div>
-      
-          {/* Add a link back to the homepage */}
-          <Link 
-            href="/" 
-            className="mt-6 rounded-full border border-solid border-black/[.08] transition-colors flex items-center justify-center text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44 hover:bg-[#f2f2f2]"
-          >
-            Go back to the homepage
-          </Link>
         </main>
       </div>
 

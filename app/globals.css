@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,12 +13,15 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+  input[type="number"], textarea {
+    color: black; /* FIxing text color in text input for dark mode users */
+  }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:  "Jost", Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {

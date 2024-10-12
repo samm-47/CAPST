@@ -8,7 +8,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        jost: ['Jost', 'sans-serif'],
+      },
+      fontWeight: {
+        light: '300',
+        regular: '400',
+        bold: '700',
+      },
       colors: {
+        'mint-green': '#e6f7ef',
+        'greenify-button-green': '#09ad5f',
+        'coffee-green': '#006241',
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
