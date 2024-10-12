@@ -15,7 +15,6 @@ pip install tokenizers
 pip install tqdm
 pip install pandas
 
-<<<<<<< HEAD
 DONT RUN IN VS TERMINAL. Open command prompt as administrator, and run this command. 
 pip install llama-stack
 
@@ -30,9 +29,7 @@ llama model download --source meta --model-id Llama3.2-90B-Vision-Instruct
 After this line it will ask for link. Ask for API key
 
 
-=======
 After installing the required libraries, follow these steps to run the API:
->>>>>>> 9194a9f07537f3ae079181f87e84e213fc6eea00
 
 python api.py
 

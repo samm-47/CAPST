@@ -18,7 +18,11 @@ const ChatbotPage = () => {
         bottomReference.current?.scrollIntoView({ behavior: 'smooth'});
     }, [messages]); // Triggers upon change of the 'messages' array
 
-
+    // Automatically scroll to the top of the page when the component is mounted
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
+    
     // Handle Input Changes Dynamically
     const handleInputChanges = (event:React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserInput(event.target.value);
@@ -42,7 +46,7 @@ const ChatbotPage = () => {
     return(
         <Layout>
             {/* Use the same grid and flex styling as the calculator page */}
-            <div className="flex min-h-screen flex-col items-center justify-center bg-[#d4f3e8]"> {/*Chatbot Background here*/}
+            <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]"> {/*Chatbot Background here*/}
                 <h1 className="text-4xl font-bold mt-4">Chatbot</h1>
                 <p className="text-lg mt-2 mb-8 text-gray-600">This is the placeholder page for the Chatbot.</p>
                 {/* Message Container */}

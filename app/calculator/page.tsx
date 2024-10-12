@@ -29,7 +29,7 @@ const CalculatorPage = () => {
     
     <Layout>
       {/*} CSS grid to center content like home tsx page*/}
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#d4f3e8]"> {/*Chatbot Background here*/}
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]"> {/*Chatbot Background here*/}
         <h1 className="text-4xl font-bold mt-4">Sustainability Calculator</h1>
         <p className="text-lg mt-4 mb-4 text-gray-600">Please enter the following information so we can calculate your sustainability score!</p>
         <div className="flex flex-col w-1/2 bg-white shadow-lg rounded-lg p-6">

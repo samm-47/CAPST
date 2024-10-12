@@ -27,9 +27,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     script.src = "https://kit.fontawesome.com/cb7258edb1.js";
     script.crossOrigin = "anonymous";
     document.body.appendChild(script);
-
-    script.onload = () => console.log("Font Awesome loaded successfully!");
-    script.onerror = () => console.error("Failed to load Font Awesome.");
   }, []);
 
   return (
