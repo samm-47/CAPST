@@ -15,15 +15,6 @@ const FaqPage = () => {
           <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
             <h1 className="text-4xl">Frequently Asked Questions</h1>
             <p className="text-lg mt-4">This is a placeholder page for the FAQ.</p>
-
-  
-            {/* Add a link back to the homepage */}
-            <Link 
-              href="/" 
-              className="bg-greenify-button-green mt-4 mb-8 rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44 hover:bg-[#2e6957]"
-            >
-              Go back to the homepage
-            </Link>
           </main>
         </div>
   

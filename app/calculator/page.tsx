@@ -64,14 +64,6 @@ const CalculatorPage = () => {
             <label htmlFor= "susScoreLabel">Sustainability Score: </label>
             <label htmlFor= "susScoreValue" id="susScoreValue"> </label>
           </div>
-      
-          {/* Add a link back to the homepage */}
-          <Link 
-            href="/" 
-            className="bg-greenify-button-green mt-4 mb-8 rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44 hover:bg-[#2e6957]"
-          >
-            Go back to the homepage
-          </Link>
         </main>
       </div>
 
