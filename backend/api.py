@@ -15,4 +15,16 @@ pipe = pipeline(
     torch_dtype=torch.bfloat16,
     device=-1,
 )
+# Initialize a conversation context
+conversation_history = []
 
+
+# Start the conversation loop
+print("Welcome to the Real Estate Chatbot! You can ask me anything about real estate. Type 'exit' to stop.")
+
+while True:
+    user_input = input("You: ")
+   
+    if user_input.lower() == 'exit':
+        print("Chatbot: Goodbye! If you have more questions, feel free to ask.")
+        break
