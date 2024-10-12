@@ -53,6 +53,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         >
           Chatbot
         </Link>
+        {/* Add a link to the FAQ page */}
+        <Link
+          href="/faq"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+        >
+          FAQ
+        </Link>
       </div>
 
       {/* Main content area */}
