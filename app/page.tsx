@@ -17,8 +17,8 @@ export default function Home() {
           priority
         />
         <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">Beginnings for GreenExpectations Web.</li>
-          <li>Save and see your changes instantly.</li>
+          <h1 className="text-4xl">GEACRE Home</h1>
+          <p className="text-lg mt-4">Placeholder format for Home page.</p>
         </ol>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
