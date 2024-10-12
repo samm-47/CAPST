@@ -29,3 +29,15 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Hide arrows in input of type=number fields for Webkit browsers (Chrome, Safari, Edge) */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Hide arrows for Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
