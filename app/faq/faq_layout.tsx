@@ -56,7 +56,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {/* Add a link to the FAQ page */}
         <Link
           href="/faq"
-          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green border-b-2 border-coffee-green"
+          
         >
           FAQ
         </Link>
