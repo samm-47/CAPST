@@ -60,6 +60,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         >
           FAQ
         </Link>
+        {/* Add a link to the GreenExpecations website */}
+        <Link
+          href="https://greenexpectations.us/"
+          className="ml-auto font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green" 
+          // Used to open website in a new tab
+          target="_blank" rel="noopener noreferrer"
+        >
+          GreenExpectations.US
+        </Link>
       </div>
 
       {/* Main content area */}

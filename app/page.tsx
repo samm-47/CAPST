@@ -43,6 +43,15 @@ export default function Home() {
           >
             FAQ
           </Link>
+          {/* Link to the GreenExpectations Real Estate website */}
+          <Link
+            href="https://greenexpectations.us/"
+            className="green-expectations-us bg-greenify-button-green mt-4 mb-8 rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44 hover:bg-[#2e6957]"
+            // Used to open website in a new tab
+            target="_blank" rel="noopener noreferrer"        
+          >
+            GreenExpectations Website
+          </Link>
         </div>
       </main>
     </div>
