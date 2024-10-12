@@ -27,10 +27,13 @@ const ChatbotPage = () => {
     const handleSubmission = () => {
         // Upon submisison appends user message to chat history and displays
         if (userInput.trim()) {
+
+            // TODO: Add initial message to chatbot with name
+            // Ex. Hello! My name is Grehb. How can I help you today?
             setMessages((prevMessages) => [
                 ...prevMessages,
                 { type: 'user', text: userInput }, // Add user's message
-                { type: 'bot', text: 'This is a placeholder response.' } // Placeholder bot response to be changed later
+                { type: 'bot', text: 'Chatbot recieved message: \"' + userInput + '\"' } // Placeholder bot response to be changed later
             ]);
             setUserInput(''); // Clears the user input
         }
