@@ -22,6 +22,14 @@ const geistMono = localFont({
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Any client-side logic can go here (e.g., analytics)
+    // Dynamically insert the Font Awesome script
+    const script = document.createElement('script');
+    script.src = "https://kit.fontawesome.com/cb7258edb1.js";
+    script.crossOrigin = "anonymous";
+    document.body.appendChild(script);
+
+    script.onload = () => console.log("Font Awesome loaded successfully!");
+    script.onerror = () => console.error("Failed to load Font Awesome.");
   }, []);
 
   return (
@@ -46,10 +54,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         >
           Calculator
         </Link>
-        {/* Add a link to the Calculator page */}
+        {/* Chatbot Link with Active border */}
         <Link
           href="/chatbot"
-          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green border-b-2 border-coffee-green"
         >
           Chatbot
         </Link>

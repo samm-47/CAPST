@@ -77,10 +77,11 @@ const ChatbotPage = () => {
                     {/* Summission Button */}
                     <button
                         onClick={handleSubmission}
-                        className="ml-4 w-30 px-6 py-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition duration-100"
-                    >
-                        Submit
+                        className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
+                        >
+                        <i className="fa-solid fa-arrow-up"></i> 
                     </button>
+
 
                 </div>
                 {/* You can extend this with actual chatbot functionality later */}

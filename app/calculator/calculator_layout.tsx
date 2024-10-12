@@ -39,10 +39,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           />
         </Link>
 
-        {/* Add a link to the Calculator page */}
+        {/* Calculator Link  Active Border */}
         <Link
           href="/calculator"
-          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green"
+          className="ml-8 font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green border-b-2 border-coffee-green"
         >
           Calculator
         </Link>
