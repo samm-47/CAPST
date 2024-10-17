@@ -23,11 +23,11 @@ export default function Home() {
         </ol>
         
          {/* Ribbon Section */}
-        <div className="w-full bg-[rgba(55,65,81,0.90)] py-12">{/* Gray ribbon across middle */}
+        <div className="w-full bg-[rgba(55,65,81,0.90)] py-8 sm:py-12">{/* Gray ribbon across middle */}
           <div className="flex gap-4 flex-col sm:flex-row items-center justify-center">
 
             {/* Card for Calculator */}
-            <div className="h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
+            <div className="ml-4 h-48 md:h-64 lg:h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
               <h2 className="text-xl font-semibold mb-4">Calculator</h2>
               <p className="text-lg text-gray-600 mb-4">
                 Use our calculator to estimate your current sustainability.
@@ -42,7 +42,7 @@ export default function Home() {
               </Link>
             </div>
             {/* Card for Chatbot */}
-            <div className="h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
+            <div className="h-48 md:h-64 lg:h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
               <h2 className="text-xl font-semibold mb-4">Chatbot</h2>
               <p className="text-lg text-gray-600 mb-4">
                 Ask our chatbot any questions you have about the services.
@@ -72,7 +72,7 @@ export default function Home() {
               </Link>
             </div>
             {/* Card for Green Expectations */}
-            <div className="h-96 bg-white border border-gray-300 shadow-2xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
+            <div className="mr-4 h-96 bg-white border border-gray-300 shadow-2xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
               <h2 className="text-xl font-semibold mb-4">Green Expectations</h2>
               <p className="text-lg text-gray-600 mb-4">
                 Learn more about Green Expectations.
