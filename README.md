@@ -20,7 +20,7 @@ for Server-side icons copy icon i tag from FontAwesome but change 'class' to 'cl
 
 ## Getting Started
 
-First, run the development server:
+*In one terminal, run the frontend development server:
 
 ```bash
 npm run dev
@@ -31,6 +31,11 @@ pnpm dev
 # or
 bun dev
 ```
+In a second terminal, run the backend server:
+
+cd backend
+
+python api.py
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
