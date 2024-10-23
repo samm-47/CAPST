@@ -17,10 +17,10 @@ export default function Home() {
           height={50}
           priority
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-center font-[family-name:var(--font-geist-mono)]">
+        <div className="list-inside list-decimal text-sm text-center sm:text-center font-[family-name:var(--font-geist-mono)]">
           <h1 className="text-4xl">GEACRE Home</h1>
           <p className="text-xl mt-4">Dedicated to building and creating sustainable and affordable housing solutions for New Jersey residents.</p>
-        </ol>
+        </div>
         
          {/* Ribbon Section */}
         <div className="w-full bg-[rgba(55,65,81,0.90)] py-8 sm:py-12">{/* Gray ribbon across middle */}
@@ -88,9 +88,9 @@ export default function Home() {
               <i className="ml-2 fa-solid fa-house"></i> {/* House Icon */}
               </Link>
             </div>
-
           </div>
         </div>
+        {/* TODO: Add same sized footer with same gradient as header*/}       
       </main>
     </div>
   );
