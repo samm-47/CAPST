@@ -6,6 +6,7 @@ import Layout from './chatbot_layout';
 const ChatbotPage = () => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState<{type: string; text: string}[]>([]);
+    const [hasSentMessage, setHasSentMessage] = useState(false); // Used to track if message sent for moving the chatbar after initial message
     const bottomReference = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -40,6 +41,7 @@ const ChatbotPage = () => {
     }
 
     const handleSubmission = async () => {
+        setHasSentMessage(true); // Marks when the user has sent the first message
         if (userInput.trim()) {
             setMessages((prevMessages) => [
                 ...prevMessages,
@@ -62,7 +64,7 @@ const ChatbotPage = () => {
                     { type: 'bot', text: 'Sorry, something went wrong. Please try again later.' }
                 ]);
             }
-
+            
             setUserInput('');
         }
     };
@@ -82,23 +84,29 @@ const ChatbotPage = () => {
 
     return (
         <Layout>
+
             <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]">
                 <h1 className="text-4xl font-bold mt-4">Chatbot</h1>
                 <p className="text-lg mt-2 mb-8 text-gray-600">This is the placeholder page for the Chatbot.</p>
-                <div className="flex flex-col w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 mb-4 flex-1 overflow-y-auto">
-                    {messages.map((message, index) => (
-                        <div
-                            key={index}
-                            className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
-                                message.type === 'user' ? 'bg-blue-100 text-blue-900 ml-auto' : 'bg-gray-200 text-gray-900'
-                            }`}
-                        >
-                            {message.text}
-                        </div>
-                    ))}
-                    <div ref={bottomReference} />
-                </div>
-                <div className="w-full max-w-3xl bg-white shadow-lg rounded-lg p-4 mb-4 flex items-center sticky bottom-0">
+                {/* Chat area Post Rendered when first message sent */}    
+                {hasSentMessage && (
+                    <div className="flex flex-col w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 mb-4 flex-1 overflow-y-auto">
+                        {messages.map((message, index) => (
+                            <div
+                                key={index}
+                                className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
+                                    message.type === 'user' ? 'bg-blue-100 text-blue-900 ml-auto' : 'bg-gray-200 text-gray-900'
+                                }`}
+                            >
+                                {message.text}
+                            </div>
+                        ))}
+                        <div ref={bottomReference} />
+                    </div>
+                )}
+
+                {/* Input box with button */}
+                <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? 'sticky bottom-0 bg-white shadow-lg' : ''}`}>
                     <textarea
                         value={userInput}
                         onChange={handleInputChanges}
