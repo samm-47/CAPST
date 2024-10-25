@@ -87,7 +87,7 @@ const ChatbotPage = () => {
 
             <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]">
                 <h1 className="text-4xl font-bold mt-4">Chatbot</h1>
-                <p className="text-lg mt-2 mb-8 text-gray-600">This is the placeholder page for the Chatbot.</p>
+                <p className="text-lg mt-2 mb-8 text-gray-800">This is the placeholder page for the Chatbot.</p>
                 {/* Chat area Post Rendered when first message sent */}    
                 {hasSentMessage && (
                     <div className="flex flex-col w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 mb-4 flex-1 overflow-y-auto">
