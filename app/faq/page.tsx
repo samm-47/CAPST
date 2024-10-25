@@ -21,7 +21,7 @@ const FaqPage = () => {
             </div>
             <div className="flex items-baseline space-x-2">
                 <i className="mr-1 fa-solid fa-lg fa-reply"></i> {/*} Reply Icon*/}
-                <h2 className="text-lg">Sustainable housing focuses on creating living spaces that are environmentally friendly, energy-efficient, and resource-efficient. It aims to reduce the carbon footprint and impact on natural resources while providing comfortable and healthy living environments. </h2>
+                <p className="text-lg text-gray-800">Sustainable housing focuses on creating living spaces that are environmentally friendly, energy-efficient, and resource-efficient. It aims to reduce the carbon footprint and impact on natural resources while providing comfortable and healthy living environments. </p>
             </div>
           </div>
         </div>
@@ -32,7 +32,7 @@ const FaqPage = () => {
             </div>
             <div className="flex items-baseline space-x-2">
                 <i className="mr-1 fa-solid fa-lg fa-reply"></i> {/*} Reply Icon*/}
-                <h2 className="text-lg">Sustainable housing reduces the carbon footprint by lowering energy consumption and greenhouse gas emissions. It also conserves water, reduces waste, and promotes the use of recycled or renewable materials, all of which contribute to a healthier planet.</h2>
+                <p className="text-lg text-gray-800">Sustainable housing reduces the carbon footprint by lowering energy consumption and greenhouse gas emissions. It also conserves water, reduces waste, and promotes the use of recycled or renewable materials, all of which contribute to a healthier planet.</p>
             </div>
         </div>
 
