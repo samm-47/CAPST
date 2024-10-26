@@ -17,17 +17,17 @@ export default function Home() {
           height={50}
           priority
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-center font-[family-name:var(--font-geist-mono)]">
-          <h1 className="text-4xl">GEACRE Home</h1>
+        <div className="list-inside list-decimal text-sm text-center sm:text-center font-[family-name:var(--font-geist-mono)]">
+          <h1 className="text-4xl font-semibold">GEACRE Home</h1>
           <p className="text-xl mt-4">Dedicated to building and creating sustainable and affordable housing solutions for New Jersey residents.</p>
-        </ol>
+        </div>
         
          {/* Ribbon Section */}
         <div className="w-full bg-[rgba(55,65,81,0.90)] py-8 sm:py-12">{/* Gray ribbon across middle */}
           <div className="flex gap-4 flex-col sm:flex-row items-center justify-center">
 
             {/* Card for Calculator */}
-            <div className="ml-4 h-48 md:h-64 lg:h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
+            <div className="ml-64 h-48 md:h-64 lg:h-96 bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
               <h2 className="text-xl font-semibold mb-4">Calculator</h2>
               <p className="text-lg text-gray-600 mb-4">
                 Use our calculator to estimate your current sustainability.
@@ -72,7 +72,7 @@ export default function Home() {
               </Link>
             </div>
             {/* Card for Green Expectations */}
-            <div className="mr-4 h-96 bg-white border border-gray-300 shadow-2xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
+            <div className="mr-64 h-96 bg-white border border-gray-300 shadow-2xl rounded-lg p-6 text-center flex flex-col justify-between items-center">
               <h2 className="text-xl font-semibold mb-4">Green Expectations</h2>
               <p className="text-lg text-gray-600 mb-4">
                 Learn more about Green Expectations.
@@ -88,9 +88,9 @@ export default function Home() {
               <i className="ml-2 fa-solid fa-house"></i> {/* House Icon */}
               </Link>
             </div>
-
           </div>
         </div>
+        {/* TODO: Add same sized footer with same gradient as header*/}       
       </main>
     </div>
   );

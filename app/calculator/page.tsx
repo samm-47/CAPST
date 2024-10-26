@@ -31,7 +31,7 @@ const CalculatorPage = () => {
       {/*} CSS grid to center content like home tsx page*/}
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]"> {/*Chatbot Background here*/}
         <h1 className="text-4xl font-bold mt-4">Sustainability Calculator</h1>
-        <p className="text-lg mt-4 mb-4 text-gray-600">Please enter the following information so we can calculate your sustainability score!</p>
+        <p className="text-lg mt-4 mb-4 text-gray-800">Please enter the following information so we can calculate your sustainability score!</p>
         <div className="flex flex-col w-1/2 bg-white shadow-lg rounded-lg p-6">
           <div className="flex flex-col w-full max-w-lg mb-4">
             {/* Input Section */}
@@ -49,6 +49,33 @@ const CalculatorPage = () => {
                 <label htmlFor="carbonFootprint" className="w-1/2 text-lg p-2">Carbon Footprint (CO2e): </label>
                 <input type="number" id="carbonFootprint" name="carbonFootprint" step="any" className="w-1/2 ml-4 text-lg p-2 rounded-md outline outline-3 outline-green-500"/>
               </div>
+
+              {/*
+              
+              <div className="flex flex-row justify-around w-full">
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px", border: "10px solid black"}}/>
+                    <label>text</label>
+                </div>
+              </div>
+
+              */}
             </form>
           </div>
           <div className="mb-4">

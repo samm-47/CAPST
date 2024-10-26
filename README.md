@@ -4,6 +4,21 @@ npm install
 
 npm run dev
 
+
+## Possible installs before running backend
+
+npm install axios
+
+
+pip install flask 
+
+
+pip install google-generativeai
+
+
+pip install flask-cors
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Any images or icons to be used put in the public folder and then refer to with /icon_name.filetype
@@ -20,7 +35,7 @@ for Server-side icons copy icon i tag from FontAwesome but change 'class' to 'cl
 
 ## Getting Started
 
-First, run the development server:
+*In one terminal, run the frontend development server:
 
 ```bash
 npm run dev
@@ -31,12 +46,16 @@ pnpm dev
 # or
 bun dev
 ```
+In a second terminal, run the backend server:
+
+cd backend
+
+python api.py
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 
