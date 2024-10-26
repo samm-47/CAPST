@@ -49,6 +49,33 @@ const CalculatorPage = () => {
                 <label htmlFor="carbonFootprint" className="w-1/2 text-lg p-2">Carbon Footprint (CO2e): </label>
                 <input type="number" id="carbonFootprint" name="carbonFootprint" step="any" className="w-1/2 ml-4 text-lg p-2 rounded-md outline outline-3 outline-green-500"/>
               </div>
+
+              {/*
+              
+              <div className="flex flex-row justify-around w-full">
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
+                    <label>text</label>
+                </div>
+                <div className="flex flex-col justify-center items-center">
+                    <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px", border: "10px solid black"}}/>
+                    <label>text</label>
+                </div>
+              </div>
+
+              */}
             </form>
           </div>
           <div className="mb-4">
