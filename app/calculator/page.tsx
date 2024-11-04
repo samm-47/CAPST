@@ -52,6 +52,8 @@ const CalculatorPage = () => {
 
               {/*
               
+              Rough draft for radio/bubble selection menu
+              
               <div className="flex flex-row justify-around w-full">
                 <div className="flex flex-col justify-center items-center">
                     <input className="mb-1" type="radio" id="bubble1" name="rating" value="1" style={{width: "20px", height: "20px"}}/>
