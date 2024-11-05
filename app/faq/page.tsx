@@ -10,9 +10,13 @@ const FaqPage = () => {
     return(
 <Layout>
       {/*} CSS grid to center content like home tsx page*/}
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]"> {/*Chatbot Background here*/}
-        <h1 className="text-4xl font-bold mt-4">Frequently Asked Questions</h1>
-        <p className="text-lg mt-4 mb-4 text-gray-800">This is a placeholder page for the FAQ.</p>
+      <div className="default-page-bg"> {/* Page background with mint->white gradient*/}
+        <h1 className="text-4xl font-bold mt-4">
+          Frequently Asked Questions
+        </h1>
+        <p className="text-lg mt-4 mb-4 text-gray-800">
+          Here are some answers to frequently asked questions!
+        </p>
         <div className="flex flex-col w-3/4 mb-6 mt-2 bg-white shadow-lg rounded-lg p-6" style={{outline: "2px solid #22c55e"}}>
           <div>
             <div className="flex items-center space-x-2 mb-4">

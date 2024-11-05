@@ -4,7 +4,6 @@
 // Important for creation of the logo top right
 import Layout from "./calculator_layout";
 
-
 const CalculatorPage = () => {
   // Used to track different values input by user into calculator
   
@@ -29,9 +28,13 @@ const CalculatorPage = () => {
     
     <Layout>
       {/*} CSS grid to center content like home tsx page*/}
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-mint-green to-[#FFFFFF]"> {/*Chatbot Background here*/}
-        <h1 className="text-4xl font-bold mt-4">Sustainability Calculator</h1>
-        <p className="text-lg mt-4 mb-4 text-gray-800">Please enter the following information so we can calculate your sustainability score!</p>
+      <div className="default-page-bg"> {/*Calculator Background here*/}
+        <h1 className="text-4xl font-bold mt-4">
+          Sustainability Calculator
+        </h1>
+        <p className="text-lg mt-4 mb-4 text-gray-800">
+          Please enter the following information so we can calculate your sustainability score!
+        </p>
         <div className="flex flex-col w-1/2 bg-white shadow-lg rounded-lg p-6">
           <div className="flex flex-col w-full max-w-lg mb-4">
             {/* Input Section */}
