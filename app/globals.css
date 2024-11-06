@@ -13,11 +13,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #171717;
+    --foreground: #ffffff;
   }
+
+  /* Fixing text color for dark mode users */
   input[type="number"], textarea {
-    color: black; /* Fixing text color in text input for dark mode users */
+    color: black; 
+  }
+  h1, p { 
+    color: var(--background);
   }
 }
 
