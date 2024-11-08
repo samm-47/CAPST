@@ -14,6 +14,7 @@ load_dotenv(".env.local")
 app = Flask(__name__)
 CORS(app)
 
+<<<<<<< HEAD
 # Function to decrypt the .env file
 def decrypt_env_file(encrypted_file=".env.enc", decrypted_file=".env"):
     # Retrieve the decryption password from the environment variables loaded from .env.local
@@ -37,6 +38,10 @@ def decrypt_env_file(encrypted_file=".env.enc", decrypted_file=".env"):
         return False
     return True
 
+=======
+
+
+>>>>>>> cdb6e8db26c997a78ddc7fd39acc3bc99b796dfd
 # Decrypt and load environment variables
 if decrypt_env_file():
     load_dotenv(".env")  # Load variables from the decrypted .env file
