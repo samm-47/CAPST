@@ -7,17 +7,23 @@
   --mint-green: #e6f7ef; 
   --greenify-button-green: #09ad5f; 
   --coffee-green: #006241;
+  --our-black: #171717;
   --background: #ffffff;
   --foreground: #171717;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #171717;
+    --foreground: #ffffff;
   }
+
+  /* Fixing text color for dark mode users */
   input[type="number"], textarea {
-    color: black; /* Fixing text color in text input for dark mode users */
+    color: black; 
+  }
+  h1, h2, p, label { 
+    color: var(--background);
   }
 }
 
@@ -67,7 +73,82 @@ input[type=number] {
     -moz-appearance: textfield;
 }
 
-/* Default background for content page */
+/* 
+Home Page 
+*/
+
+/* Background of home page */
+.home-page-bg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 2vh;
+  background: radial-gradient(ellipse, #FFFFFF, var(--mint-green));
+}
+
+/* Gray navigation ribbon */
+.nav-ribbon-body {
+  display: flex;
+  height: 60vh;
+  width: 100vw;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 2vw;
+  @apply bg-[rgba(55,65,81,0.90)] rounded-md
+}
+
+/* Card with white background on navigation ribbon */
+.nav-ribbon-card {
+  height: 50vh;
+  width: 20vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  @apply bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center
+}
+
+/* Title of navigation ribbon card */
+.nav-ribbon-card-title {
+  @apply text-xl font-semibold mb-4 border-b-2 border-coffee-green
+}
+
+/* Caption of navigation ribbon card */
+.nav-ribbon-card-caption {
+  @apply text-lg text-gray-800 mb-4
+}
+
+/* Button on navigation ribbon card */
+.nav-ribbon-card-button {
+  @apply bg-greenify-button-green rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 hover:bg-coffee-green;
+}
+/* End of Home Page */
+
+
+/*
+Default Elements
+*/
+
+/* Centered flex column */
+.flex-col-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Centered flex column */
+.flex-row-centered {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Default page background with vertical mintgreen->white gradient */
 .default-page-bg {
   display: flex;
   min-height: 100vh;
@@ -76,6 +157,11 @@ input[type=number] {
   justify-content: center;
   background: linear-gradient(to bottom, var(--mint-green), #FFFFFF);
 }
+
+.fa-icon-dark {
+  color: var(--our-black);
+}
+/* End of Default Elements */
 
 /* 
 Navigation Bar
@@ -101,9 +187,6 @@ Navigation Bar
 .green-expectations-us-link {
   @apply font-bold text-sm uppercase tracking-wider text-black hover:text-coffee-green;
 }
-
-/* 
-End of Navigation Bar
-*/
+/* End of Navigation Bar */
 
 
