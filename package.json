@@ -10,11 +10,7 @@
     "backend": "cd backend && python api.py"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "concurrently": "^9.0.1",
-=======
     "axios": "^1.7.7",
->>>>>>> e560f4c7eea7f742c1e6b75ccaaba814840803fc
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18"
@@ -23,6 +19,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "concurrently": "^9.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
     "postcss": "^8",
