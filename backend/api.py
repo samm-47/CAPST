@@ -9,8 +9,7 @@ CORS(app)
 
 # Retrieve API key from the environment variable
 API_KEY = os.environ.get("GENAI_API_KEY")
-if not API_KEY:
-    raise ValueError("The API key for Google Gemini is not set.")
+
 
 # Configure the Generative AI model
 genai.configure(api_key=API_KEY)
