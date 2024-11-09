@@ -137,15 +137,15 @@ Default Elements
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
 
-/* Centered flex column */
+/* Centered flex row */
 .flex-row-centered {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 /* Default page background with top down mint green-white gradient */
