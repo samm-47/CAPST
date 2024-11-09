@@ -6,22 +6,19 @@ from langdetect import detect
 from dotenv import load_dotenv
 import time
 import subprocess
+from cryptography.fernet import Fernet
+import base64
 
 # Load the .env.local file to access the decryption password
-load_dotenv(".env.local")
+if not os.environ.get("GENAI_API_KEY_1"):  # Check if the keys are not already set
+    subprocess.run(["python", "decrypt.py"])  # Decrypt the file if not present
+
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
 
-
-# Decrypt and load environment variables
-if decrypt_env_file():
-    load_dotenv(".env")  # Load variables from the decrypted .env file
-    os.remove(".env")  # Remove the temporary .env file after loading
-else:
-    raise Exception("Failed to decrypt .env file.")
 
 # Retrieve API keys from the environment variables
 API_KEYS = [
@@ -52,7 +49,12 @@ chat_history = [
     {"role": "model", "parts": "Hello! How can I help you with real estate?"}  # Shortened response
 ]
 
-
+# Language detection function
+def detect_language(text):
+    try:
+        return detect(text)
+    except:
+        return 'en'  # Default to English
 
 @app.route('/api/chat', methods=['POST'])
 def chat_with_bot():
