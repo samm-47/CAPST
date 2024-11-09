@@ -11,10 +11,10 @@ const FaqPage = () => {
 <Layout>
       {/*} CSS grid to center content like home tsx page*/}
       <div className="default-page-bg"> {/* Page background with mint->white gradient*/}
-        <h1 className="text-4xl font-bold mt-4">
+        <h1 className="page-title">
           Frequently Asked Questions
         </h1>
-        <p className="text-lg mt-4 mb-4 text-gray-800">
+        <p className="page-caption">
           Here are some answers to frequently asked questions!
         </p>
         <div className="flex flex-col w-3/4 mb-6 mt-2 bg-white shadow-lg rounded-lg p-6" style={{outline: "2px solid #22c55e"}}>
