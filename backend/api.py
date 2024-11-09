@@ -10,41 +10,14 @@ from cryptography.fernet import Fernet
 import base64
 
 # Load the .env.local file to access the decryption password
-load_dotenv(".env.local")
+if not os.environ.get("GENAI_API_KEY_1"):  # Check if the keys are not already set
+    subprocess.run(["python", "decrypt.py"])  # Decrypt the file if not present
+
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Function to decrypt the .env file using cryptography.fernet
-def decrypt_env_file(encrypted_file=".env.enc", decrypted_file=".env"):
-    decryption_password = os.environ.get("DECRYPTION_PASSWORD")
-    
-    if not decryption_password:
-        print("Decryption password not found in .env.local.")
-        return False
-
-    # Derive a Fernet key from the decryption password (this step can vary)
-    key = base64.urlsafe_b64encode(decryption_password.encode('utf-8').ljust(32, b'\0')[:32])
-    cipher = Fernet(key)
-
-    try:
-        # Read the encrypted .env.enc file
-        with open(encrypted_file, "rb") as enc_file:
-            encrypted_data = enc_file.read()
-
-        # Decrypt the data
-        decrypted_data = cipher.decrypt(encrypted_data)
-
-        # Write the decrypted data to the .env file
-        with open(decrypted_file, "wb") as dec_file:
-            dec_file.write(decrypted_data)
-
-        print("Decryption successful")
-    except Exception as e:
-        print("Decryption failed:", str(e))
-        return False
-    return True
 
 
 # Retrieve API keys from the environment variables
