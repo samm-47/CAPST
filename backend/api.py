@@ -6,19 +6,13 @@ from langdetect import detect
 from dotenv import load_dotenv
 import time
 import subprocess
-from cryptography.fernet import Fernet
-import base64
-
-# Load the .env.local file to access the decryption password
-if not os.environ.get("GENAI_API_KEY_1"):  # Check if the keys are not already set
-    subprocess.run(["python", "decrypt.py"])  # Decrypt the file if not present
-
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-
+# Function to decrypt the .env file
+load_dotenv()
 
 # Retrieve API keys from the environment variables
 API_KEYS = [
