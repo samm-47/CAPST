@@ -6,6 +6,8 @@ from langdetect import detect
 from dotenv import load_dotenv
 import time
 import subprocess
+from cryptography.fernet import Fernet
+import base64
 
 # Load the .env.local file to access the decryption password
 load_dotenv(".env.local")
@@ -14,35 +16,36 @@ load_dotenv(".env.local")
 app = Flask(__name__)
 CORS(app)
 
-# Function to decrypt the .env file
+# Function to decrypt the .env file using cryptography.fernet
 def decrypt_env_file(encrypted_file=".env.enc", decrypted_file=".env"):
-    # Retrieve the decryption password from the environment variables loaded from .env.local
     decryption_password = os.environ.get("DECRYPTION_PASSWORD")
-   
+    
     if not decryption_password:
         print("Decryption password not found in .env.local.")
         return False
 
+    # Derive a Fernet key from the decryption password (this step can vary)
+    key = base64.urlsafe_b64encode(decryption_password.encode('utf-8').ljust(32, b'\0')[:32])
+    cipher = Fernet(key)
 
-    # Decrypt the .env.enc file using openssl and output to .env
     try:
-        subprocess.run(
-            ["openssl", "enc", "-aes-256-cbc", "-d", "-pbkdf2",
-             "-in", encrypted_file, "-out", decrypted_file, "-pass", f"pass:{decryption_password}"],
-            check=True
-        )
+        # Read the encrypted .env.enc file
+        with open(encrypted_file, "rb") as enc_file:
+            encrypted_data = enc_file.read()
+
+        # Decrypt the data
+        decrypted_data = cipher.decrypt(encrypted_data)
+
+        # Write the decrypted data to the .env file
+        with open(decrypted_file, "wb") as dec_file:
+            dec_file.write(decrypted_data)
+
         print("Decryption successful")
-    except subprocess.CalledProcessError:
-        print("Decryption failed")
+    except Exception as e:
+        print("Decryption failed:", str(e))
         return False
     return True
 
-# Decrypt and load environment variables
-if decrypt_env_file():
-    load_dotenv(".env")  # Load variables from the decrypted .env file
-    os.remove(".env")  # Remove the temporary .env file after loading
-else:
-    raise Exception("Failed to decrypt .env file.")
 
 # Retrieve API keys from the environment variables
 API_KEYS = [
@@ -73,6 +76,7 @@ chat_history = [
     {"role": "model", "parts": "Hello! How can I help you with real estate?"}  # Shortened response
 ]
 
+# Language detection function
 def detect_language(text):
     try:
         return detect(text)
