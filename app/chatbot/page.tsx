@@ -133,8 +133,8 @@ const ChatbotPage = () => {
         <Layout>
 
             <div className="default-page-bg">
-                <h1 className="text-4xl font-bold mt-4">Chatbot</h1>
-                <p className="text-lg mt-2 mb-8 text-gray-800">
+                <h1 className="page-title">Chatbot</h1>
+                <p className="page-caption">
                     Ask our Chatbot anything about sustainable housing and living!
                 </p>
                 {/* Chat area Post Rendered when first message sent */}    

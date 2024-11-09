@@ -29,10 +29,10 @@ const CalculatorPage = () => {
     <Layout>
       {/*} CSS grid to center content like home tsx page*/}
       <div className="default-page-bg"> {/*Calculator Background here*/}
-        <h1 className="text-4xl font-bold mt-4">
+        <h1 className="page-title">
           Sustainability Calculator
         </h1>
-        <p className="text-lg mt-4 mb-4 text-gray-800">
+        <p className="page-caption">
           Please enter the following information so we can calculate your sustainability score!
         </p>
         <div className="flex flex-col w-1/2 bg-white shadow-lg rounded-lg p-6">

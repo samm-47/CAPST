@@ -148,7 +148,7 @@ Default Elements
   justify-content: center;
 }
 
-/* Default page background with vertical mintgreen->white gradient */
+/* Default page background with top down mint green-white gradient */
 .default-page-bg {
   display: flex;
   min-height: 100vh;
@@ -158,6 +158,17 @@ Default Elements
   background: linear-gradient(to bottom, var(--mint-green), #FFFFFF);
 }
 
+/* Page Title Text */
+.page-title {
+  @apply text-4xl font-bold mt-4;
+}
+
+/* Page Caption Text */
+.page-caption {
+  @apply text-lg mt-4 mb-4 text-gray-800;
+}
+
+/* Dark Font Awesome Icon */
 .fa-icon-dark {
   color: var(--our-black);
 }
