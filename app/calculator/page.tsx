@@ -7,15 +7,85 @@ import { useState } from "react";
 
 import './custom_radio.css';
 
-const CalculatorPage: React.FC = () => { 
-  // Used to track the selected radio button 
-  const [selectedOption, setSelectedOption] = useState<string | null>(null); 
+const CalculatorPage: React.FC = () => {
+
+  // Used to track Energy Consumption radio selection.
+  const [energyUsage, setEnergyUsage] = useState<string | null>(null);
+
+  // Used to track Percent Renewable Energy radio selection.
+  const [percentRenewable, setPercentRenewable] = useState<string | null>(null); 
+
+  // Used to track Water Usage radio selection.
+  const [waterUsage, setWaterUsage] = useState<string | null>(null); 
+
+  // Used to track CO2 Level radio selection.
+  const [airQuality, setAirQuality] = useState<string | null>(null); 
   
-  const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => { 
-    setSelectedOption(event.target.id); };
+  const handleEnergyUsage = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setEnergyUsage(event.target.id); };
+
+  const handlePercentRenewable = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setPercentRenewable(event.target.id); };
+    
+  const handleWaterUsage = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setWaterUsage(event.target.id); };
+
+  const handleAirQuality = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setAirQuality(event.target.id); };
     
   const calculateScore = () => {
-    const testval = document.getElementById("testval");
+    const testval = document.getElementById("sustainabilityScoreLabel");
+
+    let sustainabilityScoreInt:number = -1;
+    let energyConsumptionScore:number;
+    let renewableEnergyScore:number;
+    let waterConsumptionScore:number;
+    let airQualityScore:number;
+
+    switch (energyUsage) {
+      case "energy1": energyConsumptionScore = 5; break;
+      case "energy2": energyConsumptionScore = 4; break;
+      case "energy3": energyConsumptionScore = 3; break;
+      case "energy4": energyConsumptionScore = 2; break;
+      case "energy5": energyConsumptionScore = 1; break;
+      default: energyConsumptionScore = 0;
+    }
+
+    switch (percentRenewable) {
+      case "renew1": renewableEnergyScore = 1; break;
+      case "renew2": renewableEnergyScore = 2; break;
+      case "renew3": renewableEnergyScore = 3; break;
+      case "renew4": renewableEnergyScore = 4; break;
+      case "renew5": renewableEnergyScore = 5; break;
+      default: renewableEnergyScore = 0;
+    }
+
+    switch (waterUsage) {
+      case "water1": waterConsumptionScore = 5; break;
+      case "water2": waterConsumptionScore = 4; break;
+      case "water3": waterConsumptionScore = 3; break;
+      case "water4": waterConsumptionScore = 2; break;
+      case "water5": waterConsumptionScore = 1; break;
+      default: waterConsumptionScore = 0;
+    }
+
+    switch (airQuality) {
+      case "air1": airQualityScore = 5; break;
+      case "air2": airQualityScore = 4; break;
+      case "air3": airQualityScore = 3; break;
+      case "air4": airQualityScore = 2; break;
+      case "air5": airQualityScore = 1; break;
+      default: airQualityScore = 0;
+    }
+
+    {/* TODO: Create more complex scoring system */}
+    {/* WIll need to add more metrics and weighed/curved scoring systems */}
+    sustainabilityScoreInt = energyConsumptionScore + 
+                             renewableEnergyScore +
+                             waterConsumptionScore +
+                             airQualityScore;
+    
+    let sustainabilityScore:string;
 
     if (!testval)
     {
@@ -23,7 +93,30 @@ const CalculatorPage: React.FC = () => {
     }
     else
     {
-      testval.textContent = "zap zap: " + selectedOption;
+      if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 5) {
+        sustainabilityScore = "F";
+      }
+      else if (sustainabilityScoreInt > 5 && sustainabilityScoreInt <= 10) {
+        sustainabilityScore = "D";
+      }
+      else if (sustainabilityScoreInt > 10 && sustainabilityScoreInt <= 13) {
+        sustainabilityScore = "C";
+      }
+      else if (sustainabilityScoreInt > 13 && sustainabilityScoreInt <= 16) {
+        sustainabilityScore = "B";
+      }
+      else if (sustainabilityScoreInt > 16 && sustainabilityScoreInt <= 19) {
+        sustainabilityScore = "A";
+      }
+      else if (sustainabilityScoreInt == 20) {
+        sustainabilityScore = "S - Sustainable";
+      }
+      else
+      {
+        sustainabilityScore = "Error: sustainability score cannot be calculated.";
+      }
+
+      testval.textContent = sustainabilityScore;
     }
   }
 
@@ -36,69 +129,193 @@ const CalculatorPage: React.FC = () => {
           Sustainability Calculator
         </h1>
         <p className="page-caption">
-          Please enter the following information so we can calculate your sustainability score!
+          Please enter the following information to calculate your house's sustainability score!
         </p>
 
         {/* Main Content Section */}
         <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
-
-            <div className="flex-col-centered w-5/6 gap-[4vh]">
-              <label> Monthly Energy Consumption </label>
-                <div className="flex-row-centered w-full">
-                  <div className="flex-col-centered gap-[1vh]"> 
-                    <input type="radio" id="option1" name="options" className="custom-radio" onChange={handleRadioChange}/> 
-                      <label htmlFor="option1">
-                        Text1
-                      </label> 
-                  </div>
-
-                  <div className="flex-col-centered gap-[1vh]"> 
-                    <input type="radio" id="option2" name="options" className="custom-radio" onChange={handleRadioChange}/> 
-                      <label htmlFor="option2">
-                        Text2
-                      </label> 
-                  </div>
-
-                  <div className="flex-col-centered gap-[1vh]"> 
-                    <input type="radio" id="option3" name="options" className="custom-radio" onChange={handleRadioChange}/> 
-                      <label htmlFor="option3">
-                        Text3
-                      </label> 
-                  </div>
-
-                  <div className="flex-col-centered gap-[1vh]"> 
-                    <input type="radio" id="option4" name="options" className="custom-radio" onChange={handleRadioChange}/> 
-                      <label htmlFor="option4">
-                        Text4
-                      </label> 
-                  </div>
-
-                  <div className="flex-col-centered gap-[1vh]"> 
-                    <input type="radio" id="option5" name="options" className="custom-radio" onChange={handleRadioChange}/> 
-                      <label htmlFor="option5">
-                        Text5
-                      </label> 
-                  </div>
+          {/* Monthly Energy Consumption */}
+          <div className="sus-calc-input">
+            <label className="sus-calc-title"> 
+              Monthly Energy Consumption (kWh) 
+            </label>
+            <div className="flex-row-centered w-full">
+              {/* Radio options */}
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy1" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy1" className="text-lg">
+                    &lt;500
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy2" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy2" className="text-lg">
+                    500 to 650
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy3" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy3" className="text-lg">
+                    650 to 850
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy4" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/>  
+                  <label htmlFor="energy4" className="text-lg">
+                    850 to 1000
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy5" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy5" className="text-lg">
+                    1000+
+                  </label> 
               </div>
             </div>
-            
-            {/*Calculate Score Button*/}
-            <div>
-              <button
-                onClick={calculateScore}
-                className="jmb-4 px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-lg"
-                >
-                Calculate Score
-              </button>
-            </div>
+          </div>
 
-            { /* temp label to test output */}
-            <div className="flex-col-centered">
-              <p> testing </p>
-              <label htmlFor="testval" id="testval" className="text-lg"> </label>
+          {/* Percent Renweable Energy */}
+          <div className="sus-calc-input">
+            <label className="sus-calc-title"> 
+              % Renewable Energy 
+            </label>
+            {/* Radio options */}
+            <div className="flex-row-centered w-full">
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew1" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew1" className="text-lg">
+                    &lt;20%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew2" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew2" className="text-lg">
+                    20 to 40%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew3" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/>  
+                  <label htmlFor="renew3" className="text-lg">
+                    40 to 60%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew4" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew4" className="text-lg">
+                    60 to 80%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew5" name="renew_energy" className="custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew5" className="text-lg">
+                    80+%
+                  </label> 
+              </div>
             </div>
           </div>
-        </div>  
+
+          { /* Monthly Water Usage */}
+          <div className="sus-calc-input">
+            <label className="sus-calc-title"> 
+              Monthly Water Usage (gal) 
+            </label>
+
+          <div className="flex-row-centered w-full">
+          {/* Radio options */}
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water1" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+                <label htmlFor="water1" className="text-lg">
+                  &lt;50
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water2" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+                <label htmlFor="water2" className="text-lg">
+                  50 to 70
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water3" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+                <label htmlFor="water3" className="text-lg">
+                  70 to 90
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water4" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+                <label htmlFor="water4" className="text-lg">
+                  90 to 110
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water5" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+                <label htmlFor="water5" className="text-lg">
+                  110+
+                </label> 
+            </div>
+          </div>
+        </div>
+
+        { /* CO2 Level (Air Quality) */}
+        <div className="sus-calc-input">
+          <label className="sus-calc-title"> 
+            Air Quality: CO2 Level (ppm) 
+          </label>
+        <div className="flex-row-centered w-full">
+          {/* Radio options */}
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air1" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air1" className="text-lg">
+                &lt;400
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air2" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air2" className="text-lg">
+                400 to 500
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air3" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air3" className="text-lg">
+                500 to 600
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air4" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air4" className="text-lg">
+                600 to 700
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air5" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air5" className="text-lg">
+                700+
+              </label> 
+          </div>
+          </div>
+
+          {/*Calculate Score Button*/}
+          <div>
+            <button
+              onClick={calculateScore}
+              className="bg-greenify-button-green rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 hover:bg-coffee-green"
+              >
+              Calculate Score
+            </button>
+          </div>
+
+          { /* Label to display sustainability score */}
+          <div className="flex-col-centered">
+            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold"> </label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="h-[5vh]">
+        <p className="opacity-0"> Text for spacing </p>
+      </div>
+
+    </div>
     </Layout>
   );
 };
