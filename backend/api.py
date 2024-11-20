@@ -7,42 +7,12 @@ from dotenv import load_dotenv
 import time
 import subprocess
 
-# Load the .env.local file to access the decryption password
-load_dotenv(".env.local")
-
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
 # Function to decrypt the .env file
-def decrypt_env_file(encrypted_file=".env.enc", decrypted_file=".env"):
-    # Retrieve the decryption password from the environment variables loaded from .env.local
-    decryption_password = os.environ.get("DECRYPTION_PASSWORD")
-   
-    if not decryption_password:
-        print("Decryption password not found in .env.local.")
-        return False
-
-
-    # Decrypt the .env.enc file using openssl and output to .env
-    try:
-        subprocess.run(
-            ["openssl", "enc", "-aes-256-cbc", "-d", "-pbkdf2",
-             "-in", encrypted_file, "-out", decrypted_file, "-pass", f"pass:{decryption_password}"],
-            check=True
-        )
-        print("Decryption successful")
-    except subprocess.CalledProcessError:
-        print("Decryption failed")
-        return False
-    return True
-
-# Decrypt and load environment variables
-if decrypt_env_file():
-    load_dotenv(".env")  # Load variables from the decrypted .env file
-    os.remove(".env")  # Remove the temporary .env file after loading
-else:
-    raise Exception("Failed to decrypt .env file.")
+load_dotenv()
 
 # Retrieve API keys from the environment variables
 API_KEYS = [
@@ -73,6 +43,7 @@ chat_history = [
     {"role": "model", "parts": "Hello! How can I help you with real estate?"}  # Shortened response
 ]
 
+# Language detection function
 def detect_language(text):
     try:
         return detect(text)
