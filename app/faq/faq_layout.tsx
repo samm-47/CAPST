@@ -2,8 +2,6 @@
 "use client"; // Mark this as a Client Component for client-side hooks
 
 import React, { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import localFont from "next/font/local";
 import "../globals.css";
 
