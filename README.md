@@ -23,6 +23,24 @@ pip install langdetect
 npm install concurrently --save-dev
 
 
+## new for web hosted 
+
+npm run dev will run somewhat differently then what is on the cloudflare 
+
+due to static web nuances
+
+to test similar environment must
+
+npm install -g serve
+
+
+THEN FROM HERE
+To run the Build locally instead of 'npm run dev' use 'npx next build'
+and then when that finishes use 'serve out'
+
+THIS METHOD DOES NOT CHANGE SITE DYNAMICALLY WITH CODE LIKE NPM RUN DEV DOES!!
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Any images or icons to be used put in the public folder and then refer to with /icon_name.filetype
