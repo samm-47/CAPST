@@ -129,7 +129,7 @@ const CalculatorPage: React.FC = () => {
           Sustainability Calculator
         </h1>
         <p className="page-caption">
-          Please enter the following information to calculate your house's sustainability score!
+          Please enter the following information to calculate your house&#39; sustainability score!
         </p>
 
         {/* Main Content Section */}
