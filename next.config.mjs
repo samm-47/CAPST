@@ -3,7 +3,7 @@ export default {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/:path*', // Proxy to the Flask backend
+        destination: 'https://capst.onrender.com/api/:path*', // Proxy to the Flask backend
       },
     ];
   },
