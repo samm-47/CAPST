@@ -13,7 +13,7 @@ CORS(app)
 
 # Function to decrypt the .env file
 load_dotenv()
-
+port = os.environ.get("PORT", 5000)
 # Retrieve API keys from the environment variables
 API_KEYS = [
     os.environ.get("GENAI_API_KEY_1"),
@@ -98,4 +98,4 @@ def chat_with_bot():
 
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=int(port))
