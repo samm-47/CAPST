@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "concurrently \"npm run backend\" \"next start -p $PORT\"",
     "lint": "next lint",
-    "backend": "cd backend && gunicorn -b 0.0.0.0:$PORT api:app",
+    "backend": "cd backend && gunicorn -b 0.0.0.0:5000 api:app",
      "next-start": "next start -p $PORT" 
   },
   "dependencies": {
