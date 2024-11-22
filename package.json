@@ -10,7 +10,7 @@
     "backend": "cd backend && gunicorn -b 0.0.0.0:5000 api:app"
   },
   "dependencies": {
-    "http-proxy-middleware": "^3.x.x", // Example version
+    "http-proxy-middleware": "^3.x.x", 
     "axios": "^1.7.7",
     "next": "14.2.13",
     "react": "^18",
