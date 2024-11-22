@@ -5,13 +5,12 @@ from flask_cors import CORS
 from langdetect import detect
 from dotenv import load_dotenv
 import time
-import subprocess
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Function to decrypt the .env file
+# Load environment variables from .env file
 load_dotenv()
 
 # Retrieve API keys from the environment variables
@@ -40,7 +39,7 @@ def configure_genai():
 # Define a route for the chatbot interaction
 chat_history = [
     {"role": "user", "parts": "Hello, you are a chatbot designed to help users with real-estate related questions."},
-    {"role": "model", "parts": "Hello! How can I help you with real estate?"}  # Shortened response
+    {"role": "model", "parts": "Hello! How can I help you with real estate?"}
 ]
 
 # Language detection function
@@ -95,7 +94,6 @@ def chat_with_bot():
 
     return jsonify({"response": response_text})
 
-
-# Run the Flask app
+# Run the Flask app only in development mode
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)  # Disable Flask's debug mode for production
