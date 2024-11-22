@@ -1,7 +1,13 @@
-/** @type {import('next').NextConfig} */
+import { createProxyMiddleware } from 'http-proxy-middleware';
+
 const nextConfig = {
-  images: {
-    unoptimized: process.env.NODE_ENV === 'production', // Only apply in production
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*', // Route starting with /api
+        destination: 'http://127.0.0.1:5000/api/:path*', // Proxy to Flask backend
+      },
+    ];
   },
 };
 
