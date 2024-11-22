@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"next dev\" \"npm run backend\"",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently \"cd backend && python api.py\" \"next start\"",
     "lint": "next lint",
     "backend": "cd backend && python api.py"
   },
