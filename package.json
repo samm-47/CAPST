@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "concurrently \"next dev\" \"npm run backend\"",
     "build": "next build",
-    "start": "concurrently \"cd backend && python api.py\" \"next start\"",
+    "start": "concurrently \"npm run backend\" \"next start -p $PORT\"",
     "lint": "next lint",
-    "backend": "cd backend && python api.py"
+    "backend": "cd backend && gunicorn -b 0.0.0.0:$PORT api:app",
+     "next-start": "next start -p $PORT" 
   },
   "dependencies": {
     "axios": "^1.7.7",
