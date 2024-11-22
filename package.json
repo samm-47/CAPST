@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "concurrently \"next dev\" \"npm run backend\"",
     "build": "next build",
-   "start": "cd backend && gunicorn -b 127.0.0.1:5000 api:app & next start",
+   "start": "cd backend && python api.py & next start",
     "lint": "next lint",
-    "backend": "cd backend && gunicorn -b 0.0.0.0:5000 api:app"
+    
   },
   "dependencies": {
     "http-proxy-middleware": "^3.x.x", 
