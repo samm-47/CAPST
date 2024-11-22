@@ -1,14 +1,10 @@
-import { createProxyMiddleware } from 'http-proxy-middleware';
-
-const nextConfig = {
+module.exports = {
   async rewrites() {
     return [
       {
-        source: '/api/:path*', // Route starting with /api
-        destination: 'http://127.0.0.1:5000/api/:path*', // Proxy to Flask backend
+        source: '/api/:path*',
+        destination: 'http://localhost:5000/:path*', // Proxy to the Flask backend
       },
     ];
   },
 };
-
-export default nextConfig;
