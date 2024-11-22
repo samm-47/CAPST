@@ -50,7 +50,7 @@ const ChatbotPage = () => {
     const sendInitialMessage = async () => {
         try {
             const initialMessage = "Greet the user with hello, how can I help you? Keep it to one sentence to open";
-            const response = await axios.post('http://127.0.0.1:5000/api/chat', {
+            const response = await axios.post('https://capst.onrender.com/api/chat', {
                 question: initialMessage,
             });
             setMessages([
@@ -82,7 +82,7 @@ const ChatbotPage = () => {
             ]);
             setLoading(true); // Starts the loading state
             try {
-                const response = await axios.post('http://127.0.0.1:5000/api/chat', {
+                const response = await axios.post('https://capst.onrender.com/api/chat', {
                     question: currentUserInput,
                 });
 
