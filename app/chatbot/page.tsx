@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Layout from './chatbot_layout';
-import Image from "next/image";
+
 import Link from "next/link";
 
 const ChatbotPage = () => {
