@@ -57,15 +57,30 @@ const Navbar = () => {
                 }
             )}
         </ul>
-        <div className="ml-auto">
-            {/* Add a link to the GreenExpecations website */}
-            <Link
-            href="https://greenexpectations.us/"
+         <div className="flex-col-centered ml-auto">
+            {/* Add a link to the GreenExpectations website */}
+            <Link 
+            href="https://greenifyai.com/"
             className="green-expectations-us-link" 
             // Used to open website in a new tab
             target="_blank" rel="noopener noreferrer"
             >
-            GreenExpectations.US
+            <Image
+                    src="/green_expectations_logo.png"
+                    alt="Green Expectations Logo"
+                    width={35}
+                    height={35}
+                    className="transition hover:filer-coffee-green hover:brightness-90"
+                    priority
+                />
+            </Link>
+            <Link
+                href="https://greenifyai.com/"
+                className="green-expectations-us-link" 
+                // Used to open website in a new tab
+                target="_blank" rel="noopener noreferrer"
+            >
+                GreenifyAI
             </Link>
         </div>
     </div>
