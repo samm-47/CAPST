@@ -14,14 +14,14 @@ export default function Home() {
               <Image
                 className="object-cover"
                 src="/greenliving_iconv1.png"
-                alt="Green Expectations.png logo"
+                
                 alt="Green Living logo"
                 loading="eager"
                 width={100}
                 height={100}
                 priority
               />
-              <a className="text-xs ml-auto" href="https://www.freepik.com/icons/house">Icon by Freepik</a>
+              
             </div>
             <div className="flex-col-centered">
               <h1 className="text-5xl font-semibold">Green</h1>
@@ -60,7 +60,7 @@ export default function Home() {
                 className="nav-ribbon-card-button"
               >
                 Calculator
-                <i className="ml-2 fa-solid fa-calculator"></i>
+                
                 <i className="ml-2 fa-lg fa-solid fa-calculator"></i>
               </Link>
             </div>
@@ -79,7 +79,7 @@ export default function Home() {
                   className="nav-ribbon-card-button"
                 >
                   Chatbot
-                  <i className="ml-2 fa-regular fa-comment"></i>
+                  
                   <i className="ml-2 fa-lg fa-regular fa-comment"></i>
                 </Link>
               </div>
@@ -96,7 +96,7 @@ export default function Home() {
                   className="nav-ribbon-card-button"
                 >
                   FAQ
-                  <i className="ml-2 fa-solid fa-question"></i>
+                  
                   <i className="ml-2 fa-lg fa-regular fa-question-circle"></i>
                 </Link>
               </div>
@@ -104,7 +104,7 @@ export default function Home() {
             {/* Card for Green Expectations */}
               <div className="nav-ribbon-card">
                 <h2 className="nav-ribbon-card-title">
-                  Green Expectations
+                  
                   GreenifyAI
                 </h2>
                 <p className="nav-ribbon-card-caption">
@@ -112,14 +112,14 @@ export default function Home() {
                 </p>
                 {/* Link to the GreenExpectations Real Estate website */}
                 <Link
-                href="https://greenexpectations.us/"
+                
                 href="https://greenifyai.com/"
                 className="nav-ribbon-card-button"
                 // Used to open website in a new tab
                 target="_blank" rel="noopener noreferrer"        
                 >
                 GreenifyAI
-                <i className="ml-2 fa-solid fa-house"></i> {/* House Icon */}
+                 {/* House Icon */}
                 <i className="ml-2 fa-lg fa-solid fa-house"></i> {/* House Icon */}
                 </Link>
               </div>
