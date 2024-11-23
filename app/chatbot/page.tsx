@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Layout from './chatbot_layout';
-
+import Image from "next/image";
 import Link from "next/link";
 
 const ChatbotPage = () => {
@@ -14,6 +14,57 @@ const ChatbotPage = () => {
     const [showScrollToTop, setShowScrollToTop] = useState(false); // State for Scroll to top button
     const [showScrollToBottom, setShowScrollToBottom] = useState(false); // State for Scroll to bottom button
     const bottomReference = useRef<HTMLDivElement>(null);
+
+    const initialMessage = {
+        type: "bot",
+        text: "Hello, how can I help you? Keep it to one sentence to open.",
+    };
+
+    // Load previous messages from localStorage change in future to database type
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const savedMessages = localStorage.getItem("chatHistory");
+
+                if (savedMessages) {
+                    const parsedMessages = JSON.parse(savedMessages);
+
+                    if (parsedMessages.length > 0) {
+                        setMessages(parsedMessages); // Use saved messages if available
+
+                        // Check if only the initial message is present
+                        if (parsedMessages.length === 1 && parsedMessages[0].text === initialMessage.text) {
+                            setHasSentMessage(false); // Treat it as if no user interaction has occurred
+                        } else {
+                            setHasSentMessage(true); // User has interacted
+                        }
+                    }
+                } else {
+                    // No saved messages, set initial state
+                    setMessages([initialMessage]);
+                    setHasSentMessage(false);
+                    localStorage.setItem("chatHistory", JSON.stringify([initialMessage])); // Save initial message to localStorage
+                }
+            } catch (error) {
+                console.error("Error loading localStorage data:", error);
+            }
+        }
+    }, []);
+
+    
+    
+
+    // Function to save the messages to localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem('chatHistory', JSON.stringify(messages));
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+    }, [messages]);
+    
 
     useEffect(() => {
         bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,25 +98,6 @@ const ChatbotPage = () => {
         window.addEventListener('scroll', handleScroll); // Runs handle scroll every time scrolled
         return () => window.removeEventListener('scroll', handleScroll); // Should prevent memory leaks by unmounting
     }, []);
-
-    // Function to send the initial message when the chatbot loads
-    const sendInitialMessage = async () => {
-        try {
-            const initialMessage = "Greet the user with hello, how can I help you? Keep it to one sentence to open";
-            const response = await axios.post('https://capst.onrender.com/api/chat', {
-                question: initialMessage,
-            });
-            setMessages([
-                { type: 'bot', text: response.data.response }, // Add bot's initial response
-            ]);
-        } catch (error) {
-            console.error('Error sending initial message:', error);
-        }
-    };
-
-    useEffect(() => {
-        sendInitialMessage(); // Call to send the initial message
-    }, []); // Run this only once when the component mounts
 
     const handleInputChanges = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserInput(event.target.value);
@@ -131,6 +163,12 @@ const ChatbotPage = () => {
         }
     };
 
+    // Function to clear chat history
+    const clearChatHistory = () => {
+        localStorage.removeItem("chatHistory");
+        setMessages([initialMessage]);
+        setHasSentMessage(false);
+    };
     return (
         <Layout>
 
@@ -140,31 +178,41 @@ const ChatbotPage = () => {
                     Ask our Chatbot anything about sustainable housing and living!
                 </p>
                 {/* Chat area Post Rendered when first message sent */}    
-                {hasSentMessage && (
-                    <div className="flex flex-col w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 mb-4 flex-1 overflow-y-auto">
-                        {messages.map((message, index) => (
-                            <div key={index} className="flex flex-col"> {/* Wrap each message for icon rendering structure to work */}
-                                {/* Conditionally render the icon above bot messages */}
-                                {message.type !== 'user' && (
-                                    <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i> // Icon for bot messsages
-                                )}
-                                
-                                <div
-                                    className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
-                                        message.type === 'user' ? 'bg-blue-100 text-blue-900 ml-auto' : ' text-gray-900'
-                                    } break-words`} // This will break up long words into wrappable segments
-                                >
-                                    {message.text}
+                {hasSentMessage && (  
+                    <div className="flex items-start w-full max-w-4xl mb-4">
+                        <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
+                            {messages.map((message, index) => (
+                                <div key={index} className="flex flex-col"> {/* Wrap each message for icon rendering structure to work */}
+                                    {/* Conditionally render the icon above bot messages */}
+                                    {message.type !== 'user' && (
+                                        <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i> // Icon for bot messsages
+                                    )}
+                                    
+                                    <div
+                                        className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
+                                            message.type === 'user' ? 'bg-blue-100 text-blue-900 ml-auto' : ' text-gray-900'
+                                        } break-words`} // This will break up long words into wrappable segments
+                                    >
+                                        {message.text}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {loading && ( // Renders a loading indicator
-                            <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
-                                {loadingDots}  {/* loads animated dots */}
-                            </div>
-                        )}
-                        <div ref={bottomReference} />
-                    </div>
+                            ))}
+                            {loading && ( // Renders a loading indicator
+                                <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
+                                    {loadingDots}  {/* loads animated dots */}
+                                </div>
+                            )}
+                            
+                            <div ref={bottomReference} />
+                        </div>
+                            {/* Clear Chat History Button */}
+                            <button
+                                onClick={clearChatHistory}
+                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center"
+                            >
+                                <i className="fa-solid fa-trash-can"></i>
+                            </button>
+                    </div>           
                 )}
                 
                 {/* Scroll-to-top button */}
