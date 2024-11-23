@@ -165,12 +165,19 @@ Default Elements
 
 /* Page Caption Text */
 .page-caption {
-  @apply text-lg mt-4 mb-4 text-gray-800;
+  @apply text-xl mt-4 mb-4 text-gray-800;
 }
 
 /* Dark Font Awesome Icon */
 .fa-icon-dark {
   color: var(--our-black);
+}
+.footer-text {
+  color: var(--our-black);
+  @apply text-base border-b-2 border-coffee-green;
+}
+.footer-icon {
+  color: var(--greenify-button-green); 
 }
 /* End of Default Elements */
 
