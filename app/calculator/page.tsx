@@ -4,6 +4,8 @@
 // Important for creation of the logo top right
 import Layout from "./calculator_layout";
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 import './custom_radio.css';
 
@@ -109,11 +111,11 @@ const CalculatorPage: React.FC = () => {
         sustainabilityScore = "A";
       }
       else if (sustainabilityScoreInt == 20) {
-        sustainabilityScore = "S - Sustainable";
+        sustainabilityScore = "S";
       }
       else
       {
-        sustainabilityScore = "Error: sustainability score cannot be calculated.";
+        sustainabilityScore = "Error: no inputs found.";
       }
 
       testval.textContent = sustainabilityScore;
@@ -311,8 +313,12 @@ const CalculatorPage: React.FC = () => {
         </div>
       </div>
       
-      <div className="h-[5vh]">
-        <p className="opacity-0"> Text for spacing </p>
+      {/* Footer link to FAQ */}
+      <div className="flex-row-centered h-[8vh]">
+        <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
+          <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
+          <p className="footer-text"> How is sustainability score calculated? </p>
+        </Link>
       </div>
 
     </div>
