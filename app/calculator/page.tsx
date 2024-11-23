@@ -4,7 +4,7 @@
 // Important for creation of the logo top right
 import Layout from "./calculator_layout";
 import { useState } from "react";
-import Image from "next/image";
+
 import Link from "next/link";
 
 import './custom_radio.css';
