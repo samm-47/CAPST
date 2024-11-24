@@ -17,7 +17,7 @@ const ChatbotPage = () => {
 
     const initialMessage = {
         type: "bot",
-        text: "Hello, how can I help you? Keep it to one sentence to open.",
+        text: "Hello, how can I help you?",
     };
 
     // Load previous messages from localStorage change in future to database type
