@@ -27,11 +27,11 @@ const Navbar = () => {
         <div>
             <Link href="/" passHref>
                 <Image
-                    src="/green_expectations_logo.png"
-                    alt="Green Expectations Logo"
+                    src="/greenliving_iconv1.png"
+                    alt="Green Living Logo"
                     width={35}
                     height={35}
-                    className="ml-8 transition hover:filer-coffee-green hover:brightness-90"
+                    className="transition hover:filer-coffee-green hover:brightness-90"
                     priority
                 />
             </Link>
