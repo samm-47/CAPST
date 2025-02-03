@@ -83,7 +83,7 @@ Home Page
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
   gap: 2vh;
   background: radial-gradient(ellipse, #FFFFFF, var(--mint-green));
 }
@@ -91,7 +91,8 @@ Home Page
 /* Gray navigation ribbon */
 .nav-ribbon-body {
   display: flex;
-  height: 60vh;
+  min-height: 50vh;
+  height: auto;
   width: 100vw;
   flex-direction: row;
   align-items: center;
@@ -102,7 +103,8 @@ Home Page
 
 /* Card with white background on navigation ribbon */
 .nav-ribbon-card {
-  height: 50vh;
+  min-height: 30vh;
+  height: auto;
   width: 20vw;
   display: flex;
   flex-direction: column;
@@ -110,7 +112,38 @@ Home Page
   justify-content: space-between;
   @apply bg-white border border-gray-300 shadow-xl rounded-lg p-6 text-center
 }
+/* For the smalller screens */
+@media (max-width: 768px) {
+  .home-page-bg{
+    padding-top: 5vh; /* push content down slightly */
+  }
+  
+  .nav-ribbon-body{
+    flex-direction: column; /* Stacks the cards vertically */
+    height: auto;
+    min-height: 100vh; /* Make sure there is enough height */
+    gap: 3vh; /* Increase the spacing between the cards*/
+    padding: 3vh 0; /* Extra padding at the top and the bottom */
+    margin-top: 1vh;
+  }
+  .nav-ribbon-card{
+    width: 80vw; /* Make cards take most of the screen width */
+    min-height: 20vh; /* Adjust height */
+    padding: 1rem;
+  }
+  .nav-ribbon-card-title {
+    font-size: 1.2rem; /* Smaller font for mobile */
+  }
 
+  .nav-ribbon-card-caption {
+    font-size: 1rem; /* Caption text size */
+  }
+
+  .nav-ribbon-card-button {
+    width: 100%; /* Ensure buttons fit the card */
+    text-align: center;
+  }
+}
 /* Title of navigation ribbon card */
 .nav-ribbon-card-title {
   @apply text-xl font-semibold mb-4 border-b-2 border-coffee-green
@@ -172,10 +205,13 @@ Default Elements
 .fa-icon-dark {
   color: var(--our-black);
 }
+
+/* Text for page footer link to FAQ */
 .footer-text {
   color: var(--our-black);
   @apply text-base border-b-2 border-coffee-green;
 }
+
 .footer-icon {
   color: var(--greenify-button-green); 
 }
