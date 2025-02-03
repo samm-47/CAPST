@@ -36,7 +36,8 @@ const CalculatorPage: React.FC = () => {
     setAirQuality(event.target.id); };
     
   const calculateScore = () => {
-    const testval = document.getElementById("sustainabilityScoreLabel");
+    const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
+    const sustainabilityExplanation = document.getElementById("sustainabilityScoreExplanation");
 
     let sustainabilityScoreInt:number = -1;
     let energyConsumptionScore:number;
@@ -87,9 +88,10 @@ const CalculatorPage: React.FC = () => {
                              waterConsumptionScore +
                              airQualityScore;
     
-    let sustainabilityScore:string;
+    let sustainabilityScore = "";
+    let sustainabilityScoreDetail = "";
 
-    if (!testval)
+    if (!sustainabilityGrade|| !sustainabilityExplanation)
     {
       console.error("No element found.");
     }
@@ -97,28 +99,36 @@ const CalculatorPage: React.FC = () => {
     {
       if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 5) {
         sustainabilityScore = "F";
+        sustainabilityScoreDetail = "Oh no! A score of F indicates that multiple areas of your home and lifestyle can be improved to become more sustainable.";
       }
       else if (sustainabilityScoreInt > 5 && sustainabilityScoreInt <= 10) {
         sustainabilityScore = "D";
+        sustainabilityScoreDetail = "Oh no! A score of D indicates that one or more areas of your home and lifestyle can be improved to become more sustainable.";
       }
       else if (sustainabilityScoreInt > 10 && sustainabilityScoreInt <= 13) {
         sustainabilityScore = "C";
+        sustainabilityScoreDetail = "You are doing alright! A score of C indicates that your home and lifestyle are somewhat helping to create a cleaner environment.";
       }
       else if (sustainabilityScoreInt > 13 && sustainabilityScoreInt <= 16) {
         sustainabilityScore = "B";
+        sustainabilityScoreDetail = "Good job! Your home and lifestyle for the most part are helping create a cleaner environment!";
       }
       else if (sustainabilityScoreInt > 16 && sustainabilityScoreInt <= 19) {
         sustainabilityScore = "A";
+        sustainabilityScoreDetail = "Nice job! Your home and lifestyle are helping create a cleaner environment!";
       }
       else if (sustainabilityScoreInt == 20) {
         sustainabilityScore = "S";
+        sustainabilityScoreDetail = "Perfect! Your home and lifestyle are helping create a cleaner environment!";
       }
       else
       {
-        sustainabilityScore = "Error: no inputs found.";
+        sustainabilityScore = "Error!";
+        sustainabilityScoreDetail = "Please select a value for each category."
       }
 
-      testval.textContent = sustainabilityScore;
+      sustainabilityGrade.textContent = sustainabilityScore;
+      sustainabilityExplanation.textContent = sustainabilityScoreDetail;
     }
   }
 
@@ -309,6 +319,7 @@ const CalculatorPage: React.FC = () => {
           { /* Label to display sustainability score */}
           <div className="flex-col-centered">
             <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold"> </label>
+            <label htmlFor="sustainabilityScoreExplanation" id="sustainabilityScoreExplanation" className="text-2xl"></label>          
           </div>
         </div>
       </div>

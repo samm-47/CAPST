@@ -35,7 +35,7 @@ export default function Home() {
                 </span> 
                 Future:
               </span>
-              &nbsp;Sustainable Homes and Eco-Friendly Living
+              &nbsp;Your #1 Resource for Sustainable Living
             </p>
           </div>
         </div>
