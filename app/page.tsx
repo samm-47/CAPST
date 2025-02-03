@@ -27,7 +27,7 @@ export default function Home() {
           </div>
 
           <div>
-            <p className="text-2xl">
+            <p className="text-2xl text-center">
               <span className="font-semibold">
                 Building a
                 <span className="coffee-green font-semibold" style={{ color: "#006241" }}>
