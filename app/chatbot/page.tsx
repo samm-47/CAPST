@@ -5,6 +5,9 @@ import Layout from './chatbot_layout';
 
 import Link from "next/link";
 
+const page_title = "Chatbot"
+const page_caption = "Learn more about sustainable living!"
+
 const ChatbotPage = () => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState<{type: string; text: string}[]>([]);
@@ -171,12 +174,15 @@ const ChatbotPage = () => {
     };
     return (
         <Layout>
-
             <div className="default-page-bg">
-                <h1 className="page-title">Chatbot</h1>
-                <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
-                    Ask our Chatbot anything about sustainable housing and living!
-                </p>
+                <div className = "flex flex-col w-1/2 bg-white mt-6 mb-6 shadow-lg rounded-lg p-1">
+                    <h1 className="title text-center">
+                    {page_title}
+                    </h1>
+                    <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+                    {page_caption}
+                    </p>
+                </div>
                 {/* Chat area Post Rendered when first message sent */}    
                 {hasSentMessage && (  
                     <div className="flex items-start w-full max-w-4xl mb-4">

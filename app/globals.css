@@ -193,7 +193,7 @@ Default Elements
 
 /* Page Title Text */
 .page-title {
-  @apply text-4xl font-bold mt-4;
+  @apply text-6xl font-bold mt-4;
 }
 
 /* Page Caption Text */
@@ -264,4 +264,16 @@ Calculator Page
 
 /* End of Calculator Page */
 
+/* FAQ page */
 
+/* Page Title Text */
+.title {
+  color: #235347; /* Forest green */
+  @apply text-6xl font-bold mt-2;
+}
+
+/* Page Caption Text */
+.caption {
+  color: #000000; /* Forest green */
+  @apply text-xl mt-2 mb-2 font-semibold;
+}

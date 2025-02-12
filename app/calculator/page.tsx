@@ -9,6 +9,9 @@ import Link from "next/link";
 
 import './custom_radio.css';
 
+const page_title = "Calculator"
+const page_caption = "How sustainable is your lifestyle?"
+
 const CalculatorPage: React.FC = () => {
 
   // Used to track Energy Consumption radio selection.
@@ -137,12 +140,14 @@ const CalculatorPage: React.FC = () => {
     <Layout>
       {/*} CSS grid to center content like home tsx page*/}
       <div className="default-page-bg"> {/*Calculator Background here*/}
-        <h1 className="page-title">
-          Sustainability Calculator
-        </h1>
-        <p className="page-caption">
-          Please enter the following information to calculate your house&#39;s sustainability score!
-        </p>
+        <div className = "flex flex-col w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-1">
+          <h1 className="title text-center">
+            {page_title}
+          </h1>
+          <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+            {page_caption}
+          </p>
+        </div>
 
         {/* Main Content Section */}
         <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
