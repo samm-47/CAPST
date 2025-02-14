@@ -259,7 +259,7 @@ Calculator Page
 
 /* Radio Element */
 .sus-calc-bubble {
-  @apply flex-col-centered gap-[1vh] w-full;
+  @apply flex-col-centered gap-1 w-full;
 }
 
 /* End of Calculator Page */
@@ -280,9 +280,17 @@ Calculator Page
 
 /* Hoverable div for Chatbot common prompts */
 .hoverable-div {
-  transition: transform 0.5s ease; /* Smooth transition */
+  transition: transform 0.3s ease; /* Smooth transition */
 }
 
 .hoverable-div:hover {
   transform: scale(1.05); /* Slightly larger on hover */
+}
+
+.hoverable-bubble-div {
+  transition: transform 0.3s ease; /* Smooth transition */
+}
+
+.hoverable-bubble-div:hover {
+  transform: scale(1.15); /* Slightly larger on hover */
 }

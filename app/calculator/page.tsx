@@ -159,31 +159,31 @@ const CalculatorPage: React.FC = () => {
             <div className="flex-row-centered w-full">
               {/* Radio options */}
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="energy1" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                <input type="radio" id="energy1" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
                   <label htmlFor="energy1" className="text-lg">
                     &lt;500
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="energy2" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                <input type="radio" id="energy2" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
                   <label htmlFor="energy2" className="text-lg">
                     500 to 650
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="energy3" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                <input type="radio" id="energy3" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
                   <label htmlFor="energy3" className="text-lg">
                     650 to 850
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="energy4" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/>  
+                <input type="radio" id="energy4" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/>  
                   <label htmlFor="energy4" className="text-lg">
                     850 to 1000
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="energy5" name="energy_consume" className="custom-radio" onChange={handleEnergyUsage}/> 
+                <input type="radio" id="energy5" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
                   <label htmlFor="energy5" className="text-lg">
                     1000+
                   </label> 
@@ -198,32 +198,32 @@ const CalculatorPage: React.FC = () => {
             </label>
             {/* Radio options */}
             <div className="flex-row-centered w-full">
-              <div className="sus-calc-bubble"> 
-                <input type="radio" id="renew1" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+              <div className="sus-calc-bubble">
+                  <input type="radio" id="renew1" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
                   <label htmlFor="renew1" className="text-lg">
                     &lt;20%
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="renew2" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+                <input type="radio" id="renew2" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
                   <label htmlFor="renew2" className="text-lg">
                     20 to 40%
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="renew3" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/>  
+                <input type="radio" id="renew3" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/>  
                   <label htmlFor="renew3" className="text-lg">
                     40 to 60%
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="renew4" name="renew_energy"  className="custom-radio" onChange={handlePercentRenewable}/> 
+                <input type="radio" id="renew4" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
                   <label htmlFor="renew4" className="text-lg">
                     60 to 80%
                   </label> 
               </div>
               <div className="sus-calc-bubble"> 
-                <input type="radio" id="renew5" name="renew_energy" className="custom-radio" onChange={handlePercentRenewable}/> 
+                <input type="radio" id="renew5" name="renew_energy" className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
                   <label htmlFor="renew5" className="text-lg">
                     80+%
                   </label> 
@@ -240,31 +240,31 @@ const CalculatorPage: React.FC = () => {
           <div className="flex-row-centered w-full">
           {/* Radio options */}
             <div className="sus-calc-bubble"> 
-              <input type="radio" id="water1" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+              <input type="radio" id="water1" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water1" className="text-lg">
                   &lt;50
                 </label> 
             </div>
             <div className="sus-calc-bubble"> 
-              <input type="radio" id="water2" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+              <input type="radio" id="water2" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water2" className="text-lg">
                   50 to 70
                 </label> 
             </div>
             <div className="sus-calc-bubble"> 
-              <input type="radio" id="water3" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+              <input type="radio" id="water3" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water3" className="text-lg">
                   70 to 90
                 </label> 
             </div>
             <div className="sus-calc-bubble"> 
-              <input type="radio" id="water4" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+              <input type="radio" id="water4" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water4" className="text-lg">
                   90 to 110
                 </label> 
             </div>
             <div className="sus-calc-bubble"> 
-              <input type="radio" id="water5" name="water_usage" className="custom-radio" onChange={handleWaterUsage}/> 
+              <input type="radio" id="water5" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water5" className="text-lg">
                   110+
                 </label> 
@@ -280,31 +280,31 @@ const CalculatorPage: React.FC = () => {
         <div className="flex-row-centered w-full">
           {/* Radio options */}
           <div className="sus-calc-bubble"> 
-            <input type="radio" id="air1" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+            <input type="radio" id="air1" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
               <label htmlFor="air1" className="text-lg">
                 &lt;400
               </label> 
           </div>
           <div className="sus-calc-bubble"> 
-            <input type="radio" id="air2" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+            <input type="radio" id="air2" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
               <label htmlFor="air2" className="text-lg">
                 400 to 500
               </label> 
           </div>
           <div className="sus-calc-bubble"> 
-            <input type="radio" id="air3" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+            <input type="radio" id="air3" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
               <label htmlFor="air3" className="text-lg">
                 500 to 600
               </label> 
           </div>
           <div className="sus-calc-bubble"> 
-            <input type="radio" id="air4" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+            <input type="radio" id="air4" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
               <label htmlFor="air4" className="text-lg">
                 600 to 700
               </label> 
           </div>
           <div className="sus-calc-bubble"> 
-            <input type="radio" id="air5" name="air_quality" className="custom-radio" onChange={handleAirQuality}/> 
+            <input type="radio" id="air5" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
               <label htmlFor="air5" className="text-lg">
                 700+
               </label> 
@@ -331,7 +331,7 @@ const CalculatorPage: React.FC = () => {
       
       {/* Footer link to FAQ */}
       <div className="flex-row-centered h-[8vh]">
-        <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
+        <Link className="flex-row-centered gap-[0.75vw] hoverable-div" href="/faq" passHref>
           <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
           <p className="footer-text"> How is sustainability score calculated? </p>
         </Link>

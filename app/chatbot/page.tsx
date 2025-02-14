@@ -275,7 +275,7 @@ const ChatbotPage = () => {
                 {/* Footer link to FAQ */}
                 {hasSentMessage &&
                     (
-                    <div className="flex-row-centered h-[8vh]">
+                    <div className="flex-row-centered h-[8vh] hoverable-div">
                         <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
                         <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
                         <p className="footer-text"> How was our AI-powered chatbot developed? </p>
@@ -285,6 +285,7 @@ const ChatbotPage = () => {
                 }
                 
                 {/* TODO: Add functionality for clicking common prompts */}
+                {!hasSentMessage &&
                 <div className = "flex-col-centered w-1/3 h-15 bg-white shadow-lg rounded-lg p-4">
                     <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-1 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
                         <p className="hover:text-coffee-green"> {prompt_1} </p>
@@ -296,6 +297,7 @@ const ChatbotPage = () => {
                         <p className="hover:text-coffee-green"> {prompt_3} </p>
                     </div>
                 </div>
+                }
             </div>
         </Layout>
     );
