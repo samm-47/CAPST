@@ -38,8 +38,8 @@ def configure_genai():
 
 # Define a route for the chatbot interaction
 chat_history = [
-    {"role": "user", "parts": "Hello, you are a chatbot designed to help users with real-estate related questions."},
-    {"role": "model", "parts": "Hello! How can I help you with real estate?"}
+    {"role": "user", "parts": "Hello, you are a chatbot designed to help users with sustainability related questions."},
+    {"role": "model", "parts": "Hello! How can I help you with sustainability?"}
 ]
 
 # Language detection function
