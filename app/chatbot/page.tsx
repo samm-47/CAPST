@@ -8,6 +8,12 @@ import Link from "next/link";
 const page_title = "Chatbot"
 const page_caption = "Learn more about sustainable living!"
 
+{/* Common prompts for quick access */}
+{/* These are placeholders for now. -Ethan */}
+const prompt_1 = "How can I make my house more sustainable?";
+const prompt_2 = "Easy ways to increase renewable energy";
+const prompt_3 = "What is sustainable living?";
+
 const ChatbotPage = () => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState<{type: string; text: string}[]>([]);
@@ -277,6 +283,19 @@ const ChatbotPage = () => {
                     </div> 
                     )
                 }
+                
+                {/* TODO: Add functionality for clicking common prompts */}
+                <div className = "flex-col-centered w-1/3 h-15 bg-white shadow-lg rounded-lg p-4">
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-1 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_1} </p>
+                    </div>
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_2} </p>
+                    </div>
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-1 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_3} </p>
+                    </div>
+                </div>
             </div>
         </Layout>
     );

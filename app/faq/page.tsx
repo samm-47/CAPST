@@ -32,6 +32,7 @@ const FaqPage = () => {
               {page_caption}
             </p>
           </div>
+        
         <div className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
           <div className="flex items-center space-x-2 mb-4">
             <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-question-circle"></i> {/* Question Mark Icon */}

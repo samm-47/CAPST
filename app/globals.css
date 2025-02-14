@@ -277,3 +277,12 @@ Calculator Page
   color: #000000; /* Forest green */
   @apply text-xl mt-2 mb-2 font-semibold;
 }
+
+/* Hoverable div for Chatbot common prompts */
+.hoverable-div {
+  transition: transform 0.5s ease; /* Smooth transition */
+}
+
+.hoverable-div:hover {
+  transform: scale(1.05); /* Slightly larger on hover */
+}
