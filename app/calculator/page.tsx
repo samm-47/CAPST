@@ -324,7 +324,11 @@ const CalculatorPage: React.FC = () => {
           { /* Label to display sustainability score */}
           <div className="flex-col-centered">
             <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold"> </label>
-            <label htmlFor="sustainabilityScoreExplanation" id="sustainabilityScoreExplanation" className="text-2xl"></label>          
+           <label 
+            htmlFor="sustainabilityScoreExplanation" 
+            id="sustainabilityScoreExplanation" 
+            className="text-2xl block text-center">
+          </label>         
           </div>
         </div>
       </div>
