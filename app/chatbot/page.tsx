@@ -5,6 +5,15 @@ import Layout from './chatbot_layout';
 
 import Link from "next/link";
 
+const page_title = "Chatbot"
+const page_caption = "Learn more about sustainable living!"
+
+{/* Common prompts for quick access */}
+{/* These are placeholders for now. -Ethan */}
+const prompt_1 = "How can I make my house more sustainable?";
+const prompt_2 = "Easy ways to increase renewable energy";
+const prompt_3 = "What is sustainable living?";
+
 const ChatbotPage = () => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState<{type: string; text: string}[]>([]);
@@ -171,12 +180,15 @@ const ChatbotPage = () => {
     };
     return (
         <Layout>
-
             <div className="default-page-bg">
-                <h1 className="page-title">Chatbot</h1>
-                <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
-                    Ask our Chatbot anything about sustainable housing and living!
-                </p>
+                <div className = "flex flex-col w-1/2 bg-white mt-6 mb-6 shadow-lg rounded-lg p-1">
+                    <h1 className="title text-center">
+                    {page_title}
+                    </h1>
+                    <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+                    {page_caption}
+                    </p>
+                </div>
                 {/* Chat area Post Rendered when first message sent */}    
                 {hasSentMessage && (  
                     <div className="flex items-start w-full max-w-4xl mb-4">
@@ -263,13 +275,28 @@ const ChatbotPage = () => {
                 {/* Footer link to FAQ */}
                 {hasSentMessage &&
                     (
-                    <div className="flex-row-centered h-[8vh]">
+                    <div className="flex-row-centered h-[8vh] hoverable-div">
                         <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
                         <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
                         <p className="footer-text"> How was our AI-powered chatbot developed? </p>
                         </Link>
                     </div> 
                     )
+                }
+                
+                {/* TODO: Add functionality for clicking common prompts */}
+                {!hasSentMessage &&
+                <div className = "flex-col-centered w-1/3 h-15 bg-white shadow-lg rounded-lg p-4">
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-1 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_1} </p>
+                    </div>
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_2} </p>
+                    </div>
+                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-1 font-semibold" style={{ outline: '2px solid #171717' }}>
+                        <p className="hover:text-coffee-green"> {prompt_3} </p>
+                    </div>
+                </div>
                 }
             </div>
         </Layout>
