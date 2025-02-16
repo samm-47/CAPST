@@ -21,7 +21,7 @@ export default function Home() {
               />
             </div>
             <div className="flex-col-centered">
-              <h1 className="text-5xl font-semibold">Green</h1>
+              <h1 className="text-5xl font-semibold">Sustainable</h1>
               <h1 className="text-5xl mr-auto">Living</h1>
             </div>
           </div>
@@ -31,11 +31,11 @@ export default function Home() {
               <span className="font-semibold">
                 Building a 
                 <span className="coffee-green font-semibold" style={{color:"#006241"}}>
-                  &nbsp;Greener&nbsp;
+                  &nbsp;Sustainable&nbsp;
                 </span> 
                 Future:
               </span>
-              &nbsp;Your #1 Resource for Sustainable Living
+              &nbsp;Your #1 Resource for Smart Home Living
             </p>
           </div>
         </div>

@@ -112,11 +112,14 @@ const ChatbotPage = () => {
         setUserInput(event.target.value);
     }
 
-    const handleSubmission = async () => {
+    const handleSubmission = async (text?: string) => {
         setHasSentMessage(true); // Marks when the user has sent the first message
-        if (userInput.trim()) {
+
+        const currentUserInput = text || userInput; // Use text if provided userInput as fallback
+
+        if (currentUserInput.trim()) {
             // Clear user input before prompting bot for more seamless transitions
-            const currentUserInput = userInput;
+            
             setUserInput('');
 
             setMessages((prevMessages) => [
@@ -144,6 +147,10 @@ const ChatbotPage = () => {
             }
         }
     };
+    // Sends the Common prompt clicked to the bot 
+    const handleCommonPrompt = (prompt: string) => {
+        handleSubmission(prompt);     
+    }
     useEffect(() => {
         if (loading) {
             const interval = setInterval(() => {
@@ -181,7 +188,7 @@ const ChatbotPage = () => {
     return (
         <Layout>
             <div className="default-page-bg">
-                <div className = "flex flex-col w-1/2 bg-white mt-6 mb-6 shadow-lg rounded-lg p-1">
+                <div className = "flex flex-col w-1/2 mt-6 mb-6 p-1">
                     <h1 className="title text-center">
                     {page_title}
                     </h1>
@@ -249,6 +256,32 @@ const ChatbotPage = () => {
                         </button>
                     )}
                 </div>
+                {/* Ethan's Common Prompts Section moved for visual */}
+                {!hasSentMessage &&
+                <div className = "flex-col-centered max-w-3xl w-[95%] h-15 bg-white shadow-lg rounded-lg p-4">
+                    <div 
+                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-1 mb-2 font-semibold" 
+                        style={{ outline: '2px solid #171717' }}
+                        onClick = {() => handleCommonPrompt(prompt_1)} // Added Functionality for Clicking
+                    >
+                        <p className="hover:text-coffee-green"> {prompt_1} </p>
+                    </div>
+                    <div 
+                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-2 font-semibold" 
+                        style={{ outline: '2px solid #171717' }}
+                        onClick = {() => handleCommonPrompt(prompt_2)}
+                    >
+                        <p className="hover:text-coffee-green"> {prompt_2} </p> 
+                    </div>
+                    <div 
+                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-1 font-semibold" 
+                        style={{ outline: '2px solid #171717' }}
+                        onClick = {() => handleCommonPrompt(prompt_3)}
+                    >
+                        <p className="hover:text-coffee-green"> {prompt_3} </p>
+                    </div>
+                </div>
+                }
                 {/* Input box with button */}
                 <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? 'sticky bottom-0 bg-white shadow-lg' : ''}`}>
                     <textarea
@@ -265,7 +298,7 @@ const ChatbotPage = () => {
                         placeholder="Message Chatbot"
                     />
                     <button
-                        onClick={handleSubmission}
+                        onClick={() => handleSubmission()}
                         className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
                     >
                         <i className="fa-solid fa-arrow-up"></i>
@@ -284,20 +317,7 @@ const ChatbotPage = () => {
                     )
                 }
                 
-                {/* TODO: Add functionality for clicking common prompts */}
-                {!hasSentMessage &&
-                <div className = "flex-col-centered w-1/3 h-15 bg-white shadow-lg rounded-lg p-4">
-                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-1 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
-                        <p className="hover:text-coffee-green"> {prompt_1} </p>
-                    </div>
-                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-2 font-semibold" style={{ outline: '2px solid #171717' }}>
-                        <p className="hover:text-coffee-green"> {prompt_2} </p>
-                    </div>
-                    <div className = "hoverable-div flex-col-centered w-full rounded-md p-1 mt-2 mb-1 font-semibold" style={{ outline: '2px solid #171717' }}>
-                        <p className="hover:text-coffee-green"> {prompt_3} </p>
-                    </div>
-                </div>
-                }
+
             </div>
         </Layout>
     );
