@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React , { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const Navbar = () => {
     const path = usePathname();
+    const [isOpen, setIsOpen] = useState(false); // Controls mobile menu hamburger visibility
     const menuItem = [
         {
             name: "Calculator",
@@ -23,7 +24,7 @@ const Navbar = () => {
     ]
 
     return (
-    <div className="nav-bar-header">
+    <div className="nav-bar-header flex justify-between items-center">
         <div>
             <Link href="/" passHref>
                 <Image
@@ -36,7 +37,7 @@ const Navbar = () => {
                 />
             </Link>
         </div>
-        <ul className="flex">
+        <ul className="hidden md:flex">
             {menuItem.map((menu) => {
                 const isActive = menu.link === path;
                     return (
@@ -57,7 +58,7 @@ const Navbar = () => {
                 }
             )}
         </ul>
-         <div className="flex-col-centered ml-auto">
+         <div className="hidden md:flex flex-col ml-auto">
             {/* Add a link to the GreenExpectations website */}
             <Link 
             href="https://greenifyai.com/"
@@ -83,6 +84,35 @@ const Navbar = () => {
                 GreenifyAI
             </Link>
         </div>
+        {/* Mobile Menu Button Hamburger */}
+            <button 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="md:hidden ml-auto focus:outline-none"
+            >
+                <i className="fa-solid fa-bars text-2xl text-black "></i> {/* Hamburger Icon */}
+            </button>
+
+            {/* Mobile Dropdown Menu */}
+            <div className={`${isOpen ? "block" : "hidden"} absolute top-16 left-0 w-full bg-white shadow-md md:hidden`}>
+                {menuItem.map((menu) => (
+                    <Link 
+                        key={menu.link}
+                        href={menu.link}
+                        className="block py-3 px-6 text-black hover:bg-gray-100"
+                        onClick={() => setIsOpen(false)} // Close menu on click
+                    >
+                        {menu.name}
+                    </Link>
+                ))}
+                <Link 
+                    href="https://greenifyai.com/"
+                    className="block py-3 px-6 text-black hover:bg-gray-100"
+                    target="_blank" rel="noopener noreferrer"
+                    onClick={() => setIsOpen(false)}
+                >
+                    GreenifyAI
+                </Link>
+            </div>
     </div>
     );
   };
