@@ -86,12 +86,14 @@ const CalculatorPage: React.FC = () => {
 
     {/* TODO: Create more complex scoring system */}
     {/* WIll need to add more metrics and weighed/curved scoring systems */}
-    sustainabilityScoreInt = energyConsumptionScore + 
+    sustainabilityScoreInt = 5 * 
+                            (energyConsumptionScore + 
                              renewableEnergyScore +
                              waterConsumptionScore +
-                             airQualityScore;
+                             airQualityScore);
     
     let sustainabilityScore = "";
+    let susScoreRange = "";
     let sustainabilityScoreDetail = "";
 
     if (!sustainabilityGrade|| !sustainabilityExplanation)
@@ -100,28 +102,28 @@ const CalculatorPage: React.FC = () => {
     }
     else
     {
-      if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 5) {
-        sustainabilityScore = "F";
+      if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 25) {
+        sustainabilityScore = `F (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Oh no! A score of F indicates that multiple areas of your home and lifestyle can be improved to become more sustainable.";
       }
-      else if (sustainabilityScoreInt > 5 && sustainabilityScoreInt <= 10) {
-        sustainabilityScore = "D";
+      else if (sustainabilityScoreInt > 25 && sustainabilityScoreInt <= 50) {
+        sustainabilityScore = `D (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Oh no! A score of D indicates that one or more areas of your home and lifestyle can be improved to become more sustainable.";
       }
-      else if (sustainabilityScoreInt > 10 && sustainabilityScoreInt <= 13) {
-        sustainabilityScore = "C";
+      else if (sustainabilityScoreInt > 50 && sustainabilityScoreInt <= 65) {
+        sustainabilityScore = `C (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "You are doing alright! A score of C indicates that your home and lifestyle are somewhat helping to create a cleaner environment.";
       }
-      else if (sustainabilityScoreInt > 13 && sustainabilityScoreInt <= 16) {
-        sustainabilityScore = "B";
+      else if (sustainabilityScoreInt > 65 && sustainabilityScoreInt <= 80) {
+        sustainabilityScore = `B (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Good job! Your home and lifestyle for the most part are helping create a cleaner environment!";
       }
-      else if (sustainabilityScoreInt > 16 && sustainabilityScoreInt <= 19) {
-        sustainabilityScore = "A";
+      else if (sustainabilityScoreInt > 80 && sustainabilityScoreInt <= 99) {
+        sustainabilityScore = `A (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Nice job! Your home and lifestyle are helping create a cleaner environment!";
       }
-      else if (sustainabilityScoreInt == 20) {
-        sustainabilityScore = "S";
+      else if (sustainabilityScoreInt == 100) {
+        sustainabilityScore = `S (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Perfect! Your home and lifestyle are helping create a cleaner environment!";
       }
       else
@@ -152,10 +154,15 @@ const CalculatorPage: React.FC = () => {
         {/* Main Content Section */}
         <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
           {/* Monthly Energy Consumption */}
-          <div className="sus-calc-input">
+          <div className="sus-calc-topic">
             <label className="sus-calc-title"> 
-              Monthly Energy Consumption (kWh) 
+            Monthly Energy Consumption (kWh) 
             </label>
+            <p> 
+              Found on your monthly energy utility bill
+            </p>
+          </div>
+          <div className="sus-calc-input">
             <div className="flex-row-centered w-full">
               {/* Radio options */}
               <div className="sus-calc-bubble"> 
@@ -190,12 +197,20 @@ const CalculatorPage: React.FC = () => {
               </div>
             </div>
           </div>
-
+          
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+          
           {/* Percent Renweable Energy */}
-          <div className="sus-calc-input">
+          <div className="sus-calc-topic">
             <label className="sus-calc-title"> 
               % Renewable Energy 
             </label>
+            <p> 
+              Found on your monthly energy utility bill
+            </p>
+          </div>
+          
+          <div className="sus-calc-input">
             {/* Radio options */}
             <div className="flex-row-centered w-full">
               <div className="sus-calc-bubble">
@@ -231,12 +246,17 @@ const CalculatorPage: React.FC = () => {
             </div>
           </div>
 
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
           { /* Monthly Water Usage */}
-          <div className="sus-calc-input">
+          <div className="sus-calc-topic">
             <label className="sus-calc-title"> 
               Monthly Water Usage (gal) 
             </label>
-
+            <p> 
+              Found on your monthly water utility bill
+            </p>
+          </div>
+          <div className="sus-calc-input">
           <div className="flex-row-centered w-full">
           {/* Radio options */}
             <div className="sus-calc-bubble"> 
@@ -272,11 +292,18 @@ const CalculatorPage: React.FC = () => {
           </div>
         </div>
 
+      <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
         { /* CO2 Level (Air Quality) */}
+          <div className="sus-calc-topic">
+            <label className="sus-calc-title"> 
+              Air Quality: CO2 Level (ppm) 
+            </label>
+            <p> 
+              Measured using a commercial CO2 detector
+            </p>
+          </div>
         <div className="sus-calc-input">
-          <label className="sus-calc-title"> 
-            Air Quality: CO2 Level (ppm) 
-          </label>
         <div className="flex-row-centered w-full">
           {/* Radio options */}
           <div className="sus-calc-bubble"> 
@@ -323,7 +350,7 @@ const CalculatorPage: React.FC = () => {
 
           { /* Label to display sustainability score */}
           <div className="flex-col-centered">
-            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold"> </label>
+            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold mb-2"> </label>
            <label 
             htmlFor="sustainabilityScoreExplanation" 
             id="sustainabilityScoreExplanation" 
@@ -335,9 +362,9 @@ const CalculatorPage: React.FC = () => {
       
       {/* Footer link to FAQ */}
       <div className="flex-row-centered h-[8vh]">
-        <Link className="flex-row-centered gap-[0.75vw] hoverable-div" href="/faq" passHref>
-          <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
-          <p className="footer-text"> How is sustainability score calculated? </p>
+        <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
+          <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i> {/*} Question Mark Icon*/}
+          <p className="footer-text hoverable-div"> How is sustainability score calculated? </p>
         </Link>
       </div>
 

@@ -21,21 +21,20 @@ export default function Home() {
               />
             </div>
             <div className="flex-col-centered">
-              <h1 className="text-5xl font-semibold">Green</h1>
-              <h1 className="text-5xl mr-auto">Living</h1>
+              <h1 className="text-5xl">Sustain</h1>
+              <h1 className="text-5xl font-semibold mr-auto">ABLE</h1>
             </div>
           </div>
           {/* Title after icon */}
           <div className="mt-16 sm:mt-0 px-4 text-center"> {/* add margin and centering of the text when mobile only*/}
             <p className="text-2xl">
               <span className="font-semibold">
-                Building a 
-                <span className="coffee-green font-semibold" style={{color:"#006241"}}>
-                  &nbsp;Greener&nbsp;
-                </span> 
-                Future:
+                Constructing Resourceful Communities:
               </span>
-              &nbsp;Your #1 Resource for Sustainable Living
+              &nbsp;Your #1 Resource for 
+              <span className="coffee-green font-semibold" style={{color:"#006241"}}>
+                  &nbsp;Sustainable Living&nbsp;
+                </span> 
             </p>
           </div>
         </div>
@@ -115,10 +114,10 @@ export default function Home() {
         </div>
 
         {/* Footer link to FAQ */}
-        <div className="flex-row-centered h-[4vh] hoverable-div">
+        <div className="flex-row-centered h-[4vh]">
           <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
-            <i className="footer-icon fa-solid fa-lg fa-info-circle"></i> {/*} Question Mark Icon*/}
-            <p className="footer-text"> GreenLiving vs. GreenifyAI vs. GreenExpectations </p>
+            <i className="footer-icon fa-solid fa-lg fa-info-circle mr-1"></i> {/*} Question Mark Icon*/}
+            <p className="footer-text hoverable-div"> SustainABLEvs. GreenifyAI</p>
           </Link>
         </div>
       </div>
