@@ -335,9 +335,9 @@ const CalculatorPage: React.FC = () => {
       
       {/* Footer link to FAQ */}
       <div className="flex-row-centered h-[8vh]">
-        <Link className="flex-row-centered gap-[0.75vw] hoverable-div" href="/faq" passHref>
-          <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
-          <p className="footer-text"> How is sustainability score calculated? </p>
+        <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
+          <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i> {/*} Question Mark Icon*/}
+          <p className="footer-text hoverable-div"> How is sustainability score calculated? </p>
         </Link>
       </div>
 

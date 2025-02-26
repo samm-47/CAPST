@@ -5,9 +5,8 @@ import Layout from "./faq_layout";
 
 // Note from Ethan: I think this is the most efficient way to allow easy access/editing of the questions. Using a text file for dynamic rendering of FAQ page is out of scope and unnecessary for this project.
 const Q1 = "What is the difference between GreenLiving, GreenifyAI, and GreenExpectations?";
-const A1_P1 = "GreenLiving is the current website you are on and allows you to learn more about sustainable living through our site's AI-powered virtual assistant and sustainability calculator.";
-const A1_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and contact agents regarding various properties in the greater New Jersey area.";
-const A1_P3 = "GreenExpectations is a sustainability-focused real estate company which owns the GreenLiving and GreenifyAI web applications.";
+const A1_P1 = "SustainABLE is the current website you are on. Our AI virtual assistant and sustainability calculator aim to assist you in learning more about sustainable living.";
+const A1_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and convert conventional houses into sustainable homes. Currently, it covers a wide range of properties in the greater New Jersey area."
 
 const Q2 = "How is my sustainability score calculated?";
 const A2 = "To determine how eco-friendly your home and lifestyle are, we consider your overall energy and water usage, the amount of renewable energy you use, and the air quality in your home. Each factor gets a score based on your performance, and these scores are added up and then translated into a grade, from F (lowest) to S (highest).";
@@ -47,11 +46,6 @@ const FaqPage = () => {
           <div className="flex items-baseline space-x-2">
             <p className="text-lg text-gray-800 ml-8">
               { A1_P2 }
-            </p>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <p className="text-lg text-gray-800 ml-8">
-              { A1_P3 }
             </p>
           </div>
         </div>

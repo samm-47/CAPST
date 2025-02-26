@@ -227,7 +227,7 @@ const ChatbotPage = () => {
                             {/* Clear Chat History Button */}
                             <button
                                 onClick={clearChatHistory}
-                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center"
+                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center hoverable-bubble-div"
                             >
                                 <i className="fa-solid fa-trash-can"></i>
                             </button>
@@ -258,7 +258,7 @@ const ChatbotPage = () => {
                 </div>
                 {/* Ethan's Common Prompts Section moved for visual */}
                 {!hasSentMessage &&
-                <div className = "flex-col-centered max-w-3xl w-[95%] h-15 bg-white shadow-lg rounded-lg p-4">
+                <div className = "flex-col-centered max-w-xl w-3/4 h-15 bg-white shadow-lg rounded-lg px-6 py-4">
                     <div 
                         className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-1 mb-2 font-semibold" 
                         style={{ outline: '2px solid #171717' }}
@@ -283,7 +283,7 @@ const ChatbotPage = () => {
                 </div>
                 }
                 {/* Input box with button */}
-                <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? 'sticky bottom-0 bg-white shadow-lg' : ''}`}>
+                <div className={`w-full max-w-3xl rounded-lg p-4 mt-4 mb-4 flex items-center ${hasSentMessage ? 'sticky bottom-0 bg-white shadow-lg' : ''}`}>
                     <textarea
                         value={userInput}
                         onChange={handleInputChanges}
@@ -299,7 +299,7 @@ const ChatbotPage = () => {
                     />
                     <button
                         onClick={() => handleSubmission()}
-                        className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
+                        className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100 hoverable-bubble-div"
                     >
                         <i className="fa-solid fa-arrow-up"></i>
                     </button>
@@ -308,10 +308,10 @@ const ChatbotPage = () => {
                 {/* Footer link to FAQ */}
                 {hasSentMessage &&
                     (
-                    <div className="flex-row-centered h-[8vh] hoverable-div">
+                    <div className="flex-row-centered h-[8vh]">
                         <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
-                        <i className="footer-icon fa-solid fa-lg fa-question-circle"></i> {/*} Question Mark Icon*/}
-                        <p className="footer-text"> How was our AI-powered chatbot developed? </p>
+                        <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i> {/*} Question Mark Icon*/}
+                        <p className="footer-text hoverable-div"> How was our AI-powered chatbot developed? </p>
                         </Link>
                     </div> 
                     )
