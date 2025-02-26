@@ -117,7 +117,7 @@ export default function Home() {
         <div className="flex-row-centered h-[4vh]">
           <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
             <i className="footer-icon fa-solid fa-lg fa-info-circle mr-1"></i> {/*} Question Mark Icon*/}
-            <p className="footer-text hoverable-div"> SustainABLEvs. GreenifyAI</p>
+            <p className="footer-text hoverable-div"> SustainABLE vs. GreenifyAI</p>
           </Link>
         </div>
       </div>
