@@ -9,7 +9,8 @@ const A1_P1 = "SustainABLE is the current website you are on. Our AI virtual ass
 const A1_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and convert conventional houses into sustainable homes. Currently, it covers a wide range of properties in the greater New Jersey area."
 
 const Q2 = "How is my sustainability score calculated?";
-const A2 = "To determine how eco-friendly your home and lifestyle are, we consider your overall energy and water usage, the amount of renewable energy you use, and the air quality in your home. Each factor gets a score based on your performance, and these scores are added up and then translated into a grade, from F (lowest) to S (highest).";
+const A2_P1 = "To determine how eco-friendly your home and lifestyle are, we consider your overall energy and water usage, the amount of renewable energy you use, and the air quality in your home. Each factor gets a score based on your performance, and these scores are added up and then translated into a grade, from F (lowest) to S (highest).";
+const A2_P2 = "Score ranges: F: 0-25, D: 26-50, C: 51-65, B: 66-80, A: 81-99, S: 100"
 
 const Q3 = "How was your AI-powered chatbot developed?";
 const A3 = "Our AI-powered chatbot was built on the Gemini-1.5-Flash-8B model, enabling efficient natural language processing. Using API keys provided by the model, our chatbot delivers accurate responses to user queries in real-time. Python and Flask were used to incorporate multiple endpoints to facilitate our chatbot's functionality. ";
@@ -58,7 +59,12 @@ const FaqPage = () => {
           <div className="flex items-baseline space-x-2">
             <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-reply"></i> {/* Reply Icon */}
             <p className="text-lg text-gray-800">
-              { A2 }
+              { A2_P1 }
+            </p>
+          </div>
+          <div className="flex items-baseline space-x-2">
+            <p className="text-lg text-gray-800 ml-8">
+              { A2_P2 }
             </p>
           </div>
         </div>
