@@ -4,7 +4,7 @@
 // Important for creation of the logo top right
 import Layout from "./calculator_layout";
 import { useState } from "react";
-
+import axios from 'axios';
 import Link from "next/link";
 
 import './custom_radio.css';
@@ -16,6 +16,8 @@ const CalculatorPage: React.FC = () => {
 
   // Used to track Energy Consumption radio selection.
   const [energyUsage, setEnergyUsage] = useState<string | null>(null);
+
+  const [chatbotResponse, setChatbotResponse] = useState<string>('');
 
   // Used to track Percent Renewable Energy radio selection.
   const [percentRenewable, setPercentRenewable] = useState<string | null>(null); 
@@ -37,8 +39,19 @@ const CalculatorPage: React.FC = () => {
 
   const handleAirQuality = (event: React.ChangeEvent<HTMLInputElement>) => { 
     setAirQuality(event.target.id); };
+  const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(chatbotResponse)
+        .then(() => {
+          setCopied(true); // Set to "Text copied!" after clicking
+          // Reset to "Learn more about your score" after 2 seconds
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch((error) => console.error('Error copying text: ', error));
+    };
     
-  const calculateScore = () => {
+  const calculateScore = async () => {
     const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
     const sustainabilityExplanation = document.getElementById("sustainabilityScoreExplanation");
 
@@ -133,6 +146,29 @@ const CalculatorPage: React.FC = () => {
 
       sustainabilityGrade.textContent = sustainabilityScore;
       sustainabilityExplanation.textContent = sustainabilityScoreDetail;
+
+      try {
+        const data = {
+          score: sustainabilityScore
+        };
+        
+        console.log("Sending data to chatbot:", data);
+        
+        const response = await axios.post('https://capst.onrender.com/api/chat/calc', data);
+        
+        console.log("Chatbot response:", response.data);
+        
+        // Update the state with the chatbot's response
+        if (response.data && response.data.response) {
+          setChatbotResponse(response.data.response); // Ensure the backend returns { message: "..." }
+        } else {
+          setChatbotResponse("No response received from the chatbot.");
+        }
+      } catch (error) {
+        console.error("Error sending score to chatbot:", error);
+        setChatbotResponse("Failed to get a response from the chatbot.");
+      }
+      
     }
   }
 
@@ -140,7 +176,7 @@ const CalculatorPage: React.FC = () => {
     
     <Layout>
       {/*} CSS grid to center content like home tsx page*/}
-      <div className="default-page-bg"> {/*Calculator Background here*/}
+      <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
         <div className = "flex flex-col w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-1">
           <h1 className="title text-center">
             {page_title}
@@ -349,13 +385,29 @@ const CalculatorPage: React.FC = () => {
 
           { /* Label to display sustainability score */}
           <div className="flex-col-centered">
-            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold mb-2"> </label>
+            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold" mb-2> </label>
            <label 
             htmlFor="sustainabilityScoreExplanation" 
             id="sustainabilityScoreExplanation" 
             className="text-2xl block text-center">
           </label>         
+          </div> 
+          
+                {chatbotResponse && (
+            <div className="flex-col-centered group relative">
+            <label 
+              htmlFor="chatbotResponse" 
+              className="text-l block text-center cursor-pointer text-green-600 underline"
+              onClick={handleCopy} 
+            >
+              {copied ? 'Text copied!' : 'Learn more about your score'}
+            </label>
+
+            <div className="absolute top-full mt-2 p-4 bg-white border border-gray-200 shadow-lg rounded-lg text-xs text-left text-black opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 w-[700px]">
+            {chatbotResponse}
           </div>
+        </div>
+      )}
         </div>
       </div>
       
