@@ -5,6 +5,7 @@ from flask_cors import CORS
 from langdetect import detect
 from dotenv import load_dotenv
 import time
+import logging
 
 # Initialize Flask app
 app = Flask(__name__)
