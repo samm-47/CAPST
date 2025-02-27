@@ -93,6 +93,54 @@ def chat_with_bot():
     chat_history.append({"role": "model", "parts": response_text})
 
     return jsonify({"response": response_text})
+    
+@app.route('/api/chat/calc', methods=['POST'])
+def chat():
+    data = request.get_json()  # Get the data sent from the frontend
+    score = data.get('score')
+    print(score)
+
+
+    # Ensure that the score is provided
+    if not score:
+        return jsonify({"error": "Score is required"}), 400
+
+
+    # Construct the user's question or prompt based on the score
+    user_question = f"Given the sustainability score of {score}, explain to the user, how they can improve to be more sustainable for their home and lifestyle. The ranking is A - F and S is perfect. Output in 100 words and in sentences. Spacing should be 1.5. Use sources to support your response."
+
+
+    logging.info(f"User question: {user_question}")
+
+
+    try:
+        # Start a chat session with the AI model
+        model = configure_genai()  # Reconfigure the model with the current API key
+        chat_session = model.start_chat(history=[])  # You can pass an empty chat history if not needed
+
+
+        # Generate a response from the model using the user question
+        response = chat_session.send_message(user_question)
+       
+    except Exception as e:
+        # Handle errors like rate limit or other issues
+        if 'rate limit' in str(e).lower():
+            logging.warning(f"Rate limit reached for API Key {get_current_api_key()}. Switching to the next key.")
+            switch_api_key()  # Switch to the next API key
+            time.sleep(2)  # Optional: Wait before retrying
+            return chat()  # Retry with the new API key
+        else:
+            logging.error(f"Error calling chat model: {str(e)}")
+            return jsonify({"error": "Failed to communicate with the model."}), 500
+
+
+    # Get the response text from the model
+    response_text = response.text if hasattr(response, 'text') else "No response text available"
+    logging.info(f"Model response: {response_text}")
+
+
+    # Return the AI-generated response
+    return jsonify({"response": response_text})
 
 # Run the Flask app only in development mode
 if __name__ == '__main__':
