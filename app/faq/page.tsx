@@ -2,6 +2,7 @@
 
 import React from "react";
 import Layout from "./faq_layout";
+import Link from "next/link"; // Navigation  
 
 // Note from Ethan: I think this is the most efficient way to allow easy access/editing of the questions. Using a text file for dynamic rendering of FAQ page is out of scope and unnecessary for this project.
 const Q1 = "What is the difference between GreenLiving, GreenifyAI, and GreenExpectations?";
@@ -19,11 +20,18 @@ const A3 = "Our AI-powered chatbot was built on the Gemini-1.5-Flash-8B model, e
 const page_title = "FAQ"
 const page_caption = "Frequently Asked Questions";
 
+// Store FAQ info in an array for dynamic rendering
+const FAQ_ITEMS = [
+  { question: Q1, answers: [A1_P1, A1_P2] },
+  { question: Q2, answers: [A2_P1, A2_P2] },
+  { question: Q3, answers: [A3] }
+];
 const FaqPage = () => {
   return (
     <Layout>
       {/* CSS grid to center content like home tsx page */}
       <div className="default-page-bg"> {/* Page background with mint->white gradient*/}
+          {/* Header */}
           <div className = "flex flex-col w-1/3 bg-white mt-6 mb-6 shadow-lg rounded-lg p-1">
             <h1 className="title text-center">
               {page_title}
@@ -32,55 +40,37 @@ const FaqPage = () => {
               {page_caption}
             </p>
           </div>
+
         
-        <div className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-question-circle"></i> {/* Question Mark Icon */}
-            <h2 className="text-lg font-semibold">{ Q1 }</h2>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-reply"></i> {/* Reply Icon */}
-            <p className="text-lg text-gray-800">
-              { A1_P1 }
-            </p>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <p className="text-lg text-gray-800 ml-8">
-              { A1_P2 }
-            </p>
-          </div>
-        </div>
+        {/* Loop through each FAQ item and creates container for each Q&A pair*/}
+        {FAQ_ITEMS.map((faq, index) => (
+          <div key={index} className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
+            
+            {/* Question Header with Icon */}
+            <div className="flex items-center space-x-2 mb-4">
+              <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-question-circle"></i> {/* Question Mark Icon */}
+              <h2 className="text-lg font-semibold">{faq.question}</h2>
+            </div>
 
-        <div className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-question-circle"></i> {/* Question Mark Icon */}
-            <h2 className="text-lg font-semibold">{ Q2 }</h2>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-reply"></i> {/* Reply Icon */}
-            <p className="text-lg text-gray-800">
-              { A2_P1 }
-            </p>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <p className="text-lg text-gray-800 ml-8">
-              { A2_P2 }
-            </p>
-          </div>
-        </div>
+            {/* Answer Section */}
+            {faq.answers.map((answer, i) => (
+              <div key={i} className="flex items-baseline space-x-2">
+                <p className="text-lg text-gray-800">{answer}</p>
+              </div>
+            ))}
 
-        <div className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-question-circle"></i> {/* Question Mark Icon */}
-            <h2 className="text-lg font-semibold">{ Q3 }</h2>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <i className="fa-icon-dark mr-1 fa-solid fa-lg fa-reply"></i> {/* Reply Icon */}
-            <p className="text-lg text-gray-800">
-              { A3 }
-            </p>
-          </div>
-        </div>
+            {/* Learn More Button - Redirects user to Chatbot page with the question as a parameter */}
+            <div className="mt-4">
+              <Link 
+                href={`/chatbot?question=${encodeURIComponent(faq.question)}`} 
+                className="bg-greenify-button-green text-white font-semibold px-4 py-2 rounded hover:bg-coffee-green"
+              >
+                Learn More
+              </Link>
+            </div>
+
+            </div>
+        ))}
 
         {/* TODO: Add buttons directing to the Chatbot page with a prompt for more details */}
       </div>

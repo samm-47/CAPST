@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Layout from './chatbot_layout';
-
+import { useSearchParams } from "next/navigation"; // Allows you to read specific parameters from URL
 import Link from "next/link";
 
 const page_title = "Chatbot"
@@ -23,11 +23,16 @@ const ChatbotPage = () => {
     const [showScrollToTop, setShowScrollToTop] = useState(false); // State for Scroll to top button
     const [showScrollToBottom, setShowScrollToBottom] = useState(false); // State for Scroll to bottom button
     const bottomReference = useRef<HTMLDivElement>(null);
+    const searchParams = useSearchParams(); //Get parameters from the URL
+    const faqQuestion = searchParams.get("question"); // Extract the question parameter
+
+    const hasProcessedFAQ = useRef(false); // Track that the FAQ quesion has been processed so double input does not happen
 
     const initialMessage = {
         type: "bot",
         text: "Hello, how can I help you?",
     };
+
 
     // Load previous messages from localStorage change in future to database type
     useEffect(() => {
@@ -62,7 +67,13 @@ const ChatbotPage = () => {
 
     
     
-
+    // Grab the question from url (from faq link) and send to chatbot
+    useEffect(() => {
+        if (faqQuestion && !hasProcessedFAQ.current) {
+            hasProcessedFAQ.current = true;
+            handleCommonPrompt(faqQuestion); 
+        }
+    }, [faqQuestion]); // Runs when faq questions is changed/set 
     // Function to save the messages to localStorage
     useEffect(() => {
         if (typeof window !== 'undefined') {
