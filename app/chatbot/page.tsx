@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import Layout from './chatbot_layout';
-import { useSearchParams } from "next/navigation"; // Allows you to read specific parameters from URL
 import Link from "next/link";
 
 const page_title = "Chatbot"
