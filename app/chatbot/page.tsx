@@ -23,8 +23,8 @@ const ChatbotPage = () => {
     const [showScrollToTop, setShowScrollToTop] = useState(false); // State for Scroll to top button
     const [showScrollToBottom, setShowScrollToBottom] = useState(false); // State for Scroll to bottom button
     const bottomReference = useRef<HTMLDivElement>(null);
-    const searchParams = useSearchParams(); //Get parameters from the URL
-    const faqQuestion = searchParams.get("question"); // Extract the question parameter
+    const [faqQuestion, setFaqQuestion] = useState<string | null>(null); // Store FAQ question safely
+
 
     const hasProcessedFAQ = useRef(false); // Track that the FAQ quesion has been processed so double input does not happen
 
@@ -66,6 +66,13 @@ const ChatbotPage = () => {
     }, []);
 
     
+    useEffect(() => {
+        if (typeof window !== "undefined") {  // Ensure it runs only on the client
+            const searchParams = new URLSearchParams(window.location.search);
+            const question = searchParams.get("question");
+            if (question) setFaqQuestion(question);
+        }
+    }, []); // Runs only once after the component mounts
     
     // Grab the question from url (from faq link) and send to chatbot
     useEffect(() => {
