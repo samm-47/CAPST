@@ -5,7 +5,7 @@ import Layout from "./faq_layout";
 import Link from "next/link"; // Navigation  
 
 // Note from Ethan: I think this is the most efficient way to allow easy access/editing of the questions. Using a text file for dynamic rendering of FAQ page is out of scope and unnecessary for this project.
-const Q1 = "What is the difference between GreenLiving, GreenifyAI, and GreenExpectations?";
+const Q1 = "What is the difference between SustainABLE and GreenifyAI?";
 const A1_P1 = "SustainABLE is the current website you are on. Our AI virtual assistant and sustainability calculator aim to assist you in learning more about sustainable living.";
 const A1_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and convert conventional houses into sustainable homes. Currently, it covers a wide range of properties in the greater New Jersey area."
 
