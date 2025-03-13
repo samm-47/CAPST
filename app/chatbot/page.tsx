@@ -1,62 +1,116 @@
-"use client"; // This allows for the use of the useState hooks
-import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import Layout from './chatbot_layout';
+"use client";
+import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import Layout from "./chatbot_layout";
 import Link from "next/link";
 
-const page_title = "Chatbot"
-const page_caption = "Learn more about sustainable living!"
+const page_title = "Chatbot";
+const page_caption = "Learn more about sustainable living!";
 
-{/* Common prompts for quick access */}
-{/* These are placeholders for now. -Ethan */}
+// Common prompts for quick access
 const prompt_1 = "How can I make my house more sustainable?";
 const prompt_2 = "Easy ways to increase renewable energy";
 const prompt_3 = "What is sustainable living?";
 
+type ChatMessage = {
+    type: string;
+    text: string;
+};
+
+type SavedChat = {
+    title: string;
+    messages: ChatMessage[];
+    timestamp: number; // Add a timestamp field
+};
+
 const ChatbotPage = () => {
-    const [userInput, setUserInput] = useState('');
-    const [messages, setMessages] = useState<{type: string; text: string}[]>([]);
-    const [hasSentMessage, setHasSentMessage] = useState(false); // Used to track if message sent for moving the chatbar after initial message
-    const [loading, setLoading] = useState(false); // Loading state tracker for when waiting for Chatbot response
-    const [loadingDots, setLoadingDots] = useState(''); // States for loading dots animation
-    const [showScrollToTop, setShowScrollToTop] = useState(false); // State for Scroll to top button
-    const [showScrollToBottom, setShowScrollToBottom] = useState(false); // State for Scroll to bottom button
+    const [userInput, setUserInput] = useState("");
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [hasSentMessage, setHasSentMessage] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [loadingDots, setLoadingDots] = useState("");
+    const [savedChats, setSavedChats] = useState<SavedChat[]>([]);
+    const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(null);
+    const [faqQuestion, setFaqQuestion] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
+    const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
-    const [faqQuestion, setFaqQuestion] = useState<string | null>(null); // Store FAQ question safely
 
+    const getRelativeTime = (timestamp: number): string => {
+        const now = Date.now();
+        const diffInMilliseconds = now - timestamp;
+        const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
 
-    const hasProcessedFAQ = useRef(false); // Track that the FAQ quesion has been processed so double input does not happen
+        if (diffInDays === 0) {
+            return "Today";
+        } else if (diffInDays === 1) {
+            return "Yesterday";
+        } else if (diffInDays <= 3) {
+            return "Last 3 days";
+        } else if (diffInDays <= 7) {
+            return "Last 7 days";
+        } else if (diffInDays <= 30) {
+            return "Last 30 days";
+        } else {
+            return "Older";
+        }
+    };
+
+    const groupChatsByRelativeTime = (chats: SavedChat[]) => {
+        const groupedChats: { [key: string]: SavedChat[] } = {};
+
+        chats.forEach((chat) => {
+            const relativeTime = getRelativeTime(chat.timestamp);
+            if (!groupedChats[relativeTime]) {
+                groupedChats[relativeTime] = [];
+            }
+            groupedChats[relativeTime].push(chat);
+        });
+
+        return groupedChats;
+    };
 
     const initialMessage = {
         type: "bot",
         text: "Hello, how can I help you?",
     };
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
 
-
-    // Load previous messages from localStorage change in future to database type
+    // Load previous messages and saved chats from localStorage
     useEffect(() => {
         if (typeof window !== "undefined") {
             try {
                 const savedMessages = localStorage.getItem("chatHistory");
+                const savedChats = localStorage.getItem("savedChats");
+                const savedChatIndex = localStorage.getItem("currentChatIndex");
 
                 if (savedMessages) {
-                    const parsedMessages = JSON.parse(savedMessages);
+                    const parsedMessages: ChatMessage[] = JSON.parse(savedMessages);
 
                     if (parsedMessages.length > 0) {
-                        setMessages(parsedMessages); // Use saved messages if available
+                        setMessages(parsedMessages);
 
-                        // Check if only the initial message is present
                         if (parsedMessages.length === 1 && parsedMessages[0].text === initialMessage.text) {
-                            setHasSentMessage(false); // Treat it as if no user interaction has occurred
+                            setHasSentMessage(false);
                         } else {
-                            setHasSentMessage(true); // User has interacted
+                            setHasSentMessage(true);
                         }
                     }
                 } else {
-                    // No saved messages, set initial state
                     setMessages([initialMessage]);
                     setHasSentMessage(false);
-                    localStorage.setItem("chatHistory", JSON.stringify([initialMessage])); // Save initial message to localStorage
+                    localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
+                }
+
+                if (savedChats) {
+                    const parsedChats: SavedChat[] = JSON.parse(savedChats);
+                    setSavedChats(parsedChats);
+                }
+
+                if (savedChatIndex !== null) {
+                    setCurrentChatIndex(JSON.parse(savedChatIndex));
                 }
             } catch (error) {
                 console.error("Error loading localStorage data:", error);
@@ -64,280 +118,373 @@ const ChatbotPage = () => {
         }
     }, []);
 
-    
+    // Save messages to localStorage whenever they change
     useEffect(() => {
-        if (typeof window !== "undefined") {  // Ensure it runs only on the client
-            const searchParams = new URLSearchParams(window.location.search);
-            const question = searchParams.get("question");
-            if (question) setFaqQuestion(question);
-        }
-    }, []); // Runs only once after the component mounts
-    
-    // Grab the question from url (from faq link) and send to chatbot
-    useEffect(() => {
-        if (faqQuestion && !hasProcessedFAQ.current) {
-            hasProcessedFAQ.current = true;
-            handleCommonPrompt(faqQuestion); 
-        }
-    }, [faqQuestion]); // Runs when faq questions is changed/set 
-    // Function to save the messages to localStorage
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
             try {
-                localStorage.setItem('chatHistory', JSON.stringify(messages));
+                localStorage.setItem("chatHistory", JSON.stringify(messages));
             } catch (error) {
-                console.error('Error saving to localStorage:', error);
+                console.error("Error saving to localStorage:", error);
             }
         }
     }, [messages]);
-    
 
-    useEffect(() => {
-        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-    // Makes sure top of window in view when started up
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, []);
-    // Event handler for scroll-to-top button
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: 'smooth'});
-    };
-    // Event handler for scroll-to-bottom button
-    const scrollToBottom = () => {
-        bottomReference.current?.scrollIntoView({behavior: 'smooth'});
-    };
-
-    // Scroll listener event
-    useEffect(() => {
-        const handleScroll = () => {
-            const scrollPosition = window.scrollY;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-            // Show scroll-to-top button when not near top
-            setShowScrollToTop(scrollPosition > 200); // Adjust threshold for the scroll to top button visibility
-            // Show the scroll-to-bottom button if not near the bottom
-            const isNearBottom = windowHeight + scrollPosition >= documentHeight - 100;
-            setShowScrollToBottom(!isNearBottom);
-        };
-    
-        window.addEventListener('scroll', handleScroll); // Runs handle scroll every time scrolled
-        return () => window.removeEventListener('scroll', handleScroll); // Should prevent memory leaks by unmounting
-    }, []);
-
+    // Handle input changes
     const handleInputChanges = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserInput(event.target.value);
-    }
+    };
 
     const handleSubmission = async (text?: string) => {
-        setHasSentMessage(true); // Marks when the user has sent the first message
-
-        const currentUserInput = text || userInput; // Use text if provided userInput as fallback
+        setHasSentMessage(true);
+        const currentUserInput = text || userInput;
 
         if (currentUserInput.trim()) {
-            // Clear user input before prompting bot for more seamless transitions
-            
-            setUserInput('');
+            setUserInput("");
 
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { type: 'user', text: currentUserInput }
-            ]);
-            setLoading(true); // Starts the loading state
+            const updatedMessages = [
+                ...messages,
+                { type: "user", text: currentUserInput },
+            ];
+            setMessages(updatedMessages);
+
+            setLoading(true);
             try {
-                const response = await axios.post('https://capst.onrender.com/api/chat', {
+                // Generate a title for the chat
+                const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
+                    input: currentUserInput,
+                });
+                const title = titleResponse.data.title;
+
+                // Get the chatbot's response
+                const response = await axios.post("https://capst.onrender.com/api/chat", {
                     question: currentUserInput,
                 });
 
-                setMessages((prevMessages) => [
-                    ...prevMessages,
-                    { type: 'bot', text: response.data.response }
-                ]);
+                const finalMessages = [
+                    ...updatedMessages,
+                    { type: "bot", text: response.data.response },
+                ];
+                setMessages(finalMessages);
+
+                const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
+                const currentTimestamp = Date.now(); // Get the current timestamp
+
+                if (currentChatIndex !== null) {
+                    // Update an existing chat
+                    const updatedChats = [...savedChats];
+                    updatedChats[currentChatIndex] = {
+                        title: savedChats[currentChatIndex].title,
+                        messages: finalMessages,
+                        timestamp: currentTimestamp, // Update the timestamp
+                    };
+                    const sortedChats = updatedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
+                    setSavedChats(sortedChats);
+                    localStorage.setItem("savedChats", JSON.stringify(sortedChats));
+                } else {
+                    // Create a new chat
+                    const newSavedChats: SavedChat[] = [
+                        ...savedChats,
+                        {
+                            title,
+                            messages: finalMessages,
+                            timestamp: currentTimestamp, // Add the timestamp
+                        },
+                    ];
+                    const sortedChats = newSavedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
+                    setSavedChats(sortedChats);
+                    localStorage.setItem("savedChats", JSON.stringify(sortedChats));
+                    setCurrentChatIndex(sortedChats.length - 1);
+                    localStorage.setItem("currentChatIndex", JSON.stringify(sortedChats.length - 1));
+                }
             } catch (error) {
-                console.error('Error:', error);
+                console.error("Error:", error);
                 setMessages((prevMessages) => [
                     ...prevMessages,
-                    { type: 'bot', text: 'Sorry, something went wrong. Please try again later.' }
+                    { type: "bot", text: "Sorry, something went wrong. Please try again later." },
                 ]);
             } finally {
-                setLoading(false); // Ends the loading state
+                setLoading(false);
             }
         }
     };
-    // Sends the Common prompt clicked to the bot 
-    const handleCommonPrompt = (prompt: string) => {
-        handleSubmission(prompt);     
-    }
+
+    // Loading dots animation
     useEffect(() => {
         if (loading) {
             const interval = setInterval(() => {
                 setLoadingDots((prev) => {
-                    if (prev === '...') return '.';  // Reset to one dot after three
-                    else return prev + '.';          // Add a dot each time
+                    if (prev === "...") return ".";
+                    else return prev + ".";
                 });
-            }, 500); // 500ms interval for each dot update 300-500 mess around with
+            }, 500);
 
-            return () => clearInterval(interval); // Clear interval when loading stops
+            return () => clearInterval(interval);
         } else {
-            setLoadingDots(''); // Reset dots string when not loading
+            setLoadingDots("");
         }
     }, [loading]);
 
     // Function to determine the width class based on the number of words
     const getWidthClass = (text: string) => {
-        const wordCount = text.split(' ').length;
+        const wordCount = text.split(" ").length;
 
         if (wordCount <= 10) {
-            return 'max-w-xs';  // Small width for short messages
+            return "max-w-xs";
         } else if (wordCount <= 20) {
-            return 'max-w-md';  // Medium width for moderate messages
+            return "max-w-md";
         } else {
-            return 'max-w-lg';  // Wider width for longer messages
+            return "max-w-lg";
         }
     };
 
-    // Function to clear chat history
+    // Clear chat history
     const clearChatHistory = () => {
         localStorage.removeItem("chatHistory");
         setMessages([initialMessage]);
         setHasSentMessage(false);
+        setCurrentChatIndex(null);
     };
+
+    const startNewChat = () => {
+        setMessages([initialMessage]);
+        setHasSentMessage(false);
+        localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
+        setCurrentChatIndex(null);
+        localStorage.removeItem("currentChatIndex");
+    
+        // Close the sidebar on mobile devices
+        if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
+            setIsSidebarOpen(false);
+        }
+    };
+
+    // Load a saved chat
+   
+const loadSavedChat = (index: number) => {
+    const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
+    const sortedChats = savedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
+
+    if (sortedChats[index]) {
+        setMessages(sortedChats[index].messages);
+        setHasSentMessage(true);
+        setCurrentChatIndex(index); // Set the currentChatIndex to the correct index
+        localStorage.setItem("currentChatIndex", JSON.stringify(index));
+
+        // Close the sidebar on mobile devices
+        if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
+            setIsSidebarOpen(false);
+        }
+    }
+};
+
+    const deleteChat = (index: number) => {
+        const updatedChats: SavedChat[] = savedChats.filter((_, i) => i !== index);
+        setSavedChats(updatedChats);
+        localStorage.setItem("savedChats", JSON.stringify(updatedChats));
+
+        if (currentChatIndex === index) {
+            setMessages([initialMessage]);
+            setHasSentMessage(false);
+            setCurrentChatIndex(null);
+            localStorage.removeItem("currentChatIndex");
+        }
+    };
+
+    // FAQ integration
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const searchParams = new URLSearchParams(window.location.search);
+            const question = searchParams.get("question");
+            if (question) setFaqQuestion(question);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (faqQuestion && !hasProcessedFAQ.current) {
+            hasProcessedFAQ.current = true;
+            handleSubmission(faqQuestion);
+        }
+    }, [faqQuestion]);
+
     return (
         <Layout>
-            <div className="default-page-bg">
-                <div className = "flex flex-col w-1/2 mt-6 mb-6 p-1">
-                    <h1 className="title text-center">
-                    {page_title}
-                    </h1>
-                    <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
-                    {page_caption}
-                    </p>
-                </div>
-                {/* Chat area Post Rendered when first message sent */}    
-                {hasSentMessage && (  
-                    <div className="flex items-start w-full max-w-4xl mb-4">
-                        <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
-                            {messages.map((message, index) => (
-                                <div key={index} className="flex flex-col"> {/* Wrap each message for icon rendering structure to work */}
-                                    {/* Conditionally render the icon above bot messages */}
-                                    {message.type !== 'user' && (
-                                        <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i> // Icon for bot messsages
-                                    )}
-                                    
-                                    <div
-                                        className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
-                                            message.type === 'user' ? 'bg-blue-100 text-blue-900 ml-auto' : ' text-gray-900'
-                                        } break-words`} // This will break up long words into wrappable segments
-                                    >
-                                        {message.text}
-                                    </div>
-                                </div>
-                            ))}
-                            {loading && ( // Renders a loading indicator
-                                <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
-                                    {loadingDots}  {/* loads animated dots */}
-                                </div>
-                            )}
-                            
-                            <div ref={bottomReference} />
+            <div className="flex bg-gray-100">
+                {/* Sidebar Toggle Button (3-line icon) */}
+                <button
+                    onClick={toggleSidebar}
+                    className="fixed top-20 left-5 z-50 p-1 bg-gray-100 text-black rounded-full"
+                >
+                    ☰ {/* Hamburger icon */}
+                </button>
+
+                {/* Sidebar for chat sessions */}
+                <div
+                    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
+                        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                    } transition-transform duration-300 z-40 md:translate-x-0`} // md:translate-x-0 ensures sidebar is always visible on desktop
+                    style={{
+                        width: "100vw", // Full screen width on mobile
+                        height: "100vh", // Full screen height on mobile
+                    }}
+                >
+                    <h2 className="text-black text-lg font-semibold mb-4 text-center">Recent Chats</h2>
+
+                    {/* Scrollable Chat List */}
+                    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
+                        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
+                            <div key={relativeTime}>
+                                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
+                                <ul className="flex-1">
+                                    {chats.map((chat, index) => (
+                                        <li
+                                            key={index}
+                                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black ${
+                                                currentChatIndex === index 
+                                                ? "bg-gray-200 text-black" 
+                                                : "bg-gray-200 text-black"
+                                            } flex justify-between items-center`}
+                                        >
+                                            <span 
+                                                onClick={() => loadSavedChat(index)} 
+                                                className="flex-1 truncate pr-2" // Add padding to the right
+                                            >
+                                                {chat.title}
+                                            </span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteChat(index);
+                                                }}
+                                                className="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
+                                            >
+                                                <i className="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+
+                        {/* Sticky New Chat Button */}
+                        <div className="sticky bottom-0 bg-gray-100 pt-2">
+                            <button
+                                onClick={startNewChat}
+                                className="w-full bg-green-900 text-white rounded-lg p-2 hover:bg-blue-600"
+                            >
+                                New Chat
+                            </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Main Content Area */}
+                <div
+                    className={`flex-1 default-page-bg transition-all duration-300 ${
+                        isSidebarOpen ? "ml-0" : "ml-0 md:ml-64" // Adjust margin for mobile and desktop
+                    }`}
+                >
+                    <h1 className="page-title">{page_title}</h1>
+                    <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+                        {page_caption}
+                    </p>
+
+                    {/* Chat Messages (only shown after sending a message) */}
+                    {hasSentMessage && (
+                        <div className="flex items-start w-full max-w-4xl mb-4">
+                            <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
+                                {messages.map((message, index) => (
+                                    <div key={index} className="flex flex-col">
+                                        {message.type !== "user" && (
+                                            <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
+                                        )}
+                                        <div
+                                            className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
+                                                message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
+                                            } break-words`}
+                                        >
+                                            {message.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                {loading && (
+                                    <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
+                                        {loadingDots}
+                                    </div>
+                                )}
+                                <div ref={bottomReference} />
+                            </div>
                             {/* Clear Chat History Button */}
                             <button
                                 onClick={clearChatHistory}
-                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center hoverable-bubble-div"
+                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center"
                             >
                                 <i className="fa-solid fa-trash-can"></i>
                             </button>
-                    </div>           
-                )}
-                
-                {/* Scroll-to-top button */}
-                <div className="fixed top-20 z-10 py-2">
-                    {showScrollToTop && (
+                        </div>
+                    )}
+
+                    {/* Common Prompts Section (only shown before sending a message) */}
+                    {!hasSentMessage && (
+                        <div className="flex-col-centered max-w-xl w-3/4 h-15 bg-white shadow-lg rounded-lg px-6 py-4">
+                            <div
+                            className="hoverable-div flex flex-col items-center justify-center w-full rounded-full p-1 mt-1 mb-2 font-semibold"
+                            style={{ outline: '2px solid #171717' }}
+                            onClick={() => handleSubmission(prompt_1)}
+                        >
+                            <p className="hover:text-coffee-green text-center">{prompt_1}</p>
+                        </div>
+                            <div
+                                className="hoverable-div flex flex-col items-center justify-center w-full rounded-full p-1 mt-1 mb-2 font-semibold"
+                                style={{ outline: '2px solid #171717' }}
+                                onClick={() => handleSubmission(prompt_2)}
+                            >
+                                <p className="hover:text-coffee-green text-center">{prompt_1}</p>
+                            </div>
+                            <div
+                                className="hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-1 font-semibold"
+                                style={{ outline: '2px solid #171717' }}
+                                onClick={() => handleSubmission(prompt_3)}
+                            >
+                                <p className="hover:text-coffee-green">{prompt_3}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Input Box (always visible) */}
+                    <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? "sticky bottom-0 bg-white shadow-lg" : ""}`}>
+                        <textarea
+                            value={userInput}
+                            onChange={handleInputChanges}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter" && !event.shiftKey) {
+                                    handleSubmission();
+                                    event.preventDefault();
+                                }
+                            }}
+                            className="w-full p-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                            rows={1}
+                            placeholder="Message Chatbot"
+                        />
                         <button
-                            onClick={scrollToTop}
-                            className="mx-auto w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full shadow-md flex items-center justify-center hover:bg-blue-500 transition duration-100"
+                            onClick={() => handleSubmission()}
+                            className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
                         >
                             <i className="fa-solid fa-arrow-up"></i>
                         </button>
-                    )}
-                </div>
-                {/* Scroll-to-bottom button */}
-                <div className="fixed bottom-20 z-10 py-2">
-                    {showScrollToBottom && (
-                        <button
-                            onClick={scrollToBottom}
-                            className="w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-100"
-                        >
-                            <i className="fa-solid fa-arrow-down"></i>
-                        </button>
-                    )}
-                </div>
-                {/* Ethan's Common Prompts Section moved for visual */}
-                {!hasSentMessage &&
-                <div className = "flex-col-centered max-w-xl w-3/4 h-15 bg-white shadow-lg rounded-lg px-6 py-4">
-                    <div 
-                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-1 mb-2 font-semibold" 
-                        style={{ outline: '2px solid #171717' }}
-                        onClick = {() => handleCommonPrompt(prompt_1)} // Added Functionality for Clicking
-                    >
-                        <p className="hover:text-coffee-green"> {prompt_1} </p>
                     </div>
-                    <div 
-                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-2 font-semibold" 
-                        style={{ outline: '2px solid #171717' }}
-                        onClick = {() => handleCommonPrompt(prompt_2)}
-                    >
-                        <p className="hover:text-coffee-green"> {prompt_2} </p> 
-                    </div>
-                    <div 
-                        className = "hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-1 font-semibold" 
-                        style={{ outline: '2px solid #171717' }}
-                        onClick = {() => handleCommonPrompt(prompt_3)}
-                    >
-                        <p className="hover:text-coffee-green"> {prompt_3} </p>
-                    </div>
-                </div>
-                }
-                {/* Input box with button */}
-                <div className={`w-full max-w-3xl rounded-lg p-4 mt-4 mb-4 flex items-center ${hasSentMessage ? 'sticky bottom-0 bg-white shadow-lg' : ''}`}>
-                    <textarea
-                        value={userInput}
-                        onChange={handleInputChanges}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter' && !event.shiftKey) {
-                                handleSubmission();
-                                event.preventDefault();
-                            }
-                        }}
-                        className="w-full p-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                        rows={1}
-                        placeholder="Message Chatbot"
-                    />
-                    <button
-                        onClick={() => handleSubmission()}
-                        className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100 hoverable-bubble-div"
-                    >
-                        <i className="fa-solid fa-arrow-up"></i>
-                    </button>
 
-                </div>
-                {/* Footer link to FAQ */}
-                {hasSentMessage &&
-                    (
-                    <div className="flex-row-centered h-[8vh]">
+                    {/* Footer link to FAQ (always visible) */}
+                    <div className="flex-row-centered h-[8vh] max-w-[90%] mx-auto">
                         <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
-                        <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i> {/*} Question Mark Icon*/}
-                        <p className="footer-text hoverable-div"> How was our AI-powered chatbot developed? </p>
+                            <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i>
+                            <p className="footer-text hoverable-div text-center sm:text-left">
+                                How was our AI-powered chatbot developed?
+                            </p>
                         </Link>
-                    </div> 
-                    )
-                }
-                
-
+                    </div>
+                </div>
             </div>
         </Layout>
     );
 };
-
 export default ChatbotPage;
