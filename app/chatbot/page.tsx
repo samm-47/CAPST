@@ -75,11 +75,22 @@ const ChatbotPage = () => {
         text: "Hello, how can I help you?",
     };
     const toggleSidebar = () => {
-        if (window.innerWidth <= 1024) { // Adjust breakpoint if needed
             setIsSidebarOpen(!isSidebarOpen);
-        }
+        
         
     };
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (isSidebarOpen && !document.getElementById("sidebar")?.contains(event.target as Node)) {
+                setIsSidebarOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleOutsideClick);
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick);
+        };
+    }, [isSidebarOpen]);
+    
 
     // Load previous messages and saved chats from localStorage
     useEffect(() => {
@@ -315,7 +326,7 @@ const loadSavedChat = (index: number) => {
                 {/* Sidebar Toggle Button (3-line icon) */}
                 <button
                     onClick={toggleSidebar}
-                    className="fixed top-20 left-5 z-50 p-1 bg-gray-100 text-black rounded-full"
+                    className="fixed top-20 left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
                 >
                     ☰ {/* Hamburger icon */}
                 </button>
@@ -324,7 +335,7 @@ const loadSavedChat = (index: number) => {
                 <div
     className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-    } transition-transform duration-300 z-40 md:translate-x-0 md:block`} // Ensure it's always visible on md screens
+    } transition-transform duration-300 z-10 left-0`}
 >
 
                     <h2 className="text-black text-lg font-semibold mb-4 text-center">Recent Chats</h2>
@@ -380,7 +391,7 @@ const loadSavedChat = (index: number) => {
                 {/* Main Content Area */}
                 <div
                     className={`flex-1 default-page-bg transition-all duration-300 ${
-                        isSidebarOpen ? "ml-0" : "ml-0 md:ml-64" // Adjust margin for mobile and desktop
+                        isSidebarOpen ? "ml-0 md:ml-64" : "ml-0" // Adjust margin for mobile and desktop
                     }`}
                 >
                     <h1 className="page-title">{page_title}</h1>
@@ -438,7 +449,7 @@ const loadSavedChat = (index: number) => {
                                 style={{ outline: '2px solid #171717' }}
                                 onClick={() => handleSubmission(prompt_2)}
                             >
-                                <p className="hover:text-coffee-green text-center">{prompt_1}</p>
+                                <p className="hover:text-coffee-green text-center">{prompt_2}</p>
                             </div>
                             <div
                                 className="hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-1 font-semibold"
