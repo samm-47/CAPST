@@ -75,7 +75,10 @@ const ChatbotPage = () => {
         text: "Hello, how can I help you?",
     };
     const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+        if (window.innerWidth <= 1024) { // Adjust breakpoint if needed
+            setIsSidebarOpen(!isSidebarOpen);
+        }
+        
     };
 
     // Load previous messages and saved chats from localStorage
@@ -319,14 +322,11 @@ const loadSavedChat = (index: number) => {
 
                 {/* Sidebar for chat sessions */}
                 <div
-                    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
-                        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-                    } transition-transform duration-300 z-40 md:translate-x-0`} // md:translate-x-0 ensures sidebar is always visible on desktop
-                    style={{
-                        width: "100vw", // Full screen width on mobile
-                        height: "100vh", // Full screen height on mobile
-                    }}
-                >
+    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+    } transition-transform duration-300 z-40 md:translate-x-0 md:block`} // Ensure it's always visible on md screens
+>
+
                     <h2 className="text-black text-lg font-semibold mb-4 text-center">Recent Chats</h2>
 
                     {/* Scrollable Chat List */}
