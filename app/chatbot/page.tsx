@@ -35,7 +35,7 @@ const ChatbotPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
     const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
-
+    const [typedTitle, setTypedTitle] = useState(""); // State for the typing animation
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
         const diffInMilliseconds = now - timestamp;
@@ -75,21 +75,11 @@ const ChatbotPage = () => {
         text: "Hello, how can I help you?",
     };
     const toggleSidebar = () => {
-            setIsSidebarOpen(!isSidebarOpen);
-        
-        
+        console.log("Toggling sidebar. Current state:", isSidebarOpen);
+        setIsSidebarOpen((prevState) => !prevState);
     };
-    useEffect(() => {
-        const handleOutsideClick = (event: MouseEvent) => {
-            if (isSidebarOpen && !document.getElementById("sidebar")?.contains(event.target as Node)) {
-                setIsSidebarOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleOutsideClick);
-        return () => {
-            document.removeEventListener("mousedown", handleOutsideClick);
-        };
-    }, [isSidebarOpen]);
+    
+    
     
 
     // Load previous messages and saved chats from localStorage
@@ -325,10 +315,16 @@ const loadSavedChat = (index: number) => {
             <div className="flex bg-gray-100">
                 {/* Sidebar Toggle Button (3-line icon) */}
                 <button
+                    
                     onClick={toggleSidebar}
                     className="fixed top-20 left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
                 >
-                    ☰ {/* Hamburger icon */}
+                   <img
+                    src="/sidebar.svg" // Path to your SVG image
+                    alt="Toggle Sidebar"
+                    className="w-8 h-8 object-contain"
+       
+    />
                 </button>
 
                 {/* Sidebar for chat sessions */}
