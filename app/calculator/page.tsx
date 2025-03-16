@@ -183,7 +183,7 @@ const CalculatorPage: React.FC = () => {
         
         console.log("Sending data to chatbot:", data);
         
-        const response = await axios.post('http://127.0.0.1:5000/api/chat/calc', data);
+        const response = await axios.post('https://capst.onrender.com/api/chat/calc', data);
         
         console.log("Chatbot response:", response.data);
         
