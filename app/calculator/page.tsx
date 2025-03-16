@@ -207,7 +207,7 @@ const CalculatorPage: React.FC = () => {
       {/* CSS grid to center content like home.tsx page */}
       <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
         <div className="flex flex-col w-full sm:w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-2 sm:p-1">
-          <h1 className="title text-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+          <h1 className="title text-center text-xl sm:text-xl md:text-3xl lg:text-4xl">
             {page_title}
           </h1>
           <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%] text-sm sm:text-base md:text-lg lg:text-xl">
