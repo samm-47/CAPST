@@ -2,8 +2,8 @@
 "use client"; // Mark this as a Client Component for client-side hooks
 
 // Important for creation of the logo top right
-import ClientLayout from "../../calculator_layout";
-import { useEffect, useState } from "react";
+import Layout from "./calculator_layout";
+import { useState } from "react";
 import axios from 'axios';
 import Link from "next/link";
 
@@ -41,44 +41,15 @@ const CalculatorPage: React.FC = () => {
     setAirQuality(event.target.id); };
   const [copied, setCopied] = useState(false);
 
-    const [isMobile, setIsMobile] = useState(false);
-
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
     const handleCopy = () => {
       navigator.clipboard.writeText(chatbotResponse)
         .then(() => {
-          setCopied(true);
+          setCopied(true); // Set to "Text copied!" after clicking
+          // Reset to "Learn more about your score" after 2 seconds
           setTimeout(() => setCopied(false), 2000);
         })
         .catch((error) => console.error('Error copying text: ', error));
     };
-  
-    const openModal = () => {
-      setIsModalOpen(true);
-    };
-  
-    const closeModal = () => {
-      setIsModalOpen(false);
-    };
-
-      // Check for window width on component mount
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    // Initial check
-    handleResize();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup event listener on unmount
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-    
     
   const calculateScore = async () => {
     const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
@@ -203,7 +174,7 @@ const CalculatorPage: React.FC = () => {
 
   return (
     
-    <ClientLayout >
+    <Layout>
       {/*} CSS grid to center content like home tsx page*/}
       <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
         <div className = "flex flex-col w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-1">
@@ -214,371 +185,231 @@ const CalculatorPage: React.FC = () => {
             {page_caption}
           </p>
         </div>
+
         {/* Main Content Section */}
         <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
           {/* Monthly Energy Consumption */}
+          <div className="sus-calc-topic">
+            <label className="sus-calc-title"> 
+            Monthly Energy Consumption (kWh) 
+            </label>
+            <p> 
+              Found on your monthly energy utility bill
+            </p>
+          </div>
           <div className="sus-calc-input">
-            <label className="sus-calc-title">Monthly Energy Consumption (kWh)</label>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
+            <div className="flex-row-centered w-full">
               {/* Radio options */}
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="energy1"
-                  name="energy_consume"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleEnergyUsage}
-                />
-                <label htmlFor="energy1" className="text-lg">
-                  &lt;500
-                </label>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy1" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy1" className="text-lg">
+                    &lt;500
+                  </label> 
               </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="energy2"
-                  name="energy_consume"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleEnergyUsage}
-                />
-                <label htmlFor="energy2" className="text-lg">
-                  500 to 650
-                </label>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy2" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy2" className="text-lg">
+                    500 to 650
+                  </label> 
               </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="energy3"
-                  name="energy_consume"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleEnergyUsage}
-                />
-                <label htmlFor="energy3" className="text-lg">
-                  650 to 850
-                </label>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy3" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy3" className="text-lg">
+                    650 to 850
+                  </label> 
               </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="energy4"
-                  name="energy_consume"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleEnergyUsage}
-                />
-                <label htmlFor="energy4" className="text-lg">
-                  850 to 1000
-                </label>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy4" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/>  
+                  <label htmlFor="energy4" className="text-lg">
+                    850 to 1000
+                  </label> 
               </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="energy5"
-                  name="energy_consume"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleEnergyUsage}
-                />
-                <label htmlFor="energy5" className="text-lg">
-                  1000+
-                </label>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="energy5" name="energy_consume" className="hoverable-bubble-div custom-radio" onChange={handleEnergyUsage}/> 
+                  <label htmlFor="energy5" className="text-lg">
+                    1000+
+                  </label> 
+              </div>
+            </div>
+          </div>
+          
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+          
+          {/* Percent Renweable Energy */}
+          <div className="sus-calc-topic">
+            <label className="sus-calc-title"> 
+              % Renewable Energy 
+            </label>
+            <p> 
+              Found on your monthly energy utility bill
+            </p>
+          </div>
+          
+          <div className="sus-calc-input">
+            {/* Radio options */}
+            <div className="flex-row-centered w-full">
+              <div className="sus-calc-bubble">
+                  <input type="radio" id="renew1" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew1" className="text-lg">
+                    &lt;20%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew2" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew2" className="text-lg">
+                    20 to 40%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew3" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/>  
+                  <label htmlFor="renew3" className="text-lg">
+                    40 to 60%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew4" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew4" className="text-lg">
+                    60 to 80%
+                  </label> 
+              </div>
+              <div className="sus-calc-bubble"> 
+                <input type="radio" id="renew5" name="renew_energy" className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
+                  <label htmlFor="renew5" className="text-lg">
+                    80+%
+                  </label> 
               </div>
             </div>
           </div>
 
-          {/* Percent Renewable Energy */}
-          <div className="sus-calc-input">
-            <label className="sus-calc-title">% Renewable Energy</label>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
-              {/* Radio options */}
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="renew1"
-                  name="renew_energy"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handlePercentRenewable}
-                />
-                <label htmlFor="renew1" className="text-lg">
-                  &lt;20%
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="renew2"
-                  name="renew_energy"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handlePercentRenewable}
-                />
-                <label htmlFor="renew2" className="text-lg">
-                  20 to 40%
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="renew3"
-                  name="renew_energy"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handlePercentRenewable}
-                />
-                <label htmlFor="renew3" className="text-lg">
-                  40 to 60%
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="renew4"
-                  name="renew_energy"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handlePercentRenewable}
-                />
-                <label htmlFor="renew4" className="text-lg">
-                  60 to 80%
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="renew5"
-                  name="renew_energy"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handlePercentRenewable}
-                />
-                <label htmlFor="renew5" className="text-lg">
-                  80+%
-                </label>
-              </div>
-            </div>
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+          { /* Monthly Water Usage */}
+          <div className="sus-calc-topic">
+            <label className="sus-calc-title"> 
+              Monthly Water Usage (gal) 
+            </label>
+            <p> 
+              Found on your monthly water utility bill
+            </p>
           </div>
-
-          {/* Monthly Water Usage */}
           <div className="sus-calc-input">
-            <label className="sus-calc-title">Monthly Water Usage (gal)</label>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
-              {/* Radio options */}
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="water1"
-                  name="water_usage"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleWaterUsage}
-                />
+          <div className="flex-row-centered w-full">
+          {/* Radio options */}
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water1" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water1" className="text-lg">
                   &lt;50
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="water2"
-                  name="water_usage"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleWaterUsage}
-                />
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water2" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water2" className="text-lg">
                   50 to 70
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="water3"
-                  name="water_usage"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleWaterUsage}
-                />
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water3" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water3" className="text-lg">
                   70 to 90
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="water4"
-                  name="water_usage"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleWaterUsage}
-                />
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water4" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water4" className="text-lg">
                   90 to 110
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="water5"
-                  name="water_usage"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleWaterUsage}
-                />
+                </label> 
+            </div>
+            <div className="sus-calc-bubble"> 
+              <input type="radio" id="water5" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
                 <label htmlFor="water5" className="text-lg">
                   110+
-                </label>
-              </div>
+                </label> 
             </div>
           </div>
+        </div>
 
-          {/* CO2 Level (Air Quality) */}
-          <div className="sus-calc-input">
-            <label className="sus-calc-title">Air Quality: CO2 Level (ppm)</label>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
-              {/* Radio options */}
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="air1"
-                  name="air_quality"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleAirQuality}
-                />
-                <label htmlFor="air1" className="text-lg">
-                  &lt;400
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="air2"
-                  name="air_quality"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleAirQuality}
-                />
-                <label htmlFor="air2" className="text-lg">
-                  400 to 500
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="air3"
-                  name="air_quality"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleAirQuality}
-                />
-                <label htmlFor="air3" className="text-lg">
-                  500 to 600
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="air4"
-                  name="air_quality"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleAirQuality}
-                />
-                <label htmlFor="air4" className="text-lg">
-                  600 to 700
-                </label>
-              </div>
-              <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="radio"
-                  id="air5"
-                  name="air_quality"
-                  className="hoverable-bubble-div custom-radio"
-                  onChange={handleAirQuality}
-                />
-                <label htmlFor="air5" className="text-lg">
-                  700+
-                </label>
-              </div>
-            </div>
+      <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
+        { /* CO2 Level (Air Quality) */}
+          <div className="sus-calc-topic">
+            <label className="sus-calc-title"> 
+              Air Quality: CO2 Level (ppm) 
+            </label>
+            <p> 
+              Measured using a commercial CO2 detector
+            </p>
+          </div>
+        <div className="sus-calc-input">
+        <div className="flex-row-centered w-full">
+          {/* Radio options */}
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air1" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air1" className="text-lg">
+                &lt;400
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air2" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air2" className="text-lg">
+                400 to 500
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air3" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air3" className="text-lg">
+                500 to 600
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air4" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air4" className="text-lg">
+                600 to 700
+              </label> 
+          </div>
+          <div className="sus-calc-bubble"> 
+            <input type="radio" id="air5" name="air_quality" className="hoverable-bubble-div custom-radio" onChange={handleAirQuality}/> 
+              <label htmlFor="air5" className="text-lg">
+                700+
+              </label> 
+          </div>
           </div>
 
-          {/* Calculate Score Button */}
+          {/*Calculate Score Button*/}
           <div>
             <button
               onClick={calculateScore}
               className="bg-greenify-button-green rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 hover:bg-coffee-green"
-            >
+              >
               Calculate Score
             </button>
           </div>
 
-          {/* Label to display sustainability score */}
+          { /* Label to display sustainability score */}
           <div className="flex-col-centered">
-            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold mb-2">
-              {/* Score will be displayed here */}
-            </label>
-            <label
-              htmlFor="sustainabilityScoreExplanation"
-              id="sustainabilityScoreExplanation"
-              className="text-2xl block text-center"
+            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold" mb-2> </label>
+           <label 
+            htmlFor="sustainabilityScoreExplanation" 
+            id="sustainabilityScoreExplanation" 
+            className="text-2xl block text-center">
+          </label>         
+          </div> 
+          
+                {chatbotResponse && (
+            <div className="flex-col-centered group relative">
+            <label 
+              htmlFor="chatbotResponse" 
+              className="text-l block text-center cursor-pointer text-green-600 underline"
+              onClick={handleCopy} 
             >
-              {/* Explanation will be displayed here */}
+              {copied ? 'Text copied!' : 'Learn more about your score'}
             </label>
-          </div>
 
-          {chatbotResponse && (
-            <div className="flex-col-centered">
-              <button
-                onClick={openModal}
-                className="text-l text-green-600 underline cursor-pointer"
-              >
-                Learn more about your score
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal for Chatbot Response */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-[90%] w-[600px]">
-            <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
-            <div className="mb-4 overflow-y-auto max-h-[400px] text-black">
-              {chatbotResponse}
-            </div>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={handleCopy}
-                className="bg-green-800 text-white px-4 py-2 rounded hover:filer-coffee-green hover:brightness-90"
-              >
-                {copied ? 'Copied!' : 'Copy Text'}
-              </button>
-              <button
-                onClick={closeModal}
-                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600"
-              >
-                Close
-              </button>
-            </div>
+            <div className="absolute top-full mt-2 p-4 bg-white border border-gray-200 shadow-lg rounded-lg text-xs text-left text-black opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 w-[700px]">
+            {chatbotResponse}
           </div>
         </div>
       )}
-
+        </div>
+      </div>
       
       {/* Footer link to FAQ */}
       <div className="flex-row-centered h-[8vh]">
@@ -589,7 +420,7 @@ const CalculatorPage: React.FC = () => {
       </div>
 
     </div>
-    </ClientLayout >
+    </Layout>
   );
 };
 
