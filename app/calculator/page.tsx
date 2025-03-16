@@ -210,7 +210,7 @@ const CalculatorPage: React.FC = () => {
           <h1 className="title text-center">
             {page_title}
           </h1>
-          <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+          <p className="caption text-center mx-auto break-words max-w-[100%] sm:max-w-[100%]">
             {page_caption}
           </p>
         </div>
