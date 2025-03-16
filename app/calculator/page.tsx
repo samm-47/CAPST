@@ -2,7 +2,7 @@
 "use client"; // Mark this as a Client Component for client-side hooks
 
 // Important for creation of the logo top right
-import Layout from "./calculator_layout";
+import ClientLayout from "./calculator_layout";
 import { useEffect, useState } from "react";
 import axios from 'axios';
 import Link from "next/link";
@@ -203,7 +203,7 @@ const CalculatorPage: React.FC = () => {
 
   return (
     
-    <Layout>
+    <ClientLayout >
       {/*} CSS grid to center content like home tsx page*/}
       <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
         <div className = "flex flex-col w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-1">
@@ -589,7 +589,7 @@ const CalculatorPage: React.FC = () => {
       </div>
 
     </div>
-    </Layout>
+    </ClientLayout >
   );
 };
 
