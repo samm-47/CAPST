@@ -112,7 +112,7 @@ def chat():
         return jsonify({"error": "Score is required"}), 400
 
     # Construct the user's question or prompt based on the score
-    user_question = f"Given the sustainability score of {score}, explain to the user, how they can improve to be more sustainable for their home and lifestyle. The ranking is A - F and S is perfect. Output in 100 words and in sentences. Spacing should be 1.5. Use sources to support your response. DO NOT SAY "sources needed for EPA references..". Just say add the source."
+    user_question = f"Given the sustainability score of {score}, explain to the user, how they can improve to be more sustainable for their home and lifestyle. The ranking is A - F and S is perfect. Output in 100 words and in sentences. Spacing should be 1.5. Use sources to support your response. DO NOT SAY sources needed for EPA references. Just say add the source."
 
     logging.info(f"User question: {user_question}")
 
