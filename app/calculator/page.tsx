@@ -3,7 +3,7 @@
 
 // Important for creation of the logo top right
 import Layout from "./calculator_layout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from 'axios';
 import Link from "next/link";
 
