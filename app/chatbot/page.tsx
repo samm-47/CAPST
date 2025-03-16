@@ -35,7 +35,7 @@ const ChatbotPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
     const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
-    const [typedTitle, setTypedTitle] = useState(""); // State for the typing animation
+    
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
         const diffInMilliseconds = now - timestamp;
