@@ -2,7 +2,7 @@
 "use client"; // Mark this as a Client Component for client-side hooks
 
 // Important for creation of the logo top right
-import ClientLayout from "./calculator_layout";
+import ClientLayout from "../../calculator_layout";
 import { useEffect, useState } from "react";
 import axios from 'axios';
 import Link from "next/link";
