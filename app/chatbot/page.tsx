@@ -35,7 +35,7 @@ const ChatbotPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
     const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
-    
+    const [typedTitle, setTypedTitle] = useState(""); // State for the typing animation
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
         const diffInMilliseconds = now - timestamp;
@@ -317,7 +317,7 @@ const loadSavedChat = (index: number) => {
                 <button
                     
                     onClick={toggleSidebar}
-                    className="fixed top-20 left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
+                    className="fixed top-[74px] left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
                 >
                    <img
                     src="/sidebar.svg" // Path to your SVG image
@@ -333,56 +333,65 @@ const loadSavedChat = (index: number) => {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
     } transition-transform duration-300 z-10 left-0`}
 >
+    <div className="flex justify-between items-center mb-4">
+        <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
+        <button onClick={startNewChat}> 
+            <img
+                    src="/chat.png" // Path to your SVG image
+                    alt="Toggle Sidebar"
+                    className="w-5 h-5 object-contain"
+       
+    />
+    </button>
+    </div>
 
-                    <h2 className="text-black text-lg font-semibold mb-4 text-center">Recent Chats</h2>
 
-                    {/* Scrollable Chat List */}
-                    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
-                        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
-                            <div key={relativeTime}>
-                                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
-                                <ul className="flex-1">
-                                    {chats.map((chat, index) => (
-                                        <li
-                                            key={index}
-                                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black ${
-                                                currentChatIndex === index 
-                                                ? "bg-gray-200 text-black" 
-                                                : "bg-gray-200 text-black"
-                                            } flex justify-between items-center`}
-                                        >
-                                            <span 
-                                                onClick={() => loadSavedChat(index)} 
-                                                className="flex-1 truncate pr-2" // Add padding to the right
-                                            >
-                                                {chat.title}
-                                            </span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteChat(index);
-                                                }}
-                                                className="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition"
-                                            >
-                                                <i className="fa-solid fa-trash-can"></i>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
+    
+    {/* Scrollable Chat List */}
+    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
+        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
+            <div key={relativeTime}>
+                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
+                <ul className="flex-1">
+                    {chats.map((chat, index) => (
+                        <li
+                            key={index}
+                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black ${
+                                currentChatIndex === index 
+                                ? "bg-gray-200 text-black" 
+                                : "bg-gray-200 text-black"
+                            } flex justify-between items-center`}
+                        >
+                            {/* Icon */}
+                            
 
-                        {/* Sticky New Chat Button */}
-                        <div className="sticky bottom-0 bg-gray-100 pt-2">
-                            <button
-                                onClick={startNewChat}
-                                className="w-full bg-green-900 text-white rounded-lg p-2 hover:bg-blue-600"
+                            {/* Chat Title */}
+                            <span 
+                                onClick={() => loadSavedChat(index)} 
+                                className="flex-1 truncate pr-2" // Add padding to the right
                             >
-                                New Chat
+                                {chat.title}
+                            </span>
+
+                            
+
+                            {/* Delete Button */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteChat(index);
+                                }}
+                                className="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition ml-2"
+                            >
+                                <i className="fa-solid fa-trash-can"></i>
                             </button>
-                        </div>
-                    </div>
-                </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        ))}
+    </div>
+</div>
 
                 {/* Main Content Area */}
                 <div
