@@ -440,31 +440,19 @@ const loadSavedChat = (index: number) => {
                     )}
 
                     {/* Common Prompts Section (only shown before sending a message) */}
-                    {!hasSentMessage && (
-                        <div className="flex-col-centered max-w-xl w-3/4 h-15 bg-white shadow-lg rounded-lg px-6 py-4">
-                            <div
-                            className="hoverable-div flex flex-col items-center justify-center w-full rounded-full p-1 mt-1 mb-2 font-semibold"
-                            style={{ outline: '2px solid #171717' }}
-                            onClick={() => handleSubmission(prompt_1)}
-                        >
-                            <p className="hover:text-coffee-green text-center">{prompt_1}</p>
-                        </div>
-                            <div
-                                className="hoverable-div flex flex-col items-center justify-center w-full rounded-full p-1 mt-1 mb-2 font-semibold"
-                                style={{ outline: '2px solid #171717' }}
-                                onClick={() => handleSubmission(prompt_2)}
+                        {!hasSentMessage && (
+                    <div className="flex flex-col items-center max-w-xl w-3/4 bg-white shadow-lg rounded-xl p-6 space-y-3">
+                        {[prompt_1, prompt_2, prompt_3].map((prompt, index) => (
+                            <button
+                                key={index}
+                                className="w-full py-2 px-4 rounded-full border-2 border-neutral-900 text-neutral-900 font-semibold transition-all duration-300 hover:bg-neutral-900 hover:text-white"
+                                onClick={() => handleSubmission(prompt)}
                             >
-                                <p className="hover:text-coffee-green text-center">{prompt_2}</p>
-                            </div>
-                            <div
-                                className="hoverable-div flex-col-centered w-full rounded-full p-1 mt-2 mb-1 font-semibold"
-                                style={{ outline: '2px solid #171717' }}
-                                onClick={() => handleSubmission(prompt_3)}
-                            >
-                                <p className="hover:text-coffee-green">{prompt_3}</p>
-                            </div>
-                        </div>
-                    )}
+                                {prompt}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                     {/* Input Box (always visible) */}
                     <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? "sticky bottom-0 bg-white shadow-lg" : ""}`}>
