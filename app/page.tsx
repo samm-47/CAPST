@@ -33,7 +33,7 @@ export default function Home() {
     },
   ];
   
-  const handleExternalClick = (e: React.MouseEvent, link: string) => {
+  const handleExternalClick = (e: React.MouseEvent) => {
     const confirmLeave = window.confirm("You're about to leave SustainABLE. Continue?");
     if (!confirmLeave) {
       e.preventDefault(); // Stop navigation
@@ -84,7 +84,7 @@ export default function Home() {
                 href={card.link}
                 className="nav-ribbon-card-button"
                 {...(card.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                onClick={card.external ? (e) => handleExternalClick(e, card.link) : undefined}
+                onClick={card.external ? handleExternalClick : undefined}
               >
                 {card.title}
                 <i className={`ml-2 fa-lg ${card.icon}`}></i>

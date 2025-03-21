@@ -27,7 +27,7 @@ const Navbar = () => {
         }
     ];
     // Confirmation before leaving site
-    const handleExternalClick = (event: React.MouseEvent, link: string) => {
+    const handleExternalClick = (event: React.MouseEvent) => {
         const confirmLeave = window.confirm("You are about to leave SustainABLE. Continue?");
         if (!confirmLeave) {
             event.preventDefault(); // Prevent navigation if user cancels
@@ -61,7 +61,7 @@ const Navbar = () => {
                                 target={menu.link.startsWith("http") ? "_blank" : "_self"} 
                                 rel={menu.link.startsWith("http") ? "noopener noreferrer" : ""}
                                 // Handle external link clicks
-                                onClick={menu.link.startsWith("http") ? (e) => handleExternalClick(e, menu.link) : undefined}
+                                onClick={menu.link.startsWith("http") ? handleExternalClick : undefined}
                             >
                                 {menu.name}
                             </Link>
