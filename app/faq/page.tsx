@@ -41,10 +41,9 @@ const FaqPage = () => {
             </p>
           </div>
 
-        
         {/* Loop through each FAQ item and creates container for each Q&A pair*/}
         {FAQ_ITEMS.map((faq, index) => (
-          <div key={index} className="flex flex-col w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
+          <div key={index} className="flex flex-col justify-center align-center w-3/4 mb-6 bg-white shadow-lg rounded-lg p-6">
             
             {/* Question Header with Icon */}
             <div className="flex items-center space-x-2 mb-4">
@@ -60,10 +59,10 @@ const FaqPage = () => {
             ))}
 
             {/* Learn More Button - Redirects user to Chatbot page with the question as a parameter */}
-            <div className="mt-4">
+            <div className="flex flex-col justify-start items-center w-28 hoverable-div mt-5">
               <Link 
                 href={`/chatbot?question=${encodeURIComponent(faq.question)}`} 
-                className="bg-greenify-button-green text-white font-semibold px-4 py-2 rounded hover:bg-coffee-green"
+                className="bg-greenify-button-green text-white font-semibold px-2 py-2 mr-3 rounded hover:bg-coffee-green"
               >
                 Learn More
               </Link>
