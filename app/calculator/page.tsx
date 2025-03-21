@@ -137,7 +137,6 @@ const CalculatorPage: React.FC = () => {
                             airQualityScore);
 
     let sustainabilityScore = "";
-    let susScoreRange = "";
     let sustainabilityScoreDetail = "";
 
     if (!sustainabilityGrade|| !sustainabilityExplanation)
