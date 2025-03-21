@@ -289,6 +289,14 @@ Calculator Page
 }
 
 .hoverable-div:hover {
+  transform: scale(1.10); /* Slightly larger on hover */
+}
+
+.hoverable-faq {
+  transition: transform 0.3s ease; /* Smooth transition */
+}
+
+.hoverable-faq:hover {
   transform: scale(1.05); /* Slightly larger on hover */
 }
 

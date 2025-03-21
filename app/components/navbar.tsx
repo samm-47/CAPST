@@ -49,7 +49,7 @@ const Navbar = () => {
                             <Link 
                                 href={menu.link}
                                 className={`${isActive ? "nav-bar-element-select" : "nav-bar-element-default"} ${
-                                    menu.name === "GreenifyAI" ? "!text-green-700" : ""
+                                    menu.name === "GreenifyAI" ? "!text-green-800" : ""
                                 }`}
                                                               
                                 target={menu.link.startsWith("http") ? "_blank" : "_self"} 

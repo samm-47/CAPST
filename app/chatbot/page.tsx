@@ -314,7 +314,7 @@ const loadSavedChat = (index: number) => {
         <Layout>
             <div className="flex bg-gray-100">
                 {/* Sidebar Toggle Button (3-line icon) */}
-                <button
+                    <button
                     
                     onClick={toggleSidebar}
                     className="fixed top-[74px] left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
@@ -322,10 +322,9 @@ const loadSavedChat = (index: number) => {
                    <img
                     src="/sidebar.svg" // Path to your SVG image
                     alt="Toggle Sidebar"
-                    className="w-8 h-8 object-contain"
-       
-    />
-                </button>
+                    className="hoverable-div w-8 h-8 object-contain"
+                    />
+                    </button>
 
                 {/* Sidebar for chat sessions */}
                 <div
@@ -356,7 +355,7 @@ const loadSavedChat = (index: number) => {
                     {chats.map((chat, index) => (
                         <li
                             key={index}
-                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black ${
+                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black mb-2 ${
                                 currentChatIndex === index 
                                 ? "bg-gray-200 text-black" 
                                 : "bg-gray-200 text-black"
@@ -381,7 +380,7 @@ const loadSavedChat = (index: number) => {
                                     e.stopPropagation();
                                     deleteChat(index);
                                 }}
-                                className="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition ml-2"
+                                className="hoverable-div w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-800 transition ml-2"
                             >
                                 <i className="fa-solid fa-trash-can"></i>
                             </button>
@@ -430,12 +429,14 @@ const loadSavedChat = (index: number) => {
                                 <div ref={bottomReference} />
                             </div>
                             {/* Clear Chat History Button */}
-                            <button
-                                onClick={clearChatHistory}
-                                className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition flex items-center justify-center"
-                            >
-                                <i className="fa-solid fa-trash-can"></i>
-                            </button>
+                            <div className="hoverable-div">
+                                <button
+                                    onClick={clearChatHistory}
+                                    className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-800 transition flex items-center justify-center"
+                                >
+                                    <i className="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -471,7 +472,7 @@ const loadSavedChat = (index: number) => {
                         />
                         <button
                             onClick={() => handleSubmission()}
-                            className="ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
+                            className="hoverable-div ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
                         >
                             <i className="fa-solid fa-arrow-up"></i>
                         </button>
@@ -481,7 +482,7 @@ const loadSavedChat = (index: number) => {
                     <div className="flex-row-centered h-[8vh] max-w-[90%] mx-auto">
                         <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
                             <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i>
-                            <p className="footer-text hoverable-div text-center sm:text-left">
+                            <p className="footer-text hoverable-faq text-center sm:text-left">
                                 How was our AI-powered chatbot developed?
                             </p>
                         </Link>
