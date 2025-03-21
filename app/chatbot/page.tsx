@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import type { CancelTokenSource } from 'axios';
 import Layout from "./chatbot_layout";
 import Link from "next/link";
 
