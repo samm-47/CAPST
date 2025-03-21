@@ -1,6 +1,7 @@
 "use client"; // This allows for the use of the useState hooks
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import type { CancelTokenSource } from 'axios';
 import Layout from './chatbot_layout';
 
 import Link from "next/link";
@@ -128,25 +129,34 @@ const ChatbotPage = () => {
             ]);
             setLoading(true); // Starts the loading state
             try {
-                const response = await axios.post('https://capst.onrender.com/api/chat', {
-                    question: currentUserInput,
-                });
+                // Create a cancel token and assign it to the ref
+                chatCancelRef.current = axios.CancelToken.source(); 
+                const response = await axios.post('https://capst.onrender.com/api/chat', 
+                    { question: currentUserInput  },
+                    { cancelToken: chatCancelRef.current.token } // let it know prompts might be cancelled
+                );
 
                 setMessages((prevMessages) => [
                     ...prevMessages,
                     { type: 'bot', text: response.data.response }
                 ]);
             } catch (error) {
-                console.error('Error:', error);
-                setMessages((prevMessages) => [
-                    ...prevMessages,
-                    { type: 'bot', text: 'Sorry, something went wrong. Please try again later.' }
-                ]);
+                if (axios.isCancel(error)) {
+                    console.log("Chat requested canceled: ", error.message);
+                } else {
+                    console.error('Error:', error);
+                    setMessages((prevMessages) => [
+                        ...prevMessages,
+                        { type: 'bot', text: 'Sorry, something went wrong. Please try again later.' }
+                    ]);
+                }   
             } finally {
                 setLoading(false); // Ends the loading state
+                chatCancelRef.current = null; //  resets the cancel token
             }
         }
     };
+    
     // Sends the Common prompt clicked to the bot 
     const handleCommonPrompt = (prompt: string) => {
         handleSubmission(prompt);     
@@ -185,6 +195,9 @@ const ChatbotPage = () => {
         setMessages([initialMessage]);
         setHasSentMessage(false);
     };
+
+    // Cancelling Query button handling
+    const chatCancelRef = useRef<CancelTokenSource | null> (null);
     return (
         <Layout>
             <div className="default-page-bg">
@@ -216,11 +229,28 @@ const ChatbotPage = () => {
                                     </div>
                                 </div>
                             ))}
-                            {loading && ( // Renders a loading indicator
+                            {loading && (
+                            <>
+                                {/* Cancel Button */}
+                                <button
+                                onClick={() => { // Catch the cancelation otherwise can crash
+                                    if (chatCancelRef.current) {
+                                    chatCancelRef.current.cancel("User canceled the request.");
+                                    }
+                                }}
+                                    className="mb-2 ml-auto px-4 py-2 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition"
+                                >
+                                    <i className="fa-solid fa-rectangle-xmark mr-2"></i>
+                                    Cancel
+                                </button>
+
+                                {/* Loading Indicator */}
                                 <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
-                                    {loadingDots}  {/* loads animated dots */}
+                                {loadingDots}
                                 </div>
+                            </>
                             )}
+
                             
                             <div ref={bottomReference} />
                         </div>
