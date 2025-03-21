@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import type { CancelTokenSource } from 'axios';
 import Layout from "./chatbot_layout";
 import Link from "next/link";
 
@@ -79,7 +80,8 @@ const ChatbotPage = () => {
         setIsSidebarOpen((prevState) => !prevState);
     };
     
-    
+    const chatCancelRef = useRef<ReturnType<typeof axios.CancelToken.source> | null>(null);
+
     
 
     // Load previous messages and saved chats from localStorage
@@ -141,76 +143,85 @@ const ChatbotPage = () => {
     const handleSubmission = async (text?: string) => {
         setHasSentMessage(true);
         const currentUserInput = text || userInput;
-
+      
         if (currentUserInput.trim()) {
-            setUserInput("");
-
-            const updatedMessages = [
-                ...messages,
-                { type: "user", text: currentUserInput },
+          setUserInput("");
+      
+          const updatedMessages = [
+            ...messages,
+            { type: "user", text: currentUserInput },
+          ];
+          setMessages(updatedMessages);
+          setLoading(true);
+      
+          try {
+            // Generate a title for the chat
+            const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
+              input: currentUserInput,
+            });
+            const title = titleResponse.data.title;
+      
+            // Set up cancel token for chatbot request
+            chatCancelRef.current = axios.CancelToken.source();
+      
+            // Chatbot response with cancel config arg
+            const response = await axios.post(
+              "https://capst.onrender.com/api/chat",
+              { question: currentUserInput },
+              { cancelToken: chatCancelRef.current.token }
+            );
+      
+            const finalMessages = [
+              ...updatedMessages,
+              { type: "bot", text: response.data.response },
             ];
-            setMessages(updatedMessages);
-
-            setLoading(true);
-            try {
-                // Generate a title for the chat
-                const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
-                    input: currentUserInput,
-                });
-                const title = titleResponse.data.title;
-
-                // Get the chatbot's response
-                const response = await axios.post("https://capst.onrender.com/api/chat", {
-                    question: currentUserInput,
-                });
-
-                const finalMessages = [
-                    ...updatedMessages,
-                    { type: "bot", text: response.data.response },
-                ];
-                setMessages(finalMessages);
-
-                const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
-                const currentTimestamp = Date.now(); // Get the current timestamp
-
-                if (currentChatIndex !== null) {
-                    // Update an existing chat
-                    const updatedChats = [...savedChats];
-                    updatedChats[currentChatIndex] = {
-                        title: savedChats[currentChatIndex].title,
-                        messages: finalMessages,
-                        timestamp: currentTimestamp, // Update the timestamp
-                    };
-                    const sortedChats = updatedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
-                    setSavedChats(sortedChats);
-                    localStorage.setItem("savedChats", JSON.stringify(sortedChats));
-                } else {
-                    // Create a new chat
-                    const newSavedChats: SavedChat[] = [
-                        ...savedChats,
-                        {
-                            title,
-                            messages: finalMessages,
-                            timestamp: currentTimestamp, // Add the timestamp
-                        },
-                    ];
-                    const sortedChats = newSavedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
-                    setSavedChats(sortedChats);
-                    localStorage.setItem("savedChats", JSON.stringify(sortedChats));
-                    setCurrentChatIndex(sortedChats.length - 1);
-                    localStorage.setItem("currentChatIndex", JSON.stringify(sortedChats.length - 1));
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                setMessages((prevMessages) => [
-                    ...prevMessages,
-                    { type: "bot", text: "Sorry, something went wrong. Please try again later." },
-                ]);
-            } finally {
-                setLoading(false);
+            setMessages(finalMessages);
+      
+            const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
+            const currentTimestamp = Date.now();
+      
+            if (currentChatIndex !== null) {
+              const updatedChats = [...savedChats];
+              updatedChats[currentChatIndex] = {
+                title: savedChats[currentChatIndex].title,
+                messages: finalMessages,
+                timestamp: currentTimestamp,
+              };
+              const sortedChats = updatedChats.sort((a, b) => b.timestamp - a.timestamp);
+              setSavedChats(sortedChats);
+              localStorage.setItem("savedChats", JSON.stringify(sortedChats));
+            } else {
+              const newSavedChats: SavedChat[] = [
+                ...savedChats,
+                {
+                  title,
+                  messages: finalMessages,
+                  timestamp: currentTimestamp,
+                },
+              ];
+              const sortedChats = newSavedChats.sort((a, b) => b.timestamp - a.timestamp);
+              setSavedChats(sortedChats);
+              localStorage.setItem("savedChats", JSON.stringify(sortedChats));
+              setCurrentChatIndex(sortedChats.length - 1);
+              localStorage.setItem("currentChatIndex", JSON.stringify(sortedChats.length - 1));
             }
+          } catch (error: any) {
+            if (axios.isCancel(error)) {
+              console.log("Chat request canceled:", error.message);
+            } else {
+              console.error("Error:", error);
+              setMessages((prevMessages) => [
+                ...prevMessages,
+                { type: "bot", text: "Sorry, something went wrong. Please try again later." },
+              ]);
+            }
+          } finally {
+            setLoading(false);
+            chatCancelRef.current = null;
+          }
         }
-    };
+      };
+      
 
     // Loading dots animation
     useEffect(() => {
@@ -422,10 +433,27 @@ const loadSavedChat = (index: number) => {
                                     </div>
                                 ))}
                                 {loading && (
+                                <>
+                                    {/* Cancel Button */}
+                                    <button
+                                    onClick={() => {
+                                        if (chatCancelRef.current) {
+                                        chatCancelRef.current.cancel("User canceled the request.");
+                                        }
+                                    }}
+                                    className="mb-2 ml-auto px-4 py-2 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition"
+                                    >
+                                    <i className="fa-solid fa-rectangle-xmark mr-2"></i>
+                                    Cancel
+                                    </button>
+
+                                    {/* Loading Indicator */}
                                     <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
-                                        {loadingDots}
+                                    {loadingDots}
                                     </div>
+                                </>
                                 )}
+
                                 <div ref={bottomReference} />
                             </div>
                             {/* Clear Chat History Button */}

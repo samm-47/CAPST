@@ -26,7 +26,13 @@ const Navbar = () => {
             link: "https://greenifyai.com/"
         }
     ];
-
+    // Confirmation before leaving site
+    const handleExternalClick = (event: React.MouseEvent, link: string) => {
+        const confirmLeave = window.confirm("You are about to leave SustainABLE. Continue?");
+        if (!confirmLeave) {
+            event.preventDefault(); // Prevent navigation if user cancels
+        }
+    };
     return (
         <div className="nav-bar-header flex justify-between items-center relative">
             <div>
@@ -49,11 +55,13 @@ const Navbar = () => {
                             <Link 
                                 href={menu.link}
                                 className={`${isActive ? "nav-bar-element-select" : "nav-bar-element-default"} ${
-                                    menu.name === "GreenifyAI" ? "!text-green-800" : ""
+                                    menu.name === "GreenifyAI" ? "!text-green-700" : ""
                                 }`}
                                                               
                                 target={menu.link.startsWith("http") ? "_blank" : "_self"} 
                                 rel={menu.link.startsWith("http") ? "noopener noreferrer" : ""}
+                                // Handle external link clicks
+                                onClick={menu.link.startsWith("http") ? (e) => handleExternalClick(e, menu.link) : undefined}
                             >
                                 {menu.name}
                             </Link>
@@ -80,7 +88,16 @@ const Navbar = () => {
                         } hover:bg-gray-100`}
                         target={menu.link.startsWith("http") ? "_blank" : "_self"} 
                         rel={menu.link.startsWith("http") ? "noopener noreferrer" : ""}
-                        onClick={() => setIsOpen(false)} // Close menu on click
+                        onClick={(e) => {
+                            if (menu.link.startsWith("http")) {
+                                const confirmLeave = window.confirm("You are about to leave SustainABLE. Continue?");
+                                if (!confirmLeave) {
+                                    e.preventDefault(); // Stops navigation if user cancels
+                                    return;
+                                }
+                            }
+                            setIsOpen(false); // Always close the menu
+                        }}
                     >
                         {menu.name}
                     </Link>
@@ -90,4 +107,5 @@ const Navbar = () => {
     );
 };
 
-export default Navbar;
+  
+  export default Navbar;

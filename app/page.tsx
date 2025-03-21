@@ -1,9 +1,45 @@
 // app/page.tsx
+"use client"
 import Image from "next/image";
 import Link from "next/link";
 import "./globals.css"
 
 export default function Home() {
+  const ribbonCards = [
+    {
+      title: "Calculator",
+      description: "Use our calculator to estimate your current sustainability score.",
+      link: "/calculator",
+      icon: "fa-solid fa-calculator",
+    },
+    {
+      title: "Chatbot",
+      description: "Ask our chatbot any questions you have about sustainable living.",
+      link: "/chatbot",
+      icon: "fa-regular fa-comment",
+    },
+    {
+      title: "FAQ",
+      description: "Find answers to frequently asked questions.",
+      link: "/faq",
+      icon: "fa-regular fa-question-circle",
+    },
+    {
+      title: "GreenifyAI",
+      description: "Learn more about Green Expectations and sustainable housing.",
+      link: "https://greenifyai.com/",
+      icon: "fa-solid fa-house",
+      external: true,
+    },
+  ];
+  
+  const handleExternalClick = (e: React.MouseEvent, link: string) => {
+    const confirmLeave = window.confirm("You're about to leave SustainABLE. Continue?");
+    if (!confirmLeave) {
+      e.preventDefault(); // Stop navigation
+    }
+  };
+  
   return (
     <div>
       <div className="home-page-bg">
@@ -40,78 +76,23 @@ export default function Home() {
         </div>
         
         <div className="nav-ribbon-body mt-[1vh]">
-          {/* Card for Calculator */}
-            <div className="nav-ribbon-card">
-              <h2 className="nav-ribbon-card-title">
-                Calculator
-              </h2>
-              <p className="nav-ribbon-card-caption">
-                Use our calculator to estimate your current sustainability score.
-              </p>
-              {/* Link to the Calculator page */}
+          {ribbonCards.map((card, index) => (
+            <div key={index} className="nav-ribbon-card">
+              <h2 className="nav-ribbon-card-title">{card.title}</h2>
+              <p className="nav-ribbon-card-caption">{card.description}</p>
               <Link
-                href="/calculator"
+                href={card.link}
                 className="nav-ribbon-card-button"
+                {...(card.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                onClick={card.external ? (e) => handleExternalClick(e, card.link) : undefined}
               >
-                Calculator
-                <i className="ml-2 fa-lg fa-solid fa-calculator"></i>
+                {card.title}
+                <i className={`ml-2 fa-lg ${card.icon}`}></i>
               </Link>
             </div>
-
-          {/* Card for Chatbot */}
-            <div className="nav-ribbon-card">
-                <h2 className="nav-ribbon-card-title">
-                  Chatbot
-                </h2>
-                <p className="nav-ribbon-card-caption">
-                  Ask our chatbot any questions you have about sustainable living.
-                </p>
-                {/* Link to the Chatbot page */}
-                <Link
-                  href="/chatbot"
-                  className="nav-ribbon-card-button"
-                >
-                  Chatbot
-                  <i className="ml-2 fa-lg fa-regular fa-comment"></i>
-                </Link>
-              </div>
-
-            {/* Card for FAQ */}
-              <div className="nav-ribbon-card">
-                <h2 className="nav-ribbon-card-title">FAQ</h2>
-                <p className="nav-ribbon-card-caption">
-                  Find answers to frequently asked questions.
-                </p>
-                {/* Link to the FAQ page */}
-                <Link
-                  href="/faq"
-                  className="nav-ribbon-card-button"
-                >
-                  FAQ
-                  <i className="ml-2 fa-lg fa-regular fa-question-circle"></i>
-                </Link>
-              </div>
-
-            {/* Card for Green Expectations */}
-              <div className="nav-ribbon-card">
-                <h2 className="nav-ribbon-card-title">
-                  GreenifyAI
-                </h2>
-                <p className="nav-ribbon-card-caption">
-                  Learn more about Green Expectations and sustainable housing.
-                </p>
-                {/* Link to the GreenExpectations Real Estate website */}
-                <Link
-                href="https://greenifyai.com/"
-                className="nav-ribbon-card-button"
-                // Used to open website in a new tab
-                target="_blank" rel="noopener noreferrer"        
-                >
-                GreenifyAI
-                <i className="ml-2 fa-lg fa-solid fa-house"></i> {/* House Icon */}
-                </Link>
-              </div>
+          ))}
         </div>
+
 
         {/* Footer link to FAQ */}
         <div className="flex-row-centered h-[4vh]">
