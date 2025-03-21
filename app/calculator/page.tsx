@@ -238,7 +238,6 @@ const CalculatorPage: React.FC = () => {
                   gap: '10px',
                 }}
               >
-                  <div className="flex-row-centered w-full">
                       {/* Radio options */}
                       <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <input
@@ -300,7 +299,6 @@ const CalculatorPage: React.FC = () => {
                           1000+
                           </label>
                       </div>
-                  </div>
               </div>
           </div>
 
@@ -328,7 +326,6 @@ const CalculatorPage: React.FC = () => {
               }}
               >
                   {/* Radio options */}
-                  <div className="flex-row-centered w-full">
                       <div className="sus-calc-bubble">
                           <input type="radio" id="renew1" name="renew_energy"  className="hoverable-bubble-div custom-radio" onChange={handlePercentRenewable}/> 
                           <label htmlFor="renew1" className="text-lg">
@@ -359,7 +356,6 @@ const CalculatorPage: React.FC = () => {
                               80+%
                           </label> 
                       </div>
-                  </div>
               </div>
           </div>
 
