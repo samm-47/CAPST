@@ -372,54 +372,55 @@ const CalculatorPage: React.FC = () => {
                   <label className="sus-calc-title"> 
                       Monthly Water Usage (gal) 
                   </label>
-
                   <p> 
                       Found on your monthly water utility bill
                   </p>
               </div>
               
-              <div className="sus-calc-input"
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
+              {/* Water Usage Input Options */}
+              <div 
+                  className="sus-calc-input"
+                  style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  gap: '10px',
+                  }}
               >
-                  <div className="flex-row-centered w-full">
-                      {/* Radio options */}
-                      <div className="sus-calc-bubble"> 
-                          <input type="radio" id="water1" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
-                          <label htmlFor="water1" className="text-lg">
-                              &lt;50
-                          </label> 
-                      </div>
-                      <div className="sus-calc-bubble"> 
-                          <input type="radio" id="water2" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
-                          <label htmlFor="water2" className="text-lg">
-                              50 to 70
-                          </label> 
-                      </div>
-                      <div className="sus-calc-bubble"> 
-                          <input type="radio" id="water3" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
-                          <label htmlFor="water3" className="text-lg">
-                              70 to 90
-                          </label> 
-                      </div>
-                      <div className="sus-calc-bubble"> 
-                          <input type="radio" id="water4" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
-                          <label htmlFor="water4" className="text-lg">
-                              90 to 110
-                          </label> 
-                      </div>
-                      <div className="sus-calc-bubble"> 
-                          <input type="radio" id="water5" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
-                          <label htmlFor="water5" className="text-lg">
-                              110+
-                          </label> 
-                      </div>
+                  {/* Radio options */}
+                  <div className="sus-calc-bubble"> 
+                      <input type="radio" id="water1" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
+                      <label htmlFor="water1" className="text-lg">
+                          &lt;50
+                      </label> 
+                  </div>
+                  <div className="sus-calc-bubble"> 
+                      <input type="radio" id="water2" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
+                      <label htmlFor="water2" className="text-lg">
+                          50 to 70
+                      </label> 
+                  </div>
+                  <div className="sus-calc-bubble"> 
+                      <input type="radio" id="water3" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
+                      <label htmlFor="water3" className="text-lg">
+                          70 to 90
+                      </label> 
+                  </div>
+                  <div className="sus-calc-bubble"> 
+                      <input type="radio" id="water4" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
+                      <label htmlFor="water4" className="text-lg">
+                          90 to 110
+                      </label> 
+                  </div>
+                  <div className="sus-calc-bubble"> 
+                      <input type="radio" id="water5" name="water_usage" className="hoverable-bubble-div custom-radio" onChange={handleWaterUsage}/> 
+                      <label htmlFor="water5" className="text-lg">
+                          110+
+                      </label> 
                   </div>
               </div>
+          
+          {/* End of Water Usage section */}
           </div>
 
           <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
