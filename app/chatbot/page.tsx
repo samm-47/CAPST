@@ -204,17 +204,18 @@ const ChatbotPage = () => {
               setCurrentChatIndex(sortedChats.length - 1);
               localStorage.setItem("currentChatIndex", JSON.stringify(sortedChats.length - 1));
             }
-          } catch (error: any) {
-            if (axios.isCancel(error)) {
-              console.log("Chat request canceled:", error.message);
-            } else {
-              console.error("Error:", error);
-              setMessages((prevMessages) => [
-                ...prevMessages,
-                { type: "bot", text: "Sorry, something went wrong. Please try again later." },
-              ]);
+            } catch (error: unknown) {
+                if (axios.isCancel(error)) {
+                console.log("Chat request canceled:", (error as Error).message);
+                } else {
+                console.error("Error:", error);
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    { type: "bot", text: "Sorry, something went wrong. Please try again later." },
+                ]);
+                }
             }
-          } finally {
+           finally {
             setLoading(false);
             chatCancelRef.current = null;
           }
