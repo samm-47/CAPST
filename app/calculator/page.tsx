@@ -220,14 +220,7 @@ const CalculatorPage: React.FC = () => {
         <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
 
           {/* Monthly Energy Consumption */}
-          <div className="sus-calc-input"
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
+          <div className="sus-calc-input">
             <div  className="sus-calc-topic">
               <label className="sus-calc-title">
                   Monthly Energy Consumption (kWh) 
@@ -237,7 +230,14 @@ const CalculatorPage: React.FC = () => {
               </p>
             </div>
 
-              <div className="sus-calc-input">
+              <div className="sus-calc-input"
+                style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  gap: '10px',
+                }}
+              >
                   <div className="flex-row-centered w-full">
                       {/* Radio options */}
                       <div className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -307,14 +307,7 @@ const CalculatorPage: React.FC = () => {
           <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
 
           {/* Percent Renewable Energy */}
-          <div className="sus-calc-input"
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
+          <div className="sus-calc-input">
               {/* Title and captions */}
               <div className="sus-calc-topic">
                   <label className="sus-calc-title"> 
@@ -326,7 +319,14 @@ const CalculatorPage: React.FC = () => {
               </div>
 
               {/* Input section */}
-              <div className="sus-calc-input">
+              <div className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+              >
                   {/* Radio options */}
                   <div className="flex-row-centered w-full">
                       <div className="sus-calc-bubble">
@@ -367,14 +367,7 @@ const CalculatorPage: React.FC = () => {
           <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
 
           { /* Monthly Water Usage */}
-          <div className="sus-calc-input"
-              style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                gap: '10px',
-              }}
-            >
+          <div className="sus-calc-input">
               <div className="sus-calc-topic">
                   <label className="sus-calc-title"> 
                       Monthly Water Usage (gal) 
@@ -385,7 +378,14 @@ const CalculatorPage: React.FC = () => {
                   </p>
               </div>
               
-              <div className="sus-calc-input">
+              <div className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+              >
                   <div className="flex-row-centered w-full">
                       {/* Radio options */}
                       <div className="sus-calc-bubble"> 
