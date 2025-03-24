@@ -1,523 +1,513 @@
-"use client";
-import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
-import Layout from "./chatbot_layout";
+// app/calculator/page.tsx
+"use client"; // Mark this as a Client Component for client-side hooks
+
+// Important for creation of the logo top right
+import Layout from "./calculator_layout";
+import { useEffect, useState } from "react";
+import axios from 'axios';
 import Link from "next/link";
 
-const page_title = "Chatbot";
-const page_caption = "Learn more about sustainable living!";
+import './custom_radio.css';
 
-// Common prompts for quick access
-const prompt_1 = "How can I make my house more sustainable?";
-const prompt_2 = "Easy ways to increase renewable energy";
-const prompt_3 = "What is sustainable living?";
+const page_title = "Calculator"
+const page_caption = "How sustainable is your lifestyle?"
 
-type ChatMessage = {
-    type: string;
-    text: string;
-};
+const CalculatorPage: React.FC = () => {
 
-type SavedChat = {
-    title: string;
-    messages: ChatMessage[];
-    timestamp: number; // Add a timestamp field
-};
+  // Used to track Energy Consumption radio selection.
+  const [energyUsage, setEnergyUsage] = useState<string | null>(null);
 
-const ChatbotPage = () => {
-    const [userInput, setUserInput] = useState("");
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [hasSentMessage, setHasSentMessage] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [loadingDots, setLoadingDots] = useState("");
-    const [savedChats, setSavedChats] = useState<SavedChat[]>([]);
-    const [currentChatIndex, setCurrentChatIndex] = useState<number | null>(null);
-    const [faqQuestion, setFaqQuestion] = useState<string | null>(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
-    const hasProcessedFAQ = useRef(false);
-    const bottomReference = useRef<HTMLDivElement>(null);
-   
-    const getRelativeTime = (timestamp: number): string => {
-        const now = Date.now();
-        const diffInMilliseconds = now - timestamp;
-        const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
+  const [chatbotResponse, setChatbotResponse] = useState<string>('');
 
-        if (diffInDays === 0) {
-            return "Today";
-        } else if (diffInDays === 1) {
-            return "Yesterday";
-        } else if (diffInDays <= 3) {
-            return "Last 3 days";
-        } else if (diffInDays <= 7) {
-            return "Last 7 days";
-        } else if (diffInDays <= 30) {
-            return "Last 30 days";
-        } else {
-            return "Older";
-        }
-    };
+  // Used to track Percent Renewable Energy radio selection.
+  const [percentRenewable, setPercentRenewable] = useState<string | null>(null); 
 
-    const groupChatsByRelativeTime = (chats: SavedChat[]) => {
-        const groupedChats: { [key: string]: SavedChat[] } = {};
+  // Used to track Water Usage radio selection.
+  const [waterUsage, setWaterUsage] = useState<string | null>(null); 
 
-        chats.forEach((chat) => {
-            const relativeTime = getRelativeTime(chat.timestamp);
-            if (!groupedChats[relativeTime]) {
-                groupedChats[relativeTime] = [];
-            }
-            groupedChats[relativeTime].push(chat);
-        });
+  // Used to track CO2 Level radio selection.
+  const [airQuality, setAirQuality] = useState<string | null>(null); 
+  const [isMobile, setIsMobile] = useState(false);
 
-        return groupedChats;
-    };
+  // Retrieve saved choices from localStorage when the component mounts
+  useEffect(() => {
+    const savedEnergyUsage = localStorage.getItem("energyUsage");
+    const savedPercentRenewable = localStorage.getItem("percentRenewable");
+    const savedWaterUsage = localStorage.getItem("waterUsage");
+    const savedAirQuality = localStorage.getItem("airQuality");
 
-    const initialMessage = {
-        type: "bot",
-        text: "Hello, how can I help you?",
-    };
-    const toggleSidebar = () => {
-        console.log("Toggling sidebar. Current state:", isSidebarOpen);
-        setIsSidebarOpen((prevState) => !prevState);
-    };
-    
-    const chatCancelRef = useRef<ReturnType<typeof axios.CancelToken.source> | null>(null);
+    console.log("Retrieved from localStorage:", {
+      savedEnergyUsage,
+      savedPercentRenewable,
+      savedWaterUsage,
+      savedAirQuality,
+    });
+
+    // Only update state if the retrieved value is not null or empty
+    if (savedEnergyUsage) setEnergyUsage(savedEnergyUsage);
+    if (savedPercentRenewable) setPercentRenewable(savedPercentRenewable);
+    if (savedWaterUsage) setWaterUsage(savedWaterUsage);
+    if (savedAirQuality) setAirQuality(savedAirQuality);
+  }, []); // Empty dependency array ensures this runs only on mount
+
+  // Save user choices to localStorage whenever they change
+  useEffect(() => {
+    console.log("Saving to localStorage:", {
+      energyUsage,
+      percentRenewable,
+      waterUsage,
+      airQuality,
+    });
+
+    if (energyUsage) localStorage.setItem("energyUsage", energyUsage);
+    if (percentRenewable) localStorage.setItem("percentRenewable", percentRenewable);
+    if (waterUsage) localStorage.setItem("waterUsage", waterUsage);
+    if (airQuality) localStorage.setItem("airQuality", airQuality);
+  }, [energyUsage, percentRenewable, waterUsage, airQuality]); // Save only when these values change
 
     
+  
+  const handleEnergyUsage = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setEnergyUsage(event.target.id); };
 
-    // Load previous messages and saved chats from localStorage
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                const savedMessages = localStorage.getItem("chatHistory");
-                const savedChats = localStorage.getItem("savedChats");
-                const savedChatIndex = localStorage.getItem("currentChatIndex");
-
-                if (savedMessages) {
-                    const parsedMessages: ChatMessage[] = JSON.parse(savedMessages);
-
-                    if (parsedMessages.length > 0) {
-                        setMessages(parsedMessages);
-
-                        if (parsedMessages.length === 1 && parsedMessages[0].text === initialMessage.text) {
-                            setHasSentMessage(false);
-                        } else {
-                            setHasSentMessage(true);
-                        }
-                    }
-                } else {
-                    setMessages([initialMessage]);
-                    setHasSentMessage(false);
-                    localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
-                }
-
-                if (savedChats) {
-                    const parsedChats: SavedChat[] = JSON.parse(savedChats);
-                    setSavedChats(parsedChats);
-                }
-
-                if (savedChatIndex !== null) {
-                    setCurrentChatIndex(JSON.parse(savedChatIndex));
-                }
-            } catch (error) {
-                console.error("Error loading localStorage data:", error);
-            }
-        }
-    }, []);
-
-    // Save messages to localStorage whenever they change
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                localStorage.setItem("chatHistory", JSON.stringify(messages));
-            } catch (error) {
-                console.error("Error saving to localStorage:", error);
-            }
-        }
-    }, [messages]);
-
-    // Handle input changes
-    const handleInputChanges = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setUserInput(event.target.value);
-    };
-
-    const handleSubmission = async (text?: string) => {
-        setHasSentMessage(true);
-        const currentUserInput = text || userInput;
-      
-        if (currentUserInput.trim()) {
-          setUserInput("");
-      
-          const updatedMessages = [
-            ...messages,
-            { type: "user", text: currentUserInput },
-          ];
-          setMessages(updatedMessages);
-          setLoading(true);
-      
-          try {
-            // Generate a title for the chat
-            const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
-              input: currentUserInput,
-            });
-            const title = titleResponse.data.title;
-      
-            // Set up cancel token for chatbot request
-            chatCancelRef.current = axios.CancelToken.source();
-      
-            // Chatbot response with cancel config arg
-            const response = await axios.post(
-              "https://capst.onrender.com/api/chat",
-              { question: currentUserInput },
-              { cancelToken: chatCancelRef.current.token }
-            );
-      
-            const finalMessages = [
-              ...updatedMessages,
-              { type: "bot", text: response.data.response },
-            ];
-            setMessages(finalMessages);
-      
-            const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
-            const currentTimestamp = Date.now();
-      
-            if (currentChatIndex !== null) {
-              const updatedChats = [...savedChats];
-              updatedChats[currentChatIndex] = {
-                title: savedChats[currentChatIndex].title,
-                messages: finalMessages,
-                timestamp: currentTimestamp,
-              };
-              const sortedChats = updatedChats.sort((a, b) => b.timestamp - a.timestamp);
-              setSavedChats(sortedChats);
-              localStorage.setItem("savedChats", JSON.stringify(sortedChats));
-            } else {
-              const newSavedChats: SavedChat[] = [
-                ...savedChats,
-                {
-                  title,
-                  messages: finalMessages,
-                  timestamp: currentTimestamp,
-                },
-              ];
-              const sortedChats = newSavedChats.sort((a, b) => b.timestamp - a.timestamp);
-              setSavedChats(sortedChats);
-              localStorage.setItem("savedChats", JSON.stringify(sortedChats));
-              setCurrentChatIndex(sortedChats.length - 1);
-              localStorage.setItem("currentChatIndex", JSON.stringify(sortedChats.length - 1));
-            }
-            } catch (error: unknown) {
-                if (axios.isCancel(error)) {
-                console.log("Chat request canceled:", (error as Error).message);
-                } else {
-                console.error("Error:", error);
-                setMessages((prevMessages) => [
-                    ...prevMessages,
-                    { type: "bot", text: "Sorry, something went wrong. Please try again later." },
-                ]);
-                }
-            }
-           finally {
-            setLoading(false);
-            chatCancelRef.current = null;
-          }
-        }
-      };
-      
-
-    // Loading dots animation
-    useEffect(() => {
-        if (loading) {
-            const interval = setInterval(() => {
-                setLoadingDots((prev) => {
-                    if (prev === "...") return ".";
-                    else return prev + ".";
-                });
-            }, 500);
-
-            return () => clearInterval(interval);
-        } else {
-            setLoadingDots("");
-        }
-    }, [loading]);
-
-    // Function to determine the width class based on the number of words
-    const getWidthClass = (text: string) => {
-        const wordCount = text.split(" ").length;
-
-        if (wordCount <= 10) {
-            return "max-w-xs";
-        } else if (wordCount <= 20) {
-            return "max-w-md";
-        } else {
-            return "max-w-lg";
-        }
-    };
-
-    // Clear chat history
-    const clearChatHistory = () => {
-        localStorage.removeItem("chatHistory");
-        setMessages([initialMessage]);
-        setHasSentMessage(false);
-        setCurrentChatIndex(null);
-    };
-
-    const startNewChat = () => {
-        setMessages([initialMessage]);
-        setHasSentMessage(false);
-        localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
-        setCurrentChatIndex(null);
-        localStorage.removeItem("currentChatIndex");
+  const handlePercentRenewable = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setPercentRenewable(event.target.id); };
     
-        // Close the sidebar on mobile devices
-        if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
-            setIsSidebarOpen(false);
-        }
+  const handleWaterUsage = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setWaterUsage(event.target.id); };
+
+  const handleAirQuality = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setAirQuality(event.target.id); };
+
+  // Clear saved choices
+  const clearSavedChoices = () => {
+    localStorage.removeItem("energyUsage");
+    localStorage.removeItem("percentRenewable");
+    localStorage.removeItem("waterUsage");
+    localStorage.removeItem("airQuality");
+    setEnergyUsage(null);
+    setPercentRenewable(null);
+    setWaterUsage(null);
+    setAirQuality(null);
+  };
+  
+    const [copied, setCopied] = useState(false);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(chatbotResponse)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        })
+        .catch((error) => console.error('Error copying text: ', error));
+    };
+  
+    const openModal = () => {
+      setIsModalOpen(true);
+    };
+  
+    const closeModal = () => {
+      setIsModalOpen(false);
     };
 
-    // Load a saved chat
-   
-const loadSavedChat = (index: number) => {
-    const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
-    const sortedChats = savedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
+      // Check for window width on component mount
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
 
-    if (sortedChats[index]) {
-        setMessages(sortedChats[index].messages);
-        setHasSentMessage(true);
-        setCurrentChatIndex(index); // Set the currentChatIndex to the correct index
-        localStorage.setItem("currentChatIndex", JSON.stringify(index));
+    // Initial check
+    handleResize();
 
-        // Close the sidebar on mobile devices
-        if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
-            setIsSidebarOpen(false);
-        }
+    // Add event listener for window resize
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup event listener on unmount
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+    
+  const calculateScore = async () => {
+    const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
+    const sustainabilityExplanation = document.getElementById("sustainabilityScoreExplanation");
+
+    let sustainabilityScoreInt:number = -1;
+    let energyConsumptionScore:number;
+    let renewableEnergyScore:number;
+    let waterConsumptionScore:number;
+    let airQualityScore:number;
+
+    switch (energyUsage) {
+      case "energy1": energyConsumptionScore = 5; break;
+      case "energy2": energyConsumptionScore = 4; break;
+      case "energy3": energyConsumptionScore = 3; break;
+      case "energy4": energyConsumptionScore = 2; break;
+      case "energy5": energyConsumptionScore = 1; break;
+      default: energyConsumptionScore = 0;
     }
-};
 
-    const deleteChat = (index: number) => {
-        const updatedChats: SavedChat[] = savedChats.filter((_, i) => i !== index);
-        setSavedChats(updatedChats);
-        localStorage.setItem("savedChats", JSON.stringify(updatedChats));
+    switch (percentRenewable) {
+      case "renew1": renewableEnergyScore = 1; break;
+      case "renew2": renewableEnergyScore = 2; break;
+      case "renew3": renewableEnergyScore = 3; break;
+      case "renew4": renewableEnergyScore = 4; break;
+      case "renew5": renewableEnergyScore = 5; break;
+      default: renewableEnergyScore = 0;
+    }
 
-        if (currentChatIndex === index) {
-            setMessages([initialMessage]);
-            setHasSentMessage(false);
-            setCurrentChatIndex(null);
-            localStorage.removeItem("currentChatIndex");
+    switch (waterUsage) {
+      case "water1": waterConsumptionScore = 5; break;
+      case "water2": waterConsumptionScore = 4; break;
+      case "water3": waterConsumptionScore = 3; break;
+      case "water4": waterConsumptionScore = 2; break;
+      case "water5": waterConsumptionScore = 1; break;
+      default: waterConsumptionScore = 0;
+    }
+
+    switch (airQuality) {
+      case "air1": airQualityScore = 5; break;
+      case "air2": airQualityScore = 4; break;
+      case "air3": airQualityScore = 3; break;
+      case "air4": airQualityScore = 2; break;
+      case "air5": airQualityScore = 1; break;
+      default: airQualityScore = 0;
+    }
+
+    {/* TODO: Create more complex scoring system */}
+    {/* WIll need to add more metrics and weighed/curved scoring systems */}
+    sustainabilityScoreInt = 5 * 
+                            (energyConsumptionScore + 
+                            renewableEnergyScore +
+                            waterConsumptionScore +
+                            airQualityScore);
+
+    let sustainabilityScore = "";
+    let sustainabilityScoreDetail = "";
+
+    if (!sustainabilityGrade|| !sustainabilityExplanation)
+    {
+      console.error("No element found.");
+    }
+    else
+    {
+      if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 25) {
+        sustainabilityScore = `F (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "Oh no! A score of F indicates that multiple areas of your home and lifestyle can be improved to become more sustainable.";
+      }
+      else if (sustainabilityScoreInt > 25 && sustainabilityScoreInt <= 50) {
+        sustainabilityScore = `D (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "Oh no! A score of D indicates that one or more areas of your home and lifestyle can be improved to become more sustainable.";
+      }
+      else if (sustainabilityScoreInt > 50 && sustainabilityScoreInt <= 65) {
+        sustainabilityScore = `C (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "You are doing alright! A score of C indicates that your home and lifestyle are somewhat helping to create a cleaner environment.";
+      }
+      else if (sustainabilityScoreInt > 65 && sustainabilityScoreInt <= 80) {
+        sustainabilityScore = `B (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "Good job! Your home and lifestyle for the most part are helping create a cleaner environment!";
+      }
+      else if (sustainabilityScoreInt > 80 && sustainabilityScoreInt <= 99) {
+        sustainabilityScore = `A (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "Nice job! Your home and lifestyle are helping create a cleaner environment!";
+      }
+      else if (sustainabilityScoreInt == 100) {
+        sustainabilityScore = `S (${sustainabilityScoreInt})`;
+        sustainabilityScoreDetail = "Perfect! Your home and lifestyle are helping create a cleaner environment!";
+      }
+      else
+      {
+        sustainabilityScore = "Error!";
+        sustainabilityScoreDetail = "Please select a value for each category."
+      }
+
+      sustainabilityGrade.textContent = sustainabilityScore;
+      sustainabilityExplanation.textContent = sustainabilityScoreDetail;
+      try {
+        const data = {
+          score: sustainabilityScore
+        };
+        
+        console.log("Sending data to chatbot:", data);
+        
+        const response = await axios.post('https://capst.onrender.com/api/chat/calc', data);
+        
+        console.log("Chatbot response:", response.data);
+        
+        // Update the state with the chatbot's response
+        if (response.data && response.data.response) {
+          setChatbotResponse(response.data.response); // Ensure the backend returns { message: "..." }
+        } else {
+          setChatbotResponse("No response received from the chatbot.");
         }
-    };
+      } catch (error) {
+        console.error("Error sending score to chatbot:", error);
+        setChatbotResponse("Failed to get a response from the chatbot.");
+      }
+      
 
-    // FAQ integration
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const searchParams = new URLSearchParams(window.location.search);
-            const question = searchParams.get("question");
-            if (question) setFaqQuestion(question);
-        }
-    }, []);
+    }
+  }
 
-    useEffect(() => {
-        if (faqQuestion && !hasProcessedFAQ.current) {
-            hasProcessedFAQ.current = true;
-            handleSubmission(faqQuestion);
-        }
-    }, [faqQuestion]);
+  return (
+    <Layout>
+      {/* CSS grid to center content like home.tsx page */}
+      <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
+        <div className="flex flex-col w-full sm:w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-2 sm:p-1">
+          <h1 className="title text-center text-xl sm:text-xl md:text-3xl lg:text-4xl">
+            {page_title}
+          </h1>
+          <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%] text-sm sm:text-base md:text-lg lg:text-xl">
+            {page_caption}
+          </p>
+        </div>
 
-    return (
-        <Layout>
-            <div className="flex bg-gray-100">
-                {/* Sidebar Toggle Button (3-line icon) */}
-                    <button
-                    
-                    onClick={toggleSidebar}
-                    className="fixed top-[74px] left-5 z-20 p-1 bg-gray-100 text-black rounded-full"
-                >
-                   <img
-                    src="/sidebar.svg" // Path to your SVG image
-                    alt="Toggle Sidebar"
-                    className="hoverable-div w-8 h-8 object-contain"
-                    />
-                    </button>
-
-                {/* Sidebar for chat sessions */}
-                <div
-    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-    } transition-transform duration-300 z-10 left-0`}
->
-    <div className="flex justify-between items-center mb-4">
-        <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
-        <button onClick={startNewChat}> 
-            <img
-                    src="/chat.png" // Path to your SVG image
-                    alt="Toggle Sidebar"
-                    className="w-5 h-5 object-contain"
-       
-    />
-    </button>
-    </div>
-
-
-    
-    {/* Scrollable Chat List */}
-    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
-        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
-            <div key={relativeTime}>
-                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
-                <ul className="flex-1">
-                    {chats.map((chat, index) => (
-                        <li
-                            key={index}
-                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black mb-2 ${
-                                currentChatIndex === index 
-                                ? "bg-gray-200 text-black" 
-                                : "bg-gray-200 text-black"
-                            } flex justify-between items-center`}
-                        >
-                            {/* Icon */}
-                            
-
-                            {/* Chat Title */}
-                            <span 
-                                onClick={() => loadSavedChat(index)} 
-                                className="flex-1 truncate pr-2" // Add padding to the right
-                            >
-                                {chat.title}
-                            </span>
-
-                            
-
-                            {/* Delete Button */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteChat(index);
-                                }}
-                                className="hoverable-div w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-800 transition ml-2"
-                            >
-                                <i className="fa-solid fa-trash-can"></i>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
+        {/* Main Content Section */}
+        <div className="flex-col-centered w-2/3 bg-white shadow-lg rounded-lg p-8 gap-[4vh]">
+          {/* Monthly Energy Consumption */}
+          <div className="sus-calc-input">
+            <div className="sus-calc-topic">
+              <label className="sus-calc-title">
+                Monthly Energy Consumption (kWh)
+              </label>
+              <p>Found on your monthly energy utility bill</p>
             </div>
-        ))}
-    </div>
-</div>
-
-                {/* Main Content Area */}
-                <div
-                    className={`flex-1 default-page-bg transition-all duration-300 ${
-                        isSidebarOpen ? "ml-0 md:ml-64" : "ml-0" // Adjust margin for mobile and desktop
-                    }`}
-                >
-                    <h1 className="page-title">{page_title}</h1>
-                    <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
-                        {page_caption}
-                    </p>
-
-                    {/* Chat Messages (only shown after sending a message) */}
-                    {hasSentMessage && (
-                        <div className="flex items-start w-full max-w-4xl mb-4">
-                            <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
-                                {messages.map((message, index) => (
-                                    <div key={index} className="flex flex-col">
-                                        {message.type !== "user" && (
-                                            <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
-                                        )}
-                                        <div
-                                            className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
-                                                message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
-                                            } break-words`}
-                                        >
-                                            {message.text}
-                                        </div>
-                                    </div>
-                                ))}
-                                {loading && (
-                                <>
-                                    {/* Cancel Button */}
-                                    <button
-                                    onClick={() => {
-                                        if (chatCancelRef.current) {
-                                        chatCancelRef.current.cancel("User canceled the request.");
-                                        }
-                                    }}
-                                    className="mb-2 ml-auto px-4 py-2 bg-red-500 text-white rounded-full shadow hover:bg-red-600 transition"
-                                    >
-                                    <i className="fa-solid fa-rectangle-xmark mr-2"></i>
-                                    Cancel
-                                    </button>
-
-                                    {/* Loading Indicator */}
-                                    <div className="p-3 font-bold rounded-lg mb-4 text-gray-900 max-w-xs">
-                                    {loadingDots}
-                                    </div>
-                                </>
-                                )}
-
-                                <div ref={bottomReference} />
-                            </div>
-                            {/* Clear Chat History Button */}
-                            <div className="hoverable-div">
-                                <button
-                                    onClick={clearChatHistory}
-                                    className="ml-4 w-10 h-10 bg-red-500 text-white rounded-full shadow hover:bg-red-800 transition flex items-center justify-center"
-                                >
-                                    <i className="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Common Prompts Section (only shown before sending a message) */}
-                        {!hasSentMessage && (
-                    <div className="flex flex-col items-center max-w-xl w-3/4 bg-white shadow-lg rounded-xl p-6 space-y-3">
-                        {[prompt_1, prompt_2, prompt_3].map((prompt, index) => (
-                            <button
-                                key={index}
-                                className="w-full py-2 px-4 rounded-full border-2 border-neutral-900 text-neutral-900 font-semibold transition-all duration-300 hover:bg-neutral-900 hover:text-white"
-                                onClick={() => handleSubmission(prompt)}
-                            >
-                                {prompt}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                    {/* Input Box (always visible) */}
-                    <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? "sticky bottom-0 bg-white shadow-lg" : ""}`}>
-                        <textarea
-                            value={userInput}
-                            onChange={handleInputChanges}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter" && !event.shiftKey) {
-                                    handleSubmission();
-                                    event.preventDefault();
-                                }
-                            }}
-                            className="w-full p-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                            rows={1}
-                            placeholder="Message Chatbot"
-                        />
-                        <button
-                            onClick={() => handleSubmission()}
-                            className="hoverable-div ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
-                        >
-                            <i className="fa-solid fa-arrow-up"></i>
-                        </button>
-                    </div>
-
-                    {/* Footer link to FAQ (always visible) */}
-                    <div className="flex-row-centered h-[8vh] max-w-[90%] mx-auto">
-                        <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
-                            <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i>
-                            <p className="footer-text hoverable-faq text-center sm:text-left">
-                                How was our AI-powered chatbot developed?
-                            </p>
-                        </Link>
-                    </div>
+            <div
+              className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+            >
+              {/* Radio options */}
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={`energy${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="radio"
+                    id={`energy${num}`}
+                    name="energy_consume"
+                    className="hoverable-bubble-div custom-radio"
+                    onChange={handleEnergyUsage}
+                    checked={energyUsage === `energy${num}`}
+                  />
+                  <label htmlFor={`energy${num}`} className="text-lg">
+                    {num === 1 ? "<500" : num === 2 ? "500 to 650" : num === 3 ? "650 to 850" : num === 4 ? "850 to 1000" : "1000+"}
+                  </label>
                 </div>
+              ))}
             </div>
-        </Layout>
-    );
+          </div>
+
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
+          {/* Percent Renewable Energy */}
+          <div className="sus-calc-input">
+            <div className="sus-calc-topic">
+              <label className="sus-calc-title">
+                % Renewable Energy
+              </label>
+              <p>Found on your monthly energy utility bill</p>
+            </div>
+            <div
+              className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+            >
+              {/* Radio options */}
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={`renew${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="radio"
+                    id={`renew${num}`}
+                    name="renew_energy"
+                    className="hoverable-bubble-div custom-radio"
+                    onChange={handlePercentRenewable}
+                    checked={percentRenewable === `renew${num}`}
+                  />
+                  <label htmlFor={`renew${num}`} className="text-lg">
+                    {num === 1 ? "<20%" : num === 2 ? "20 to 40%" : num === 3 ? "40 to 60%" : num === 4 ? "60 to 80%" : "80+%"}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
+          {/* Monthly Water Usage */}
+          <div className="sus-calc-input">
+            <div className="sus-calc-topic">
+              <label className="sus-calc-title">
+                Monthly Water Usage (gal)
+              </label>
+              <p>Found on your monthly water utility bill</p>
+            </div>
+            <div
+              className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+            >
+              {/* Radio options */}
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={`water${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="radio"
+                    id={`water${num}`}
+                    name="water_usage"
+                    className="hoverable-bubble-div custom-radio"
+                    onChange={handleWaterUsage}
+                    checked={waterUsage === `water${num}`}
+                  />
+                  <label htmlFor={`water${num}`} className="text-lg">
+                    {num === 1 ? "<50" : num === 2 ? "50 to 70" : num === 3 ? "70 to 90" : num === 4 ? "90 to 110" : "110+"}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
+          {/* CO2 Level (Air Quality) */}
+          <div className="sus-calc-input">
+            <div className="sus-calc-topic">
+              <label className="sus-calc-title">
+                Air Quality: CO2 Level (ppm)
+              </label>
+              <p>Measured using a commercial CO2 detector</p>
+            </div>
+            <div
+              className="sus-calc-input"
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                gap: '10px',
+              }}
+            >
+              {/* Radio options */}
+              {[1, 2, 3, 4, 5].map((num) => (
+                <div key={`air${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="radio"
+                    id={`air${num}`}
+                    name="air_quality"
+                    className="hoverable-bubble-div custom-radio"
+                    onChange={handleAirQuality}
+                    checked={airQuality === `air${num}`}
+                  />
+                  <label htmlFor={`air${num}`} className="text-lg">
+                    {num === 1 ? "<400" : num === 2 ? "400 to 500" : num === 3 ? "500 to 600" : num === 4 ? "600 to 700" : "700+"}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Calculate Score Button */}
+          <div>
+            <button
+              onClick={calculateScore}
+              className="bg-greenify-button-green rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 hover:bg-coffee-green"
+            >
+              Calculate Score
+            </button>
+          </div>
+          {/* Clear Saved Choices Button*/}
+          <div>
+            <button
+              onClick={clearSavedChoices}
+              className="bg-red-500 rounded-full shadow-sm border border-solid border-black/[.08] transition-colors flex items-center justify-center text-white text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 hover:bg-red-600"
+            >
+              Reset Calculator
+            </button>
+          </div>
+
+          {/* Label to display sustainability score */}
+          <div className="flex-col-centered">
+            <label htmlFor="sustainabilityScoreLabel" id="sustainabilityScoreLabel" className="text-6xl font-semibold mb-2">
+              {/* Score will be displayed here */}
+            </label>
+            <label
+              htmlFor="sustainabilityScoreExplanation"
+              id="sustainabilityScoreExplanation"
+              className="text-2xl block text-center"
+            >
+              {/* Explanation will be displayed here */}
+            </label>
+          </div>
+
+          {chatbotResponse && (
+            <div className="flex-col-centered">
+              <button
+                onClick={openModal}
+                className="text-l text-green-600 underline cursor-pointer"
+              >
+                Learn more about your score
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal for Chatbot Response */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-[90%] w-[600px]">
+            <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
+            <div className="mb-4 overflow-y-auto max-h-[400px] text-black">
+              {chatbotResponse}
+            </div>
+            <div className="flex justify-end gap-4">
+            <button
+                  onClick={() => {
+                    // Redirect to /chatbot without any parameters
+                    window.location.href = '/chatbot';
+                  }}
+                  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
+                >
+                  Get more Info
+                </button>
+
+              <button
+                onClick={handleCopy}
+                className="bg-green-800 text-white px-4 py-2 rounded hover:filer-coffee-green hover:brightness-90"
+              >
+                {copied ? 'Copied!' : 'Copy Text'}
+              </button>
+              <button
+                onClick={closeModal}
+                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer link to FAQ */}
+      <div className="flex justify-center items-center h-[8vh] bg-white">
+      <Link className="flex items-center gap-[0.75vw]" href="/faq" passHref>
+        <i className="footer-icon fa-solid fa-lg fa-question-circle mr-1"></i>
+        <p className="footer-text hoverable-faq"> How is sustainability score calculated? </p>
+      </Link>
+    </div>
+
+      
+    </Layout>
+  );
 };
-export default ChatbotPage;
+
+export default CalculatorPage;
