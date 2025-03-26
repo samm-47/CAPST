@@ -294,7 +294,7 @@ const CalculatorPage: React.FC = () => {
                     checked={energyUsage === `energy${num}`}
                   />
                   <label htmlFor={`energy${num}`} className="text-lg">
-                    {num === 1 ? "<500" : num === 2 ? "500 to 650" : num === 3 ? "650 to 850" : num === 4 ? "850 to 1000" : "1000+"}
+                    {num === 1 ? "<500" : num === 2 ? "500 to 650" : num === 3 ? "650 to 850" : num === 4 ? "850 to 999" : "1000+"}
                   </label>
                 </div>
               ))}
