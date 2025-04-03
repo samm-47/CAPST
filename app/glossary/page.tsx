@@ -71,7 +71,7 @@ const handleSearch = (query: string) => {
   setSearchQuery(query);
 
   if (query) {
-    fetch(`http://127.0.0.1:5000/api/search?query=${query}`)
+    fetch(`https://capst.onrender.com/api/search?query=${query}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch search results");
