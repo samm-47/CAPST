@@ -22,17 +22,15 @@ const Navbar = () => {
             link: "/faq"
         },
         {
+            name: "Glossary",
+            link: "/glossary"
+        },
+        {
             name: "GreenifyAI",
             link: "https://greenifyai.com/"
         }
     ];
-    // Confirmation before leaving site
-    const handleExternalClick = (event: React.MouseEvent) => {
-        const confirmLeave = window.confirm("You are about to leave SustainABLE. Continue?");
-        if (!confirmLeave) {
-            event.preventDefault(); // Prevent navigation if user cancels
-        }
-    };
+
     return (
         <div className="nav-bar-header flex justify-between items-center relative">
             <div>
@@ -60,8 +58,6 @@ const Navbar = () => {
                                                               
                                 target={menu.link.startsWith("http") ? "_blank" : "_self"} 
                                 rel={menu.link.startsWith("http") ? "noopener noreferrer" : ""}
-                                // Handle external link clicks
-                                onClick={menu.link.startsWith("http") ? handleExternalClick : undefined}
                             >
                                 {menu.name}
                             </Link>
@@ -88,16 +84,7 @@ const Navbar = () => {
                         } hover:bg-gray-100`}
                         target={menu.link.startsWith("http") ? "_blank" : "_self"} 
                         rel={menu.link.startsWith("http") ? "noopener noreferrer" : ""}
-                        onClick={(e) => {
-                            if (menu.link.startsWith("http")) {
-                                const confirmLeave = window.confirm("You are about to leave SustainABLE. Continue?");
-                                if (!confirmLeave) {
-                                    e.preventDefault(); // Stops navigation if user cancels
-                                    return;
-                                }
-                            }
-                            setIsOpen(false); // Always close the menu
-                        }}
+                        onClick={() => setIsOpen(false)} // Close menu on click
                     >
                         {menu.name}
                     </Link>
@@ -107,5 +94,4 @@ const Navbar = () => {
     );
 };
 
-  
-  export default Navbar;
+export default Navbar;
