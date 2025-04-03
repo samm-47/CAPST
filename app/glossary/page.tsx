@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import styles from './page.module.css';
-import Layout from "./glossary_layout";
+
 import { useRouter } from 'next/navigation';
 
 const HomePage: React.FC = () => {
