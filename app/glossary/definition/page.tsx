@@ -1,16 +1,17 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import styles from '../page.module.css';
 import Layout from "../glossary_layout";
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-const DefinitionPage: React.FC = () => {
+// Wrap the component that uses useSearchParams in Suspense
+const DefinitionContent = () => {
+  const searchParams = useSearchParams();
+  const term = searchParams.get('term');
   const [definition, setDefinition] = useState<{ term: string; definition: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const searchParams = useSearchParams();
-  const term = searchParams.get('term');
 
   const copyToClipboard = () => {
     if (!definition) return;
@@ -148,6 +149,14 @@ const DefinitionPage: React.FC = () => {
         </div>
       </div>
     </Layout>
+  );
+};
+
+const DefinitionPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DefinitionContent />
+    </Suspense>
   );
 };
 
