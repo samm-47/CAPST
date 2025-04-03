@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
     // Existing data fetching logic
     if (typeof window !== 'undefined') {
       setIsLoading(true);
-      fetch('http://127.0.0.1:5000/api/glossary')
+      fetch('https://capst.onrender.com/api/glossary')
         .then(response => response.json())
         .then(data => {
           const formattedSections = Object.entries(data).map(([key, terms]) => ({
