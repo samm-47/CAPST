@@ -1,4 +1,4 @@
-"use client"; // Mark this as a Client Component for client-side hooks
+"use client"; // Add this directive at the top
 
 import React, { useEffect } from "react";
 import localFont from "next/font/local";
@@ -18,15 +18,15 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+export default function GlossaryLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-
+    // Your effect code here
   }, []);
 
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       {/* Top navigation bar with logo */}
-      <Navbar/>
+      <Navbar />
       {/* Main content area */}
       <main>{children}</main>
     </div>
