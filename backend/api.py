@@ -175,6 +175,179 @@ def generate_title():
 
     return jsonify({"title": response_text.strip()})
 
+# Define a route for the chatbot interaction
+chat_history = [
+    {"role": "user", "parts": "Hello, you are a chatbot designed to be a glossary for real estate. Only output in sentences."},
+    {"role": "model", "parts": "Hello! How can I help you with real estate terms today?"}
+]
+
+
+glossary_terms = [
+    "2-Way Lighting", "2-Wire Lighting System", "2-Pipe HVAC System", "2-Stage Cooling", "2-Pane Window", "2-Pipe System", 
+    "3-Way Valve", "3-Way Switch", "3-Layer Insulation", "3-Zone HVAC", "4-Pole Generator", "4-Point Solar Mount", 
+    "5-Blade Fan", "5-Star Energy Rating", "5-Stage Filtration", "6-Layer Roof", "6-Star Energy Rating", 
+    "7-Day Programmable Thermostat", "10-Year Sustainability Plan", 
+    "10-Year Solar Warranty", "12V LED System", "24-Hour Energy Monitoring", "100% Recycled Material", "200W Solar Panel", "360° Wind Turbine",
+    "Abiotic components", "Abiotic depletion", "ACH (Air Changes per Hour)",
+    "Acid rain", "Acidification", "Advanced Framing", "AECB", "Aerobic digestion", "Afforestation",
+    "Air barrier / airtightness membrane", "Air film resistance", "Air infiltration", "Air leakage index",
+    "Air permeability", "Air-Source Heat Pump", "Airtightness", "Airtightness layer", "Airtightness line",
+    "Airtightness test", "Alexa", "Alexa Routine", "Alexa Skill", "Alpha - value", "Alternative energy", "Android",
+    "Application Programming Interface (API)", "Automations", "Balance point", "Balancing pond", "Batt Insulation",
+    "BFRC Rating", "Bio-accumulation", "Biocide", "Biodegradation", "Biofuel", "Biological wastewater treatment",
+    "Biomass", "Bioretention area", "Bixby", "Blackwater", "Blower Door Test", "Blown-in Insulation", "Bluetooth",
+    "Breathable sheathing", "Breather membrane", "Breathing wall", "BREEAM", "Bridge", "Brown roof", "Building Envelope",
+    "CAPEM", "Carbon neutral", "Carbon sequestration", "Carbon sink", "CarbonLite Programme",
+    "Chlorofluorocarbons (CFC)", "Closed Cell (spray) Foam Insulation (CCF)", "Closed loop-recycling", "Co-generation",
+    "Code for Sustainable Homes", "Coefficient of performance (COP)", "Cold bridging", "Cold spot",
+    "Combined Heat and Power (CHP)", "Communication Protocol", "Compost", "Composting toilet", "Conditioned Space",
+    "Connected Device", "Connected Home", "Connectivity Session", "Control4", "Cortana", "Cradle-to-*",
+    "Cross-laminated timber (CLT) panels", "Daylight transmittance", "Deconstruction", "Decrement delay",
+    "Decrement factor", "Deforestation", "Degree days", "Delivered energy", "Desertification",
+    "Design for Deconstruction (DfD)", "Diffuse pollution", "Diffusion Open", "Diffusion Tight", "Direct-Gain System",
+    "Displacement Ventilation", "Distributed generation", "District heating", "Diurnal heat flow",
+    "Diurnal temperature variation", "Double Pane Windows", "Double-Stud Wall", "Downcycle", "Drainage Plane", "Driver",
+    "Dual-Mesh Network", "Dynamic Pricing", "Earth construction", "Eco Sinope", "Eco-design", "Eco-label",
+    "Effective Leakage Area", "Embodied energy", "Energy Assessment", "Energy Consumption Graphs", "Energy efficiency",
+    "Engineered wood", "Energy Recovery Ventilator", "Energy Truss", "Engineered Lumber", "Enhanced Air Filtration",
+    "Environmental profile", "Environmental profiling", "Ethernet", "Eutrophication", "Evaporative cooling", "Event",
+    "F-factor", "Faucet Flow Restrictor", "Filter drain", "Filtration", "Fire-Resistant Insulation", 
+    "First-Flush Water System", "Fixed Window for Efficiency", "Floor Radiant Heating System", "Flood Resilient Foundation", "Flood routeing", "Flow control device", "Flow-Control Faucet", "Fly ash (PFA - Pulverised Fuel Ash)", "Fresh Air Ventilation", 
+    "Fresh water aquatic ecotoxicity", "FSC-Certified Timber", "Fuel-Efficient Home Design", "Fossil fuel", "Framing", "Fully Recyclable Materials","G-value",
+    "Gasification", "Gateway", "Geofencing", "Geolocation", "Geotextile", "Geothermal energy",
+    "Global Warming Potential (GWP)", "Google Assistant", "Google Home", "Green Building Standards", "Green Electricity",
+    "Green Guide to Specification", "Green Power", "Green Register", "Green roof", "Greenhouse gases", "Greenwash",
+    "Greywater", "Greywater Reuse", "Ground source heat pump (GSHP)", "Groundwater", "Hazardous waste", "Heat capacity",
+    "Heat exchanger", "Heat island", "Heat Loss Parameter (HLP)", "Heat Pump", "Heat recovery",
+    "Heat Recovery Ventilator", "Hot spots", "Home Automation", "Home Energy Rating System", "Home ID", "HomeKit", "Hub",
+    "Hubitat", "Human toxicity", "Humidity", "Hydrocarbons", "Hydrochlorofluorocarbon (HCFC)", "Hydrofluorocarbon (HFC)",
+    "Hygroscopic material", "Ice Dam", "Impermeable surface", "Indoor air quality (IAQ)", "Insulated Concrete Form",
+    "Insulated Glass", "Insulating concrete formwork (ICF)", "Intelligent building", "Insulation", "Integration",
+    "Internal heat gains", "Internet of Things (IoT)", "Interstitial condensation", "K-value", "Kiosk", "Kinetic Energy", "Kilowatt-hour", 
+    "Knee Wall", "Krypton Gas", "Komatsu Equipment", "Land use",
+    "Life cycle assessment (LCA)", "Life cycle costing (LCC)", "Life cycle approach", "Light pollution",
+    "Living Building", "Low-Emissivity (Low-E) glass", "Low-impact development (LID)", "Low-Voltage lighting",
+    "MERV rating", "Microgrid", "Microplastics", "Modular construction", "Modular Home", "Net-Zero Energy Building",
+    "Non-Renewable energy", "Offsetting", "Onsite renewable energy", "Open-loop geothermal", "Passive house",
+    "Passive Solar Design", "Photovoltaic (PV) energy", "Pollinator-friendly design", "Pollutant", "Pre-Assessment",
+    "Prescriptive approach", "Proximity sensor", "Rain garden", "Renewable energy", "Retrofitting", "Roof garden", "Roof overhang", 
+    "Runoff", "Rainwater harvesting", "Reclaimed materials", "Recycled content", "Radon mitigation", "Roof insulation", 
+    "Rainwater collection system", "Rainwater filtration", "Rooftop solar panels", "Resource efficiency", "Reforestation", 
+    "Renewable resource", "Retrofit design","Sanitary landfill", "Scaffolding", "Smart Building Technology", "Smart Grid",
+    "Smart Meter", "Solar thermal energy", "Solar shading", "Solar tracker", "Solar wall", "Sustainable Architecture",
+    "Sustainable Development", "Sustainable Materials", "Smart Building", "Smart Home", "Smart HVAC system",
+    "Smart thermostat", "Solar panel", "Solar water heater", "Stormwater management", "Sustainable Urban Development",
+    "Sustainability report", "Sustainable design", "Thermal bridge", "Thermal envelope", "Thermal mass",
+    "Thermal transmittance", "Urban heat island", "Urban Planning", "Ventilation", "Vertical garden",
+    "Water-efficient landscaping", "Water Harvesting", "Water Recycling", "Waterway", "Wetland", "Wind turbine",
+    "Zero-energy building", "Zoning"
+]
+
+
+
+@app.route('/api/definition/<term>', methods=['GET'])
+def get_definition(term):
+    """
+    This route handles fetching the definition of a term from the generative model.
+    """
+    user_question = f"Define the term '{term}' in simple language. Please respond in 300 words. Make it into 2-3 paragraphs with indentation. And keep it in simple terms for the user to understand. These are terms related to sustainabilty living."
+
+
+    # Append the user's question to the chat history for context
+    chat_history.append({"role": "user", "parts": user_question})
+    
+    model = configure_genai() 
+
+    try:
+        # Create a new chat session with the model, using the updated chat history
+        chat_session = model.start_chat(history=chat_history)
+
+
+        # Send the term definition request to the model
+        response = chat_session.send_message(user_question)
+
+
+        # Extract the response text
+        response_text = response.text if hasattr(response, 'text') else "No response available."
+       
+    except Exception as e:
+        print("Error calling chat model:", str(e))
+        return jsonify({"error": "Failed to communicate with the model."}), 500
+
+
+    # Append the model's response to the chat history
+    chat_history.append({"role": "model", "parts": response_text})
+
+
+    return jsonify({"term": term, "definition": response_text})
+
+
+@app.route('/api/glossary', methods=['GET'])
+def get_glossary():
+   
+    grouped_terms = groupTermsByFirstLetter(glossary_terms)
+   
+    return jsonify(grouped_terms)
+   
+
+
+def groupTermsByFirstLetter(glossary_terms):
+    grouped = {}
+    for term in glossary_terms:
+        first_char = term[0].upper()
+
+
+        # If the first character is a letter or a number, group accordingly
+        group_key = first_char if first_char.isalpha() else 'Numbers & Others'
+       
+        if group_key not in grouped:
+            grouped[group_key] = []
+        grouped[group_key].append(term)
+   
+    return grouped
+@app.route('/api/search', methods=['GET'])
+def search_glossary():
+    query = request.args.get('query', '').lower()
+   
+    if query:
+        # Filter terms that start with the query
+        filtered_terms = [term for term in glossary_terms if term.lower().startswith(query)]
+        filtered_terms.sort()  # Sort terms alphabetically
+    else:
+        filtered_terms = glossary_terms
+
+
+    return jsonify(filtered_terms)
+
+
+@app.route('/api/sections', methods=['GET'])
+def get_sections():
+    # Group terms by their first letter (or '#' for numbers and others)
+    grouped_terms = {}
+    for term in glossary_terms:
+        first_char = term[0].upper()
+        group_key = first_char if first_char.isalpha() else 'Numbers & Others'
+        if group_key not in grouped_terms:
+            grouped_terms[group_key] = []
+        grouped_terms[group_key].append(term)
+
+
+    # Sort the keys: letters first (A-Z), then numbers/others
+    sorted_keys = sorted(grouped_terms.keys(), key=lambda x: (x != 'Numbers & Others', x))
+
+
+    sections = []
+    for key in sorted_keys:
+        section = {
+            'title': 'Numbers & Others' if key == 'Numbers & Others' else key,
+            'terms': sorted(grouped_terms[key])  # Sort terms alphabetically
+        }
+        sections.append(section)
+
+
+    return jsonify(sections)
+
+
 
 # Run the Flask app
 if __name__ == '__main__':
