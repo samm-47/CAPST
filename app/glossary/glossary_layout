@@ -20,12 +20,7 @@ const geistMono = localFont({
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Any client-side logic can go here (e.g., analytics)
-    // Dynamically insert the Font Awesome script
-    const script = document.createElement('script');
-    script.src = "https://kit.fontawesome.com/cb7258edb1.js";
-    script.crossOrigin = "anonymous";
-    document.body.appendChild(script);
+
   }, []);
 
   return (
