@@ -17,8 +17,6 @@ const HomePage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<GlossaryTerm[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [modalContent, setModalContent] = useState<{ term: string; definition: string } | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTooltipActive, setIsTooltipActive] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -98,25 +96,17 @@ const handleSearch = (query: string) => {
 };
   
 
-// Replace the showDefinition function in your page.tsx
- const showDefinition = (term: string) => {
-    router.push(`/glossary/${encodeURIComponent(term)}`);
-  };
+const showDefinition = (term: string) => {
+  router.push(`/glossary/definition?term=${encodeURIComponent(term)}`);
+};
 
   
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalContent(null);
-  };
 
   const toggleTooltip = () => {
     setIsTooltipActive(!isTooltipActive);
   };
 
-  useEffect(() => {
-    console.log("Modal state:", isModalOpen);
-  }, [isModalOpen]);
+
 
   return (
     <Layout>
