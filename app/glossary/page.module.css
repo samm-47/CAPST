@@ -356,10 +356,21 @@
     padding: 1.5rem;
   }
   
-  .heading1 {
-    font-size: 1.8rem;
+  .definitionHeader {
+    padding: 0 0 0.5rem 0;
+    margin-bottom: 0.5rem;
+  }
+  
+  .backArrow, .copyButton {
+    padding: 6px;
+  }
+  
+  .heading2 {
+    font-size: 1.5rem;
+    padding-top: 0.25rem;
   }
 }
+
 
 /* Add to your page.module.css */
 .definitionContainer {
