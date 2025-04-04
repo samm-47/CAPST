@@ -37,7 +37,9 @@ const ChatbotPage = () => {
     const bottomReference = useRef<HTMLDivElement>(null);
     const [showScrollToTop, setShowScrollToTop] = useState(false);
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-    
+    // Track which message is being hovered for editing
+    const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); 
+
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
         const diffInMilliseconds = now - timestamp;
@@ -443,17 +445,31 @@ const ChatbotPage = () => {
                         <div className="flex items-start w-full max-w-4xl mb-4">
                             <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
                                 {messages.map((message, index) => (
-                                    <div key={index} className="flex flex-col">
+                                    <div 
+                                        key={index}
+                                        className="flex flex-col relative group"
+                                        onMouseEnter={() => setHoveredMessageIndex(index)}
+                                        onMouseLeave={() => setHoveredMessageIndex(null)}
+                                    >
                                         {message.type !== "user" && (
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
                                         )}
                                         <div
-                                            className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
+                                            className={`p-3 rounded-lg mb-2 ${getWidthClass(message.text)} ${
                                                 message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
                                             } break-words`}
                                         >
                                             {message.text}
                                         </div>
+                                        {/* Edit button that shows on message hover */}
+                                        {message.type === "user" && hoveredMessageIndex === index && (
+                                            <button
+                                                onClick = {() => setUserInput(message.text)}
+                                                className="text-sm text-blue-500 hover:text-red-500 ml-auto mr-1 transition-all"
+                                            >
+                                                <i className="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                                 {loading && (
