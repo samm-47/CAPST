@@ -1,12 +1,12 @@
 .body {
-  font-family: Anona;
+  font-family: Jost;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  background-color: #c2e0c6;
+  background-color: #e6f7ef;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -17,34 +17,40 @@
   max-width: 500px;
   height: 40px;
   padding: 10px;
-  margin-top: 10px;
+  
   font-size: 16px;
   border-radius: 10px;
   background-color: #f0f0f0;
   z-index: 10;
-  border: 6px solid rgb(103, 99, 99);
+  border: 1px solid rgb(103, 99, 99);
   box-sizing: border-box;
   color: black;
 }
 
+.whiteBox {
+  background-color: white;
+  display: inline-block;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  margin-top: 10px;
+}
+
 .heading1 {
-  margin-top: 20px;
-  color: rgb(0, 0, 0);
+  margin-top: 0;
+  color: #235347;
   font-size: clamp(24px, 8vw, 50px);
   font-weight: bold;
   text-align: center;
-  padding: 0 15px;
+  padding: 10px 15px;
 }
 
 .centerText {
-  width: 100%;
-  max-width: 900px;
   color: rgb(0, 0, 0);
+  font-size: 16px;
   text-align: center;
-  margin: 0 auto;
-  font-weight: normal;
-  font-size: clamp(12px, 3vw, 15px);
-  padding: 0 15px;
+  margin-top: 10px;
 }
 
 .heading3 {
@@ -141,6 +147,8 @@
     transform: translateY(0);
   }
 }
+
+
 
 .results.active {
   display: block;
@@ -370,6 +378,7 @@
     padding-top: 0.25rem;
   }
 }
+
 
 
 /* Add to your page.module.css */
