@@ -35,7 +35,9 @@ const ChatbotPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State to manage sidebar visibility
     const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
-   
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+    
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
         const diffInMilliseconds = now - timestamp;
@@ -81,8 +83,32 @@ const ChatbotPage = () => {
     
     const chatCancelRef = useRef<ReturnType<typeof axios.CancelToken.source> | null>(null);
 
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
     
+    const scrollToBottom = () => {
+        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight;
+    
+            setShowScrollToTop(scrollY > 200);
+            setShowScrollToBottom(windowHeight + scrollY < docHeight - 100);
+        };
+    
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
+    useEffect(() => {
+        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+    
     // Load previous messages and saved chats from localStorage
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -275,22 +301,22 @@ const ChatbotPage = () => {
 
     // Load a saved chat
    
-const loadSavedChat = (index: number) => {
+    const loadSavedChat = (index: number) => {
     const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
     const sortedChats = savedChats.sort((a, b) => b.timestamp - a.timestamp); // Sort chats by timestamp
 
-    if (sortedChats[index]) {
-        setMessages(sortedChats[index].messages);
-        setHasSentMessage(true);
-        setCurrentChatIndex(index); // Set the currentChatIndex to the correct index
-        localStorage.setItem("currentChatIndex", JSON.stringify(index));
+        if (sortedChats[index]) {
+            setMessages(sortedChats[index].messages);
+            setHasSentMessage(true);
+            setCurrentChatIndex(index); // Set the currentChatIndex to the correct index
+            localStorage.setItem("currentChatIndex", JSON.stringify(index));
 
-        // Close the sidebar on mobile devices
-        if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
-            setIsSidebarOpen(false);
+            // Close the sidebar on mobile devices
+            if (window.innerWidth <= 768) { // Adjust the breakpoint as needed
+                setIsSidebarOpen(false);
+            }
         }
-    }
-};
+    };
 
     const deleteChat = (index: number) => {
         const updatedChats: SavedChat[] = savedChats.filter((_, i) => i !== index);
@@ -339,21 +365,21 @@ const loadSavedChat = (index: number) => {
 
                 {/* Sidebar for chat sessions */}
                 <div
-    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
-        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-    } transition-transform duration-300 z-10 left-0`}
->
-    <div className="flex justify-between items-center mb-4">
-        <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
-        <button onClick={startNewChat}> 
-            <img
-                    src="/chat.png" // Path to your SVG image
-                    alt="Toggle Sidebar"
-                    className="w-5 h-5 object-contain"
-       
-    />
-    </button>
-    </div>
+                    className={`w-64 bg-gray-100 p-4 h-screen overflow-y-auto fixed transform ${
+                        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                    } transition-transform duration-300 z-10 left-0`}
+                >
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
+                    <button onClick={startNewChat}> 
+                        <img
+                                src="/chat.png" // Path to your SVG image
+                                alt="Toggle Sidebar"
+                                className="w-5 h-5 object-contain"
+                
+                />
+                </button>
+                </div>
 
 
     
@@ -453,7 +479,6 @@ const loadSavedChat = (index: number) => {
                                     </div>
                                 </>
                                 )}
-
                                 <div ref={bottomReference} />
                             </div>
                             {/* Clear Chat History Button */}
@@ -467,7 +492,29 @@ const loadSavedChat = (index: number) => {
                             </div>
                         </div>
                     )}
+                    {/* Scroll-to-top button */}
+                    {showScrollToTop && (
+                        <div className="fixed top-20 z-10 py-2">
+                            <button
+                                onClick={scrollToTop}
+                                className="mx-auto w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full shadow-md flex items-center justify-center hover:bg-blue-500 transition duration-100"
+                            >
+                                <i className="fa-solid fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    )}
 
+                    {/* Scroll-to-bottom button */}
+                    {showScrollToBottom && (
+                        <div className="fixed bottom-20 z-10 py-2">
+                            <button
+                                onClick={scrollToBottom}
+                                className="w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-100"
+                            >
+                                <i className="fa-solid fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    )}
                     {/* Common Prompts Section (only shown before sending a message) */}
                         {!hasSentMessage && (
                     <div className="flex flex-col items-center max-w-xl w-3/4 bg-white shadow-lg rounded-xl p-6 space-y-3">
