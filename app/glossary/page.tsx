@@ -111,13 +111,15 @@ const showDefinition = (term: string) => {
   return (
     <Layout>
       <div className={styles.body}>
-        <h1 className={styles.heading1}>House Sustainability Tips</h1>
-        <h3 className={styles.heading3}> </h3>
-        <h4 className={styles.centerText}>
-        For the best results in the Glossary search, we recommend using any familiar term, such as Alexa, Greenhouse gases, or other individual terms.
-        </h4>
-
-        <h3 className={styles.heading3}> </h3>
+        <div className={styles.whiteBox}>
+            <h1 className={styles.heading1}>House Sustainability Tips</h1>
+            <h4 className={styles.centerText}>
+            For the best results in the Glossary search, we recommend using any familiar term, such as <br />
+             Alexa, Greenhouse gases, or other individual terms.
+        </h4>           
+        </div>
+        <h3 className={styles.heading3}></h3>
+        <h3 className={styles.heading3}></h3>
 
         <input
           type="text"
