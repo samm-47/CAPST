@@ -369,65 +369,63 @@ const ChatbotPage = () => {
                         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
                     } transition-transform duration-300 z-10 left-0`}
                 >
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
-                    <button onClick={startNewChat}> 
-                        <img
-                                src="/chat.png" // Path to your SVG image
-                                alt="Toggle Sidebar"
-                                className="w-5 h-5 object-contain"
-                
-                />
-                </button>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-black text-lg font-semibold text-center ml-16" > Recent Chats</h2>
+                        <button onClick={startNewChat}> 
+                            <img
+                                    src="/chat.png" // Path to your SVG image
+                                    alt="Toggle Sidebar"
+                                    className="w-5 h-5 object-contain"
+                    
+                    />
+                    </button>
+                    </div>
+
+                    {/* Scrollable Chat List */}
+                    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
+                        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
+                            <div key={relativeTime}>
+                                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
+                                <ul className="flex-1">
+                                    {chats.map((chat, index) => (
+                                        <li
+                                            key={index}
+                                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black mb-2 ${
+                                                currentChatIndex === index 
+                                                ? "bg-gray-200 text-black" 
+                                                : "bg-gray-200 text-black"
+                                            } flex justify-between items-center`}
+                                        >
+                                            {/* Icon */}
+                                            
+
+                                            {/* Chat Title */}
+                                            <span 
+                                                onClick={() => loadSavedChat(index)} 
+                                                className="flex-1 truncate pr-2" // Add padding to the right
+                                            >
+                                                {chat.title}
+                                            </span>
+
+                                            
+
+                                            {/* Delete Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteChat(index);
+                                                }}
+                                                className="hoverable-div w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-800 transition ml-2"
+                                            >
+                                                <i className="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-
-
-    
-    {/* Scrollable Chat List */}
-    <div className="overflow-y-auto max-h-[calc(100vh-150px)]">
-        {Object.entries(groupChatsByRelativeTime(savedChats)).map(([relativeTime, chats]) => (
-            <div key={relativeTime}>
-                <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
-                <ul className="flex-1">
-                    {chats.map((chat, index) => (
-                        <li
-                            key={index}
-                            className={`p-2 hover:bg-gray-300 cursor-pointer rounded-lg border border-black mb-2 ${
-                                currentChatIndex === index 
-                                ? "bg-gray-200 text-black" 
-                                : "bg-gray-200 text-black"
-                            } flex justify-between items-center`}
-                        >
-                            {/* Icon */}
-                            
-
-                            {/* Chat Title */}
-                            <span 
-                                onClick={() => loadSavedChat(index)} 
-                                className="flex-1 truncate pr-2" // Add padding to the right
-                            >
-                                {chat.title}
-                            </span>
-
-                            
-
-                            {/* Delete Button */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteChat(index);
-                                }}
-                                className="hoverable-div w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-800 transition ml-2"
-                            >
-                                <i className="fa-solid fa-trash-can"></i>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        ))}
-    </div>
-</div>
 
                 {/* Main Content Area */}
                 <div
