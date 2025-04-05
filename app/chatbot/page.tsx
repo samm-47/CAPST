@@ -461,14 +461,29 @@ const ChatbotPage = () => {
                                         >
                                             {message.text}
                                         </div>
-                                        {/* Edit button that shows on message hover */}
+                                        {/* Edit and copy buttons that shows on message hover */}
                                         {message.type === "user" && hoveredMessageIndex === index && (
+                                        <div className="flex justify-end gap-2 mt-1 mr-1">
+                                            {/* Edit Button */}
                                             <button
-                                                onClick = {() => setUserInput(message.text)}
-                                                className="text-sm text-blue-500 hover:text-red-500 ml-auto mr-1 transition-all"
+                                            onClick={() => setUserInput(message.text)}
+                                            className="text-blue-500 hover:text-blue-700 transition"
+                                            title="Edit message"
                                             >
-                                                <i className="fa-solid fa-pen-to-square"></i>
+                                            <i className="fa-solid fa-pen-to-square"></i>
                                             </button>
+
+                                            {/* Copy Button */}
+                                            <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(message.text);
+                                            }}
+                                            className="text-blue-500 hover:text-blue-700 transition"
+                                            title="Copy message"
+                                            >
+                                            <i className="fa-solid fa-copy"></i>
+                                            </button>
+                                        </div>
                                         )}
                                     </div>
                                 ))}

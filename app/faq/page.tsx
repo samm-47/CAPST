@@ -16,15 +16,26 @@ const A2_P2 = "Score ranges: F: 0-25, D: 26-50, C: 51-65, B: 66-80, A: 81-99, S:
 const Q3 = "How was your AI-powered chatbot developed?";
 const A3 = "Our AI-powered chatbot was built on the Gemini-1.5-Flash-8B model, enabling efficient natural language processing. Using API keys provided by the model, our chatbot delivers accurate responses to user queries in real-time. Python and Flask were used to incorporate multiple endpoints to facilitate our chatbot's functionality. ";
 
+const Q4 = "How can I make my house more sustainable?";
+const A4 = "Good options include switching to LED lighting, using energy-efficient appliances, and reducing water waste. Consider solar panels, composting, and using smart thermostats to increase sustainability even further."
+
+const Q5 = "Easy ways to increase energy efficiency?"
+const A5 = "Some low cost ways to increase your energy effficiency is to be more mindful of your energy consumption such as turning off appliances and lights when not in use"
+
+const Q6 ="What is sustainable living?"
+const A6 = "Sustainable living means making daily choices that reduce your environmental impact. This includes conserving energy and water, minimizing waste, choosing eco-friendly products, and using renewable resources. The goal is to support a healthier planet while maintaining quality of life."
 // Similar idea to FAQ questions and answers
 const page_title = "FAQ"
 const page_caption = "Frequently Asked Questions";
 
 // Store FAQ info in an array for dynamic rendering
 const FAQ_ITEMS = [
-  { question: Q1, answers: [A1_P1, A1_P2] },
-  { question: Q2, answers: [A2_P1, A2_P2] },
-  { question: Q3, answers: [A3] }
+  { question: Q1, answers: [A1_P1, A1_P2] , learnMore: false},
+  { question: Q2, answers: [A2_P1, A2_P2] , learnMore: false},
+  { question: Q3, answers: [A3] , learnMore: true}, 
+  { question: Q4, answers: [A4] , learnMore: true},
+  { question: Q5, answers: [A5] , learnMore: true},
+  { question: Q6, answers: [A6] , learnMore: true}
 ];
 const FaqPage = () => {
   return (
@@ -59,16 +70,17 @@ const FaqPage = () => {
             ))}
 
             {/* Learn More Button - Redirects user to Chatbot page with the question as a parameter */}
-            <div className="flex flex-col justify-start items-center w-28 hoverable-div mt-5">
+            {faq.learnMore && (
+              <div className="flex flex-col justify-start items-center w-28 hoverable-div mt-5">
               <Link 
                 href={`/chatbot?question=${encodeURIComponent(faq.question)}`} 
                 className="bg-greenify-button-green text-white font-semibold px-2 py-2 mr-3 rounded hover:bg-coffee-green"
               >
                 Learn More
               </Link>
-            </div>
-
-            </div>
+              </div>
+            )}
+          </div>
         ))}
 
         {/* TODO: Add buttons directing to the Chatbot page with a prompt for more details */}

@@ -27,6 +27,7 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
       </head>
       <body>
         {/* Global structure that wraps all pages */}
+        
         {children}
       </body>
     </html>
