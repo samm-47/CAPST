@@ -462,22 +462,27 @@ const ChatbotPage = () => {
                                             {message.text}
                                         </div>
                                         {/* Edit and copy buttons that shows on message hover */}
-                                        {message.type === "user" && hoveredMessageIndex === index && (
-                                        <div className="flex justify-end gap-2 mt-1 mr-1">
-                                            {/* Edit Button */}
+                                        {/* Buttons (Edit/Copy) Underneath */}
+                                        {hoveredMessageIndex === index && (
+                                        <div
+                                            className={`flex gap-2 mt-1 ${
+                                            message.type === "user" ? "ml-auto" : "mr-auto"
+                                            }`}
+                                        >
+                                            {/* Edit only for user */}
+                                            {message.type === "user" && (
                                             <button
-                                            onClick={() => setUserInput(message.text)}
-                                            className="text-blue-500 hover:text-blue-700 transition"
-                                            title="Edit message"
+                                                onClick={() => setUserInput(message.text)}
+                                                className="text-blue-500 hover:text-blue-700 transition"
+                                                title="Edit message"
                                             >
-                                            <i className="fa-solid fa-pen-to-square"></i>
+                                                <i className="fa-solid fa-pen-to-square"></i>
                                             </button>
+                                            )}
 
-                                            {/* Copy Button */}
+                                            {/* Copy for all */}
                                             <button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(message.text);
-                                            }}
+                                            onClick={() => navigator.clipboard.writeText(message.text)}
                                             className="text-blue-500 hover:text-blue-700 transition"
                                             title="Copy message"
                                             >
@@ -485,6 +490,7 @@ const ChatbotPage = () => {
                                             </button>
                                         </div>
                                         )}
+
                                     </div>
                                 ))}
                                 {loading && (
