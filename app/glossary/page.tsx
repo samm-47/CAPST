@@ -111,13 +111,13 @@ const showDefinition = (term: string) => {
   return (
     <Layout>
       <div className={styles.body}>
-        <div className={styles.whiteBox}>
-            <h1 className={styles.heading1}>House Sustainability Tips</h1>
-            <h4 className={styles.centerText}>
-            For the best results in the Glossary search, we recommend using any familiar term, such as <br />
-             Alexa, Greenhouse gases, or other individual terms.
+        <div className={styles.whiteBoxTop}>
+            <h1 className={styles.heading1}>Sustainable Living Tips</h1>
+            <h4 className="text-lg mb-5">
+            To enhance your search experience in our Sustainability Glossary, we recommend <br/> using  well-known environmental terms like greenhouse gases, renewable energy, <br/> or other specific sustainability-related keywords. 
         </h4>           
         </div>
+
         <h3 className={styles.heading3}></h3>
         <h3 className={styles.heading3}></h3>
 
@@ -130,20 +130,19 @@ const showDefinition = (term: string) => {
           className={styles.searchBar}
         />
 
-        <h3 className={styles.heading3}> </h3>
+        <h3 className={styles.heading3}></h3>
 
         <p className={styles.centerText}>
-  Visit the official website for more information: <a href="https://greenifyai.com" target="_blank" rel="noopener noreferrer" className={styles.link}>greenifyai.com</a>
+        Visit the official GreenifyAI website for more information: <a href="https://greenifyai.com" target="_blank" rel="noopener noreferrer" className={styles.link}>greenifyai.com</a>
 </p>
 
 <div className={`${styles.hoverText} ${styles.centerText} `} onClick={toggleTooltip}>
-  <p>Need help getting started?</p>
+  <p className="text-lg">Need help getting started?</p>
   <span className={`${styles.tooltip} ${isTooltipActive ? styles.active : ''}`}>
     <p>Here&apos;s how to use the glossary:</p>
     <br />
-    • Search for terms<br />
-    • Browse categories<br />
-    • Click on any term to see its definition!
+    1. Search for terms using the search bar.<br />
+    2. Click on any term to see its definition!
   </span>
 </div>
 

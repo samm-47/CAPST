@@ -449,10 +449,11 @@ const CalculatorPage: React.FC = () => {
           </div>
 
           {chatbotResponse && (
-            <div className="flex-col-centered">
+            <div className="flex-row-centered">
+              <i className="fa-solid fa-lg fa-exclamation-circle text-xl text-red-600 mr-2"></i>
               <button
                 onClick={openModal}
-                className="text-l text-green-600 underline cursor-pointer"
+                className="cursor-pointer text-black text-lg hover:text-red-600"
               >
                 Learn more about your score
               </button>
@@ -475,9 +476,9 @@ const CalculatorPage: React.FC = () => {
                     // Redirect to /chatbot without any parameters
                     window.location.href = '/chatbot';
                   }}
-                  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
                 >
-                  Get more Info
+                  Get More Info
                 </button>
 
               <button

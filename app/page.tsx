@@ -54,14 +54,18 @@ export default function Home() {
           {/* Title after icon */}
           <div className="mt-16 sm:mt-0 px-4 text-center"> {/* add margin and centering of the text when mobile only*/}
             <p className="text-2xl">
-              <span className="font-semibold">
-                Building a 
-                <span className="coffee-green font-semibold" style={{color:"#006241"}}>
-                  &nbsp;SustainABLE&nbsp;
-                </span> 
-                Future:
+              <span>
+                Creating
               </span>
-              &nbsp;Sustainable Homes and Eco-Friendly Living
+              <span className="coffee-green font-semibold" style={{color:"#006241"}}>
+                &nbsp;Resourceful Communities&nbsp;
+              </span>
+              <span>
+                and Promoting
+              </span>
+              <span className="coffee-green font-semibold" style={{color:"#006241"}}>
+                &nbsp;Sustainable Living&nbsp;
+              </span> 
             </p>
           </div>
         </div>
@@ -82,8 +86,8 @@ export default function Home() {
         {/* Footer link to FAQ */}
         <div className="flex-row-centered h-[4vh]">
           <Link className="flex-row-centered gap-[0.75vw]" href="/faq" passHref>
-            <i className="footer-icon fa-solid fa-lg fa-info-circle"></i> {/*} Question Mark Icon*/}
-            <p className="footer-text"> SustainABLE vs. GreenifyAI vs. GreenExpectations </p>
+            <i className="footer-icon fa-solid fa-lg fa-info-circle mr-1"></i> {/*} Question Mark Icon*/}
+            <p className="footer-text hoverable-faq"> SustainABLE vs. GreenifyAI </p>
           </Link>
         </div>
       </div>

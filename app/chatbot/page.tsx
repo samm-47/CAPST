@@ -9,7 +9,7 @@ const page_caption = "Learn more about sustainable living!";
 
 // Common prompts for quick access
 const prompt_1 = "How can I make my house more sustainable?";
-const prompt_2 = "Easy ways to increase renewable energy";
+const prompt_2 = "Easy ways to increase my renewable energy usage.";
 const prompt_3 = "What is sustainable living?";
 
 type ChatMessage = {
@@ -435,8 +435,8 @@ const ChatbotPage = () => {
                         isSidebarOpen ? "ml-0 md:ml-64" : "ml-0" // Adjust margin for mobile and desktop
                     }`}
                 >
-                    <h1 className="page-title">{page_title}</h1>
-                    <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+                    <h1 className="title">{page_title}</h1>
+                    <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
                         {page_caption}
                     </p>
 
