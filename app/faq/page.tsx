@@ -5,25 +5,26 @@ import Layout from "./faq_layout";
 import Link from "next/link"; // Navigation  
 
 // Note from Ethan: I think this is the most efficient way to allow easy access/editing of the questions. Using a text file for dynamic rendering of FAQ page is out of scope and unnecessary for this project.
-const Q1 = "What is the difference between SustainABLE and GreenifyAI?";
-const A1_P1 = "SustainABLE is the current website you are on. Our AI virtual assistant and sustainability calculator aim to assist you in learning more about sustainable living.";
-const A1_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and convert conventional houses into sustainable homes. Currently, it covers a wide range of properties in the greater New Jersey area."
+const Q1 = "How is my sustainability score calculated?";
+const A1_P1 = "To determine how eco-friendly your home and lifestyle are, we consider your overall energy and water usage, the amount of renewable energy you use, and the air quality in your home. Each factor gets a score based on your performance, and these scores are added up and then translated into a grade, from F (lowest) to S (highest).";
+const A1_P2 = "Score ranges: F: 0-25, D: 26-50, C: 51-65, B: 66-80, A: 81-99, S: 100"
 
-const Q2 = "How is my sustainability score calculated?";
-const A2_P1 = "To determine how eco-friendly your home and lifestyle are, we consider your overall energy and water usage, the amount of renewable energy you use, and the air quality in your home. Each factor gets a score based on your performance, and these scores are added up and then translated into a grade, from F (lowest) to S (highest).";
-const A2_P2 = "Score ranges: F: 0-25, D: 26-50, C: 51-65, B: 66-80, A: 81-99, S: 100"
+const Q2 = "How was your AI-powered chatbot developed?";
+const A2 = "Our AI-powered chatbot was built on the Gemini-1.5-Flash-8B model, enabling efficient natural language processing. Using API keys provided by the model, our chatbot delivers accurate responses to user queries in real-time. Python and Flask were used to incorporate multiple endpoints to facilitate our chatbot's functionality. ";
 
-const Q3 = "How was your AI-powered chatbot developed?";
-const A3 = "Our AI-powered chatbot was built on the Gemini-1.5-Flash-8B model, enabling efficient natural language processing. Using API keys provided by the model, our chatbot delivers accurate responses to user queries in real-time. Python and Flask were used to incorporate multiple endpoints to facilitate our chatbot's functionality. ";
+const Q3 = "What is the difference between SustainABLE and GreenifyAI?";
+const A3_P1 = "SustainABLE is the current website you are on. Our AI virtual assistant and sustainability calculator aim to assist you in learning more about sustainable living.";
+const A3_P2 = "GreenifyAI is a website that allows you to browse, buy, sell, and convert conventional houses into sustainable homes. Currently, it covers a wide range of properties in the greater New Jersey area."
 
-const Q4 = "How can I make my house more sustainable?";
-const A4 = "Good options include switching to LED lighting, using energy-efficient appliances, and reducing water waste. Consider solar panels, composting, and using smart thermostats to increase sustainability even further."
+const Q4 ="What is sustainable living?"
+const A4 = "Sustainable living means making daily choices that reduce your environmental impact. This includes conserving energy and water, minimizing waste, choosing eco-friendly products, and using renewable resources. The overall goal of sustainable living is to support a healthier planet while maintaining quality of life for all."
 
-const Q5 = "Easy ways to increase energy efficiency?"
-const A5 = "Some low cost ways to increase your energy effficiency is to be more mindful of your energy consumption such as turning off appliances and lights when not in use"
+const Q5 = "How can I make my house more sustainable?";
+const A5 = "Good options include switching to LED lighting, using energy-efficient appliances, and reducing water waste. Consider solar panels, composting, and using smart thermostats to increase sustainability even further."
 
-const Q6 ="What is sustainable living?"
-const A6 = "Sustainable living means making daily choices that reduce your environmental impact. This includes conserving energy and water, minimizing waste, choosing eco-friendly products, and using renewable resources. The goal is to support a healthier planet while maintaining quality of life."
+const Q6 = "What are some easy ways to increase my residence's energy efficiency?"
+const A6 = "Some low cost ways to increase your residence's energy effficiency is to be more mindful of your energy consumption such as turning off appliances and lights when not in use."
+
 // Similar idea to FAQ questions and answers
 const page_title = "FAQ"
 const page_caption = "Frequently Asked Questions";
@@ -31,8 +32,8 @@ const page_caption = "Frequently Asked Questions";
 // Store FAQ info in an array for dynamic rendering
 const FAQ_ITEMS = [
   { question: Q1, answers: [A1_P1, A1_P2] , learnMore: false},
-  { question: Q2, answers: [A2_P1, A2_P2] , learnMore: false},
-  { question: Q3, answers: [A3] , learnMore: true}, 
+  { question: Q2, answers: [A2], learnMore: true},
+  { question: Q3, answers: [A3_P1, A3_P2] , learnMore: false}, 
   { question: Q4, answers: [A4] , learnMore: true},
   { question: Q5, answers: [A5] , learnMore: true},
   { question: Q6, answers: [A6] , learnMore: true}
