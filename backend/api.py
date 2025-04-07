@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import time
 import subprocess
 import logging
+from flask_mail import Mail, Message
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -347,10 +348,49 @@ def get_sections():
 
     return jsonify(sections)
 
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')  # Your email
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')  # Your app password
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_USER')
+
+mail = Mail(app)
+
+@app.route('/api/send-email', methods=['POST'])
+def send_sustainability_email():
+    data = request.json
+    email = data.get('email')  # Recipient's email address
+    insight = data.get('message')  # Chatbot response or sustainability tips
+
+
+    if not email or not insight:
+        return jsonify({"error": "Email and message are required"}), 400
+
+    try:
+        # Add a contextual header and footer
+        subject = "Your Sustainability Insights 🌍"
+        body = (
+            f"Thanks for exploring sustainability with us!\n\n"
+            f"Here’s what you asked for:\n\n"
+            f"{insight}\n\n"
+            f"Keep making eco-conscious choices!\n"
+            f"\n— Your Sustainability Assistant 🌱"
+            f"\n\n(Note: This is an automated message. Please do not reply.)"
+        )
+
+        msg = Message(subject=subject, recipients=[email], body=body)
+
+        mail.send(msg)
+        return jsonify({"message": "Sustainability insights sent successfully!"}), 200
+
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return jsonify({"error": "Failed to send email"}), 500
+
 
 
 # Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
-
-    
