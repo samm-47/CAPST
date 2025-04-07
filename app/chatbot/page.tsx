@@ -178,100 +178,98 @@ const ChatbotPage = () => {
         setUserInput(event.target.value);
     };
 
-    const handleSubmission = async (text?: string) => {
-        setHasSentMessage(true);
-        const currentUserInput = text || userInput;
+const handleSubmission = async (text?: string) => {
+    setHasSentMessage(true);
+    const currentUserInput = text || userInput;
+  
+    if (currentUserInput.trim()) {
+        setUserInput("");
+    
+        const updatedMessages = [
+            ...messages,
+            { type: "user", text: currentUserInput },
+        ];
+        setMessages(updatedMessages);
+        setLoading(true);
+    
+        try {
+            // Generate a title for the chat
+            const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
+                input: currentUserInput,
+            });
+            const title = titleResponse.data.title;
       
-        if (currentUserInput.trim()) {
-            setUserInput("");
-        
-            const updatedMessages = [
-                ...messages,
-                { type: "user", text: currentUserInput },
+            // Chatbot response
+            const response = await axios.post(
+                "https://capst.onrender.com/api/chat",
+                { question: currentUserInput },
+                { cancelToken: chatCancelRef.current?.token }
+            );
+      
+            const finalMessages = [
+                ...updatedMessages,
+                { type: "bot", text: response.data.response },
             ];
-            setMessages(updatedMessages);
-            setLoading(true);
-        
-            try {
-                // Generate a title for the chat
-                const titleResponse = await axios.post("https://capst.onrender.com/api/generate_title", {
-                    input: currentUserInput,
-                });
-                const title = titleResponse.data.title;
-          
-                // Chatbot response
-                const response = await axios.post(
-                    "https://capst.onrender.com/api/chat",
-                    { question: currentUserInput },
-                    { cancelToken: chatCancelRef.current?.token }
-                );
-          
-                const finalMessages = [
-                    ...updatedMessages,
-                    { type: "bot", text: response.data.response },
-                ];
-                setMessages(finalMessages);
-          
-                const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
-                const currentTimestamp = Date.now();
-          
-                let newChats: SavedChat[];
-                let newIndex: number;
-                
-                if (currentChatIndex !== null) {
-                    // Update existing chat
-                    newChats = [...savedChats];
-                    newChats[currentChatIndex] = {
-                        title: savedChats[currentChatIndex].title,
-                        messages: finalMessages,
-                        timestamp: currentTimestamp,
-                    };
-                    newIndex = currentChatIndex;
-                } else {
-                    // Add new chat
-                    const newChat = {
-                        title,
-                        messages: finalMessages,
-                        timestamp: currentTimestamp,
-                    };
-                    newChats = [...savedChats, newChat];
-                    newIndex = newChats.length - 1;
-                }
-                
-                // Sort chats by timestamp (newest first)
-                newChats.sort((a, b) => b.timestamp - a.timestamp);
-                
-                // Find the new index of our chat after sorting
-                const updatedIndex = newChats.findIndex(chat => 
-                    currentChatIndex !== null 
-                        ? chat.timestamp === savedChats[currentChatIndex]?.timestamp 
-                        : chat.timestamp === currentTimestamp
-                );
-                
-                setSavedChats(newChats);
-                localStorage.setItem("savedChats", JSON.stringify(newChats));
-                setCurrentChatIndex(updatedIndex);
-                localStorage.setItem("currentChatIndex", JSON.stringify(updatedIndex));
-                
-                // Update selected indices to match new order
-                setSelectedChats(prevSelected => {
-                    return prevSelected.map(oldIndex => {
-                        // For existing chats, find their new position
-                        if (oldIndex === currentChatIndex) {
-                            return updatedIndex;
-                        }
-                        // For other chats, find their new position based on timestamp
-                        const chat = savedChats[oldIndex];
-                        return newChats.findIndex(c => c.timestamp === chat.timestamp);
-                    }).filter(index => index !== -1); // Remove any that couldn't be found
-                });
-            } catch (error) {
-                // ... existing error handling
-            } finally {
-                setLoading(false);
+            setMessages(finalMessages);
+      
+            const savedChats: SavedChat[] = JSON.parse(localStorage.getItem("savedChats") || "[]");
+            const currentTimestamp = Date.now();
+      
+            let newChats: SavedChat[];
+            
+            if (currentChatIndex !== null) {
+                // Update existing chat
+                newChats = [...savedChats];
+                newChats[currentChatIndex] = {
+                    title: savedChats[currentChatIndex].title,
+                    messages: finalMessages,
+                    timestamp: currentTimestamp,
+                };
+            } else {
+                // Add new chat
+                const newChat = {
+                    title,
+                    messages: finalMessages,
+                    timestamp: currentTimestamp,
+                };
+                newChats = [...savedChats, newChat];
             }
+            
+            // Sort chats by timestamp (newest first)
+            newChats.sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Find the new index of our chat after sorting
+            const updatedIndex = newChats.findIndex(chat => 
+                currentChatIndex !== null 
+                    ? chat.timestamp === savedChats[currentChatIndex]?.timestamp 
+                    : chat.timestamp === currentTimestamp
+            );
+            
+            setSavedChats(newChats);
+            localStorage.setItem("savedChats", JSON.stringify(newChats));
+            setCurrentChatIndex(updatedIndex);
+            localStorage.setItem("currentChatIndex", JSON.stringify(updatedIndex));
+            
+            // Update selected indices to match new order
+            setSelectedChats(prevSelected => {
+                return prevSelected.map(oldIndex => {
+                    // For existing chats, find their new position
+                    if (oldIndex === currentChatIndex) {
+                        return updatedIndex;
+                    }
+                    // For other chats, find their new position based on timestamp
+                    const chat = savedChats[oldIndex];
+                    return newChats.findIndex(c => c.timestamp === chat.timestamp);
+                }).filter(index => index !== -1); // Remove any that couldn't be found
+            });
+        } catch {
+            // Optionally add error handling here if needed
+            console.error("An error occurred during chat submission");
+        } finally {
+            setLoading(false);
         }
-    };
+    }
+};
       
 
     // Loading dots animation
