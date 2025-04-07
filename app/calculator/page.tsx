@@ -79,21 +79,35 @@ const CalculatorPage: React.FC = () => {
   const handleAirQuality = (event: React.ChangeEvent<HTMLInputElement>) => { 
     setAirQuality(event.target.id); };
 
-  // Clear saved choices
-  const clearSavedChoices = () => {
-    localStorage.removeItem("energyUsage");
-    localStorage.removeItem("percentRenewable");
-    localStorage.removeItem("waterUsage");
-    localStorage.removeItem("airQuality");
-    setEnergyUsage(null);
-    setPercentRenewable(null);
-    setWaterUsage(null);
-    setAirQuality(null);
-  };
+    const clearSavedChoices = () => {
+      localStorage.removeItem("energyUsage");
+      localStorage.removeItem("percentRenewable");
+      localStorage.removeItem("waterUsage");
+      localStorage.removeItem("airQuality");
+    
+      setEnergyUsage(null);
+      setPercentRenewable(null);
+      setWaterUsage(null);
+      setAirQuality(null);
+    
+      // Clear score display
+      const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
+      const sustainabilityExplanation = document.getElementById("sustainabilityScoreExplanation");
+      if (sustainabilityGrade) sustainabilityGrade.textContent = '';
+      if (sustainabilityExplanation) sustainabilityExplanation.textContent = '';
+    
+      // Clear chatbot response
+      setChatbotResponse('');
+    };
+    
   
     const [copied, setCopied] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [userEmail, setUserEmail] = useState('');
+    const [showEmailInput, setShowEmailInput] = useState(false);
+
 
     const handleCopy = () => {
       navigator.clipboard.writeText(chatbotResponse)
@@ -127,6 +141,36 @@ const CalculatorPage: React.FC = () => {
     // Cleanup event listener on unmount
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const sendEmail = async () => {
+    if (!userEmail) {
+      alert('Please enter an email address.');
+      return;
+    }
+  
+    try {
+      const response = await fetch('https://capst.onrender.com/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail,
+          message: chatbotResponse,
+        }),
+      });
+  
+      if (response.ok) {
+        alert('Email sent successfully!');
+        setShowEmailInput(false);
+        setUserEmail('');
+      } else {
+        alert('Failed to send email.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while sending the email.');
+    }
+  };
+  
   
     
   const calculateScore = async () => {
@@ -463,37 +507,71 @@ const CalculatorPage: React.FC = () => {
       </div>
 
       {/* Modal for Chatbot Response */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-[90%] w-[600px]">
-            <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
-            <div className="mb-4 overflow-y-auto max-h-[400px] text-black">
-              {chatbotResponse}
-            </div>
-            <div className="flex justify-end gap-4">
-            <button
-                  onClick={() => {
-                    // Redirect to /chatbot without any parameters
-                    window.location.href = '/chatbot';
-                  }}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
-                >
-                  Get More Info
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white pt-20 px-6 pb-6 rounded-lg shadow-lg max-w-[90%] w-[600px] relative">
+                {/* Close Button styled as a back arrow (top-left) */}
+                <button onClick={closeModal} className="backArrow">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
 
-              <button
-                onClick={handleCopy}
-                className="bg-green-800 text-white px-4 py-2 rounded hover:filer-coffee-green hover:brightness-90"
-              >
-                {copied ? 'Copied!' : 'Copy Text'}
-              </button>
-              <button
-                onClick={closeModal}
-                className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-600"
-              >
-                Close
-              </button>
-            </div>
+                {/* Copy Button (top-right) */}
+                <button onClick={handleCopy} className="copyButton">
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+
+                <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
+                <div className="mb-4 overflow-y-auto max-h-[400px] text-black">
+                  {chatbotResponse}
+                </div>
+
+                <div className="flex flex-col gap-4 mt-4">
+                  {/* Expandable Email Input Section */}
+                  {showEmailInput && (
+                    <div className="transition-all duration-300 ease-in-out">
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
+                        Enter your email to receive your results
+                      </label>
+                      <input
+                          type="email"
+                          id="email"
+                          value={userEmail}
+                          onChange={(e) => setUserEmail(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-3 py-2 mb-2 text-black"
+                          placeholder="your@email.com"
+                        />
+                      <div className="flex justify-end">
+                        <button
+                          onClick={sendEmail}
+                          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500"
+                        >
+                          Send Email
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons Row */}
+                  <div className="flex justify-end gap-4">
+                    <button
+                      onClick={() => {
+                        window.location.href = '/chatbot';
+                      }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
+                    >
+                      Get More Info
+                    </button>
+                    <button
+                      onClick={() => setShowEmailInput(true)}
+                      className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                      Email Me This
+                    </button>
+                  </div>
+                </div>
+
           </div>
         </div>
       )}
