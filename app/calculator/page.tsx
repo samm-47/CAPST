@@ -518,8 +518,20 @@ const CalculatorPage: React.FC = () => {
                 </button>
 
                 {/* Copy Button (top-right) */}
-                <button onClick={handleCopy} className="copyButton">
-                  {copied ? 'Copied!' : 'Copy'}
+                <button 
+                  onClick={handleCopy} 
+                  className={"copyButton"}
+                  aria-label="Copy definition"
+                >
+                  {copied ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 13L9 17L19 7" stroke="#4CAF50" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 16H6C5.46957 16 4.96086 15.7893 4.58579 15.4142C4.21071 15.0391 4 14.5304 4 14V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4H14C14.5304 4 15.0391 4.21071 15.4142 4.58579C15.7893 4.96086 16 5.46957 16 6V8M10 20H18C18.5304 20 19.0391 19.7893 19.4142 19.4142C19.7893 19.0391 20 18.5304 20 18V10C20 9.46957 19.7893 8.96086 19.4142 8.58579C19.0391 8.21071 18.5304 8 18 8H10C9.46957 8 8.96086 8.21071 8.58579 8.58579C8.21071 8.96086 8 9.46957 8 10V18C8 18.5304 8.21071 19.0391 8.58579 19.4142C8.96086 19.7893 9.46957 20 10 20Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </button>
 
                 <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
@@ -532,7 +544,7 @@ const CalculatorPage: React.FC = () => {
                   {showEmailInput && (
                     <div className="transition-all duration-300 ease-in-out">
                       <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
-                        Enter your email to receive your results
+                        Enter your email to receive your results. Your email will not be saved.
                       </label>
                       <input
                           type="email"
@@ -555,19 +567,18 @@ const CalculatorPage: React.FC = () => {
 
                   {/* Action Buttons Row */}
                   <div className="flex justify-end gap-4">
-                    <button
-                      onClick={() => {
-                        window.location.href = '/chatbot';
-                      }}
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500"
-                    >
-                      Get More Info
-                    </button>
+                      <Link
+                        href={`/chatbot?question=${encodeURIComponent(`Further explain my score, and give additional tips: ${chatbotResponse}`)}`}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 text-center"
+                      >
+                        Talk to Chatbot
+                      </Link>
+
                     <button
                       onClick={() => setShowEmailInput(true)}
                       className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700"
                     >
-                      Email Me This
+                      Email Me My Score
                     </button>
                   </div>
                 </div>
