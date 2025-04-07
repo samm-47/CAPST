@@ -113,7 +113,7 @@ const showDefinition = (term: string) => {
       <div className={styles.body}>
         <div className={styles.whiteBoxTop}>
             <h1 className={styles.heading1}>Sustainable Living Tips</h1>
-            <h4 className="text-lg mb-5">
+            <h4 className="text-lg text-black mb-5">
             To enhance your search experience in our Sustainability Glossary, we recommend <br/> using  well-known environmental terms like greenhouse gases, renewable energy, <br/> or other specific sustainability-related keywords. 
         </h4>           
         </div>
