@@ -568,13 +568,7 @@ const handleSubmission = async (text?: string) => {
                                 >
                                     <i className="fa-solid fa-trash-can"></i>
                                 </button>
-                                <button
-                                    onClick={() => setIsEmailModalOpen(true)}
-                                    className="w-10 h-10 bg-green-500 text-white rounded-full shadow hover:bg-green-600 transition flex items-center justify-center"
-                                    title="Email chat"
-                                >
-                                    <i className="fa-solid fa-envelope"></i>
-                                </button>
+                                
                             </div>
                         </div>
                     )}
