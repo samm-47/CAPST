@@ -39,14 +39,7 @@ const ChatbotPage = () => {
     const [selectedChats, setSelectedChats] = useState<number[]>([]);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
-        // Add these helper functions
-    const toggleChatSelection = (index: number) => {
-        setSelectedChats(prev => 
-        prev.includes(index) 
-            ? prev.filter(i => i !== index) 
-            : [...prev, index]
-        );
-    };
+
 
     const handleSendToEmail = async (email: string) => {
         try {
@@ -459,7 +452,7 @@ const handleSubmission = async (text?: string) => {
         <div key={relativeTime}>
             <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
             <ul className="flex-1">
-                {sortedChats.map((chat, _sortedIndex) => {
+                {sortedChats.map((chat) => {
                     // Find the original index
                     const originalIndex = savedChats.findIndex(c => c.timestamp === chat.timestamp);
                     return (
