@@ -389,6 +389,105 @@ def send_sustainability_email():
         print(f"Error sending email: {e}")
         return jsonify({"error": "Failed to send email"}), 500
 
+@app.route('/api/send-chat-email', methods=['POST'])
+def send_chat_history_email():
+    print("\n=== REQUEST RECEIVED ===")  # This should appear in Flask console
+    print(f"Headers: {request.headers}")
+    print(f"Data: {request.data}")
+    
+    if not request.is_json:
+        print("Error: Request is not JSON")
+        return jsonify({"error": "Request must be JSON"}), 400
+        
+    data = request.get_json()
+    print(f"JSON data: {data}")  # Debug what's actually received
+    
+    email = data.get('email')
+    selected_chats = data.get('selectedChats', [])
+    chat_history = data.get('chatHistory', [])
+    
+    print(f"Email: {email}")
+    print(f"Selected chats: {selected_chats}")
+    print(f"Chat history length: {len(chat_history)}")
+
+    if not email:
+        print("Error: Email is required")
+        return jsonify({"error": "Email is required"}), 400
+    if not selected_chats or not isinstance(selected_chats, list):
+        print("Error: No chats selected or invalid format")
+        return jsonify({"error": "No chats selected or invalid format"}), 400
+
+    try:
+        # Print details of selected chats
+        print("\n=== Selected Chats Details ===")
+        chats_to_send = []
+        for idx in selected_chats:
+            if idx < 0 or idx >= len(chat_history):
+                print(f"Invalid chat index skipped: {idx}")
+                continue
+            
+            chat = chat_history[idx]
+            print(f"Chat {idx}:")
+            print(f"  Title: {chat.get('title', 'Untitled')}")
+            print(f"  Messages: {len(chat.get('messages', []))}")
+            
+            # Print first message preview
+            if chat.get('messages'):
+                first_msg = chat['messages'][0]
+                print(f"  First message: {first_msg.get('type')}: {first_msg.get('text', '')[:50]}...")
+            
+            chats_to_send.append(chat)
+
+        if not chats_to_send:
+            print("Error: No valid chats selected after filtering")
+            return jsonify({"error": "No valid chats selected"}), 400
+
+        # Format email content
+        subject = "Your Selected Chat Histories"
+        body = "Here are your selected chat histories:\n\n"
+        
+        for chat in chats_to_send:
+            body += f"=== {chat.get('title', 'Untitled Chat')} ===\n"
+            for message in chat.get('messages', []):
+                sender = "You" if message.get('type') == "user" else "Assistant"
+                body += f"{sender}: {message.get('text', '')}\n"
+            body += "\n\n"
+        
+        body += "Thank you for using our sustainability chatbot!\n— Sustainability Team"
+
+        # Print final email content
+        print("\n=== Email Content To Be Sent ===")
+        print(f"Subject: {subject}")
+        print("Body:")
+        print(body)
+        print(f"Recipient: {email}")
+        print("="*50)
+
+        # Send email
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            body=body,
+            sender=app.config['MAIL_DEFAULT_SENDER']
+        )
+        
+        print("Attempting to send email...")
+        mail.send(msg)
+        print("Email sent successfully!")
+        
+        return jsonify({
+            "message": f"Successfully sent {len(chats_to_send)} chat(s) to {email}",
+            "sentCount": len(chats_to_send)
+        }), 200
+
+    except Exception as e:
+        print(f"\n!!! Error sending email: {str(e)}")
+        logging.error(f"Error sending chat history email: {str(e)}")
+        return jsonify({
+            "error": "Failed to send email",
+            "details": str(e)
+        }), 500
+
 
 
 # Run the Flask app
