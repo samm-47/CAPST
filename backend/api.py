@@ -389,6 +389,14 @@ def send_sustainability_email():
         print(f"Error sending email: {e}")
         return jsonify({"error": "Failed to send email"}), 500
 
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://127.0.0.1:5000", "https://capst.onrender.com/api/send-chat-email"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
 @app.route('/api/send-chat-email', methods=['POST'])
 def send_chat_history_email():
     print("\n=== REQUEST RECEIVED ===")  # This should appear in Flask console
