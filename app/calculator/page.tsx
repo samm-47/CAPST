@@ -14,10 +14,11 @@ const page_caption = "How sustainable is your lifestyle?"
 
 const CalculatorPage: React.FC = () => {
 
+  const [chatbotResponse, setChatbotResponse] = useState<string>('');
+  const [isMobile, setIsMobile] = useState(false);
+
   // Used to track Energy Consumption radio selection.
   const [energyUsage, setEnergyUsage] = useState<string | null>(null);
-
-  const [chatbotResponse, setChatbotResponse] = useState<string>('');
 
   // Used to track Percent Renewable Energy radio selection.
   const [percentRenewable, setPercentRenewable] = useState<string | null>(null); 
@@ -25,9 +26,15 @@ const CalculatorPage: React.FC = () => {
   // Used to track Water Usage radio selection.
   const [waterUsage, setWaterUsage] = useState<string | null>(null); 
 
+  //Used to track Waste Management radio selection.
+  const [wasteManagement, setWasteManagement] = useState<string | null>(null);
+
+  //Used to track Transportation mode radio selection
+  const [transportationMode, setTransportationMode] = useState<string | null>(null);
+
   // Used to track CO2 Level radio selection.
   const [airQuality, setAirQuality] = useState<string | null>(null); 
-  const [isMobile, setIsMobile] = useState(false);
+
 
   // Retrieve saved choices from localStorage when the component mounts
   useEffect(() => {
@@ -35,12 +42,16 @@ const CalculatorPage: React.FC = () => {
     const savedPercentRenewable = localStorage.getItem("percentRenewable");
     const savedWaterUsage = localStorage.getItem("waterUsage");
     const savedAirQuality = localStorage.getItem("airQuality");
+    const savedWasteManagement = localStorage.getItem("wasteManagement");
+    const savedTransportationMode = localStorage.getItem("transportationMode")
 
     console.log("Retrieved from localStorage:", {
       savedEnergyUsage,
       savedPercentRenewable,
       savedWaterUsage,
       savedAirQuality,
+      savedWasteManagement,
+      savedTransportationMode
     });
 
     // Only update state if the retrieved value is not null or empty
@@ -48,6 +59,8 @@ const CalculatorPage: React.FC = () => {
     if (savedPercentRenewable) setPercentRenewable(savedPercentRenewable);
     if (savedWaterUsage) setWaterUsage(savedWaterUsage);
     if (savedAirQuality) setAirQuality(savedAirQuality);
+    if (savedWasteManagement) setWasteManagement(savedWasteManagement);
+    if (savedTransportationMode) setTransportationMode(savedTransportationMode);
   }, []); // Empty dependency array ensures this runs only on mount
 
   // Save user choices to localStorage whenever they change
@@ -57,13 +70,17 @@ const CalculatorPage: React.FC = () => {
       percentRenewable,
       waterUsage,
       airQuality,
+      wasteManagement,
+      transportationMode
     });
 
     if (energyUsage) localStorage.setItem("energyUsage", energyUsage);
     if (percentRenewable) localStorage.setItem("percentRenewable", percentRenewable);
     if (waterUsage) localStorage.setItem("waterUsage", waterUsage);
     if (airQuality) localStorage.setItem("airQuality", airQuality);
-  }, [energyUsage, percentRenewable, waterUsage, airQuality]); // Save only when these values change
+    if (wasteManagement) localStorage.setItem("wasteManagement", wasteManagement);
+    if (transportationMode) localStorage.setItem("transportationMode", transportationMode);
+  }, [energyUsage, percentRenewable, waterUsage, airQuality, wasteManagement, transportationMode]);// Save only when these values change
 
     
   
@@ -79,16 +96,26 @@ const CalculatorPage: React.FC = () => {
   const handleAirQuality = (event: React.ChangeEvent<HTMLInputElement>) => { 
     setAirQuality(event.target.id); };
 
+  const handleWasteManagement = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setWasteManagement(event.target.id); };
+
+  const handleTransportationMode = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setTransportationMode(event.target.id); };
+
     const clearSavedChoices = () => {
       localStorage.removeItem("energyUsage");
       localStorage.removeItem("percentRenewable");
       localStorage.removeItem("waterUsage");
       localStorage.removeItem("airQuality");
+      localStorage.removeItem("wasteManagement")
+      localStorage.removeItem("transportationMode")
     
       setEnergyUsage(null);
       setPercentRenewable(null);
       setWaterUsage(null);
       setAirQuality(null);
+      setWasteManagement(null);
+      setTransportationMode(null);
     
       // Clear score display
       const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
@@ -144,7 +171,7 @@ const CalculatorPage: React.FC = () => {
 
   const sendEmail = async () => {
     if (!userEmail) {
-      alert('Please enter an email address.');
+      alert('Please enter a valid email address.');
       return;
     }
   
@@ -159,7 +186,7 @@ const CalculatorPage: React.FC = () => {
       });
   
       if (response.ok) {
-        alert('Email sent successfully!');
+        alert('Email sent successfully! If you do not see it in your inbox, please check your spam.');
         setShowEmailInput(false);
         setUserEmail('');
       } else {
@@ -173,133 +200,193 @@ const CalculatorPage: React.FC = () => {
   
   
     
+  interface ScoreBreakdown {
+    selected: string;
+    rawScore: number;
+    weightedScore: number;
+  }
+  
+  interface CategoryScores {
+    [key: string]: { [key: string]: number };
+  }
+  
+  interface ChatbotPayload {
+    totalScore: number;
+    grade: string;
+    details: {
+      category: string;
+      selected: string;
+      score: number;
+      weight: number;
+    }[];
+  }
+  
   const calculateScore = async () => {
     const sustainabilityGrade = document.getElementById("sustainabilityScoreLabel");
     const sustainabilityExplanation = document.getElementById("sustainabilityScoreExplanation");
-
-    let sustainabilityScoreInt:number = -1;
-    let energyConsumptionScore:number;
-    let renewableEnergyScore:number;
-    let waterConsumptionScore:number;
-    let airQualityScore:number;
-
-    switch (energyUsage) {
-      case "energy1": energyConsumptionScore = 5; break;
-      case "energy2": energyConsumptionScore = 4; break;
-      case "energy3": energyConsumptionScore = 3; break;
-      case "energy4": energyConsumptionScore = 2; break;
-      case "energy5": energyConsumptionScore = 1; break;
-      default: energyConsumptionScore = 0;
+  
+    // Define score mappings
+    const scoreMap: CategoryScores = {
+      energyUsage: { energy1: 5, energy2: 4, energy3: 3, energy4: 2, energy5: 1 },
+      percentRenewable: { renew1: 1, renew2: 2, renew3: 3, renew4: 4, renew5: 5 },
+      waterUsage: { water1: 5, water2: 4, water3: 3, water4: 2, water5: 1 },
+      airQuality: { air1: 5, air2: 4, air3: 3, air4: 2, air5: 1 },
+      wasteManagement: { waste1: 1, waste2: 3, waste3: 5 },
+      transportationMode: { trans1: 1, trans2: 3, trans3: 5 }
+    };
+  
+    // Define category weights
+    const weights = {
+      energyUsage: 0.30,
+      percentRenewable: 0.25,
+      waterUsage: 0.15,
+      airQuality: 0.10,
+      wasteManagement: 0.10,
+      transportationMode: 0.10
+    };
+  
+    // Collect responses (assuming these are defined elsewhere)
+    const responses = {
+      energyUsage,
+      percentRenewable,
+      waterUsage,
+      airQuality,
+      wasteManagement,
+      transportationMode
+    };
+  
+    let totalScore = 0;
+    let allAnswered = true;
+    const breakdown: Record<string, ScoreBreakdown> = {};
+    const details: ChatbotPayload['details'] = [];
+  
+    // Calculate scores
+    for (const key in responses) {
+      const answer = responses[key as keyof typeof responses];
+      
+      // Validate response
+      if (!answer || typeof answer !== 'string') {
+        allAnswered = false;
+        break;
+      }
+  
+      const categoryMap = scoreMap[key];
+      const rawScore = categoryMap?.[answer] ?? 0;
+      const weight = weights[key as keyof typeof weights] ?? 0;
+      const weightedScore = rawScore * weight;
+      
+      totalScore += weightedScore;
+      breakdown[key] = { selected: answer, rawScore, weightedScore };
+      
+      // Prepare simplified details for API
+      details.push({
+        category: key,
+        selected: answer,
+        score: rawScore,
+        weight: weight
+      });
     }
-
-    switch (percentRenewable) {
-      case "renew1": renewableEnergyScore = 1; break;
-      case "renew2": renewableEnergyScore = 2; break;
-      case "renew3": renewableEnergyScore = 3; break;
-      case "renew4": renewableEnergyScore = 4; break;
-      case "renew5": renewableEnergyScore = 5; break;
-      default: renewableEnergyScore = 0;
-    }
-
-    switch (waterUsage) {
-      case "water1": waterConsumptionScore = 5; break;
-      case "water2": waterConsumptionScore = 4; break;
-      case "water3": waterConsumptionScore = 3; break;
-      case "water4": waterConsumptionScore = 2; break;
-      case "water5": waterConsumptionScore = 1; break;
-      default: waterConsumptionScore = 0;
-    }
-
-    switch (airQuality) {
-      case "air1": airQualityScore = 5; break;
-      case "air2": airQualityScore = 4; break;
-      case "air3": airQualityScore = 3; break;
-      case "air4": airQualityScore = 2; break;
-      case "air5": airQualityScore = 1; break;
-      default: airQualityScore = 0;
-    }
-
-    {/* TODO: Create more complex scoring system */}
-    {/* WIll need to add more metrics and weighed/curved scoring systems */}
-    sustainabilityScoreInt = 5 * 
-                            (energyConsumptionScore + 
-                            renewableEnergyScore +
-                            waterConsumptionScore +
-                            airQualityScore);
-
+  
+    // Calculate final score (scaled to 100)
+    const sustainabilityScoreInt = allAnswered ? Math.round((totalScore / 5) * 100) : -1;
+  
+    // Determine grade and feedback
     let sustainabilityScore = "";
     let sustainabilityScoreDetail = "";
-
-    if (!sustainabilityGrade|| !sustainabilityExplanation)
-    {
-      console.error("No element found.");
+  
+    if (!sustainabilityGrade || !sustainabilityExplanation) {
+      console.error("Required DOM elements not found");
+      return;
     }
-    else
-    {
-      if (sustainabilityScoreInt > 0 && sustainabilityScoreInt <= 25) {
+  
+    if (!allAnswered) {
+      sustainabilityScore = "Error!";
+      sustainabilityScoreDetail = "Please select a value for each category.";
+    } else {
+      // Grade mapping
+      if (sustainabilityScoreInt <= 25) {
         sustainabilityScore = `F (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Oh no! A score of F indicates that multiple areas of your home and lifestyle can be improved to become more sustainable.";
-      }
-      else if (sustainabilityScoreInt > 25 && sustainabilityScoreInt <= 50) {
+      } else if (sustainabilityScoreInt <= 50) {
         sustainabilityScore = `D (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Oh no! A score of D indicates that one or more areas of your home and lifestyle can be improved to become more sustainable.";
-      }
-      else if (sustainabilityScoreInt > 50 && sustainabilityScoreInt <= 65) {
+      } else if (sustainabilityScoreInt <= 65) {
         sustainabilityScore = `C (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "You are doing alright! A score of C indicates that your home and lifestyle are somewhat helping to create a cleaner environment.";
-      }
-      else if (sustainabilityScoreInt > 65 && sustainabilityScoreInt <= 80) {
+      } else if (sustainabilityScoreInt <= 80) {
         sustainabilityScore = `B (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Good job! Your home and lifestyle for the most part are helping create a cleaner environment!";
-      }
-      else if (sustainabilityScoreInt > 80 && sustainabilityScoreInt <= 99) {
+      } else if (sustainabilityScoreInt <= 99) {
         sustainabilityScore = `A (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Nice job! Your home and lifestyle are helping create a cleaner environment!";
-      }
-      else if (sustainabilityScoreInt == 100) {
+      } else if (sustainabilityScoreInt === 100) {
         sustainabilityScore = `S (${sustainabilityScoreInt})`;
         sustainabilityScoreDetail = "Perfect! Your home and lifestyle are helping create a cleaner environment!";
       }
-      else
-      {
-        sustainabilityScore = "Error!";
-        sustainabilityScoreDetail = "Please select a value for each category."
-      }
-
+  
+      // Update UI
       sustainabilityGrade.textContent = sustainabilityScore;
       sustainabilityExplanation.textContent = sustainabilityScoreDetail;
+  
       try {
-        const data = {
-          score: sustainabilityScore
+        // Create the properly formatted payload with minimal prompt
+        const payload = {
+          score: sustainabilityScoreInt.toString(),
+          grade: sustainabilityScore,
+          breakdown: Object.entries(breakdown).map(([category, data]) => ({
+            category,
+            selected: data.selected,
+            score: data.rawScore.toString(),
+            weighted: data.weightedScore.toFixed(2)
+          })),
+          prompt: `Given sustainability score ${sustainabilityScoreInt} (${sustainabilityScore}), provide specific recommendations focusing on ${getLowestScoringCategories(breakdown)}. Output in 100 words with 1.5 line spacing.`
         };
-        
-        console.log("Sending data to chatbot:", data);
-        
-        const response = await axios.post('https://capst.onrender.com/api/chat/calc', data);
-        
-        console.log("Chatbot response:", response.data);
-        
-        // Update the state with the chatbot's response
-        if (response.data && response.data.response) {
-          setChatbotResponse(response.data.response); // Ensure the backend returns { message: "..." }
+    
+        console.log("Sending minimized payload:", payload);
+    
+        const response = await axios.post('https://capst.onrender.com/api/chat/calc', 
+          payload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
+    
+        if (response.data?.response) {
+          setChatbotResponse(response.data.response);
         } else {
-          setChatbotResponse("No response received from the chatbot.");
+          setChatbotResponse("Analyzing your results...");
         }
       } catch (error) {
-        console.error("Error sending score to chatbot:", error);
-        setChatbotResponse("Failed to get a response from the chatbot.");
+        let errorMessage = "Please try again later";
+        if (axios.isAxiosError(error)) {
+          errorMessage = error.response?.data?.error || 
+                       error.response?.data?.message || 
+                       "Failed to get analysis";
+        }
+        setChatbotResponse(errorMessage);
       }
-      
-
+    };
+    
+    // Helper function to identify lowest scoring categories
+    function getLowestScoringCategories(breakdown: Record<string, ScoreBreakdown>): string {
+      const minScore = Math.min(...Object.values(breakdown).map(b => b.rawScore));
+      const lowCategories = Object.entries(breakdown)
+        .filter(([_, data]) => data.rawScore === minScore)
+        .map(([category]) => category);
+      return lowCategories.join(" and ");
     }
-  }
+  };
+  
 
   return (
     <Layout>
       {/* CSS grid to center content like home.tsx page */}
       <div className="default-page-bg overflow-auto"> {/*Calculator Background here*/}
         <div className="flex flex-col w-full sm:w-1/2 mt-6 mb-6 bg-white shadow-lg rounded-lg p-2 sm:p-1">
-          <h1 className="title text-center text-xl sm:text-xl md:text-3xl lg:text-4xl">
+          <h1 className="title text-center">
             {page_title}
           </h1>
           <p className="caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%] text-sm sm:text-base md:text-lg lg:text-xl">
@@ -414,7 +501,7 @@ const CalculatorPage: React.FC = () => {
                     checked={waterUsage === `water${num}`}
                   />
                   <label htmlFor={`water${num}`} className="text-lg">
-                    {num === 1 ? "<50" : num === 2 ? "50 to 70" : num === 3 ? "70 to 90" : num === 4 ? "90 to 110" : "110+"}
+                    {num === 1 ? "<2k" : num === 2 ? "2k to 4k" : num === 3 ? "4k to 6k" : num === 4 ? "6k to 8k" : "8k+"}
                   </label>
                 </div>
               ))}
@@ -458,6 +545,78 @@ const CalculatorPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Transportation Mode */}
+          <div className="sus-calc-input">
+                <div className="sus-calc-topic">
+                  <label className="sus-calc-title">
+                    Primary Transportation Mode
+                  </label>
+                  <p>Pick the mode you use most often to get around</p>
+                </div>
+                <div
+                  className="sus-calc-input"
+                  style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    alignItems: isMobile ? 'flex-start' : 'center',
+                    gap: '10px',
+                  }}
+                >
+                  {[1, 2, 3].map((num) => (
+                    <div key={`trans${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="radio"
+                        id={`trans${num}`}
+                        name="transportation_mode"
+                        className="hoverable-bubble-div custom-radio"
+                        onChange={handleTransportationMode}
+                        checked={transportationMode === `trans${num}`}
+                      />
+                      <label htmlFor={`trans${num}`} className="text-lg">
+                        {num === 1 ? "Gas Car" : num === 2 ? "Public Transit / Hybrid" : "Walking / Biking / EV"}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+          {/* Waste Management */}
+            <div className="sus-calc-input">
+              <div className="sus-calc-topic">
+                <label className="sus-calc-title">
+                  Waste Management
+                </label>
+                <p>Choose the option that best matches your household’s waste sorting habits</p>
+              </div>
+              <div
+                className="sus-calc-input"
+                style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'flex-start' : 'center',
+                  gap: '10px',
+                }}
+              >
+                {[1, 2, 3].map((num) => (
+                  <div key={`waste${num}`} className="sus-calc-bubble" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="radio"
+                      id={`waste${num}`}
+                      name="waste_management"
+                      className="hoverable-bubble-div custom-radio"
+                      onChange={handleWasteManagement}
+                      checked={wasteManagement === `waste${num}`}
+                    />
+                    <label htmlFor={`waste${num}`} className="text-lg">
+                      {num === 1 ? "No Recycling/Composting" : num === 2 ? "Some Recycling/Composting" : "Full Recycling & Composting"}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+
 
           {/* Calculate Score Button */}
           <div>
@@ -601,3 +760,4 @@ const CalculatorPage: React.FC = () => {
 };
 
 export default CalculatorPage;
+
