@@ -374,7 +374,7 @@ const CalculatorPage: React.FC = () => {
     function getLowestScoringCategories(breakdown: Record<string, ScoreBreakdown>): string {
       const minScore = Math.min(...Object.values(breakdown).map(b => b.rawScore));
       const lowCategories = Object.entries(breakdown)
-        .filter(([_, data]) => data.rawScore === minScore)
+        .filter(([, data]) => data.rawScore === minScore)  // Use array destructuring with empty first element
         .map(([category]) => category);
       return lowCategories.join(" and ");
     }
