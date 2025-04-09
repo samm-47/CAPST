@@ -105,43 +105,75 @@ def chat_with_bot():
 @app.route('/api/chat/calc', methods=['POST'])
 def chat():
     data = request.get_json()  # Get the data sent from the frontend
-    score = data.get('score')
-    print(score)
-
-    # Ensure that the score is provided
-    if not score:
+    
+    # Validate required fields
+    if not data or 'score' not in data:
         return jsonify({"error": "Score is required"}), 400
+    
+    score = data.get('score')
+    breakdown = data.get('breakdown', {})
+    prompt = data.get('prompt', "")
 
-    # Construct the user's question or prompt based on the score
-    user_question = f"Given the sustainability score of {score}, explain to the user, how they can improve to be more sustainable for their home and lifestyle. The ranking is A - F and S is perfect. Output in 100 words and in sentences. Spacing should be 1.5."
+    # Construct a detailed analysis prompt
+    user_question = f"""
+    Analyze this sustainability profile and provide specific recommendations:
+    
+    Overall Score: {score}
+    
+    Category Breakdown:
+    - Energy Usage: {breakdown.get('energyUsage', {}).get('rawScore', 'N/A')}/5
+    - Renewable Energy: {breakdown.get('percentRenewable', {}).get('rawScore', 'N/A')}/5
+    - Water Usage: {breakdown.get('waterUsage', {}).get('rawScore', 'N/A')}/5
+    - Air Quality: {breakdown.get('airQuality', {}).get('rawScore', 'N/A')}/5
+    - Waste Management: {breakdown.get('wasteManagement', {}).get('rawScore', 'N/A')}/5
+    - Transportation: {breakdown.get('transportationMode', {}).get('rawScore', 'N/A')}/5
+    
+    Specific Instructions:
+    1. Focus first on the lowest scoring categories
+    2. Provide 3-5 actionable recommendations
+    3. Include both immediate and long-term improvements
+    4. Format with clear section headings
+    5. Keep response between 150-200 words
+    6. Use 1.5 line spacing
+    
+    Additional context from user: {prompt}
+    """
 
-    logging.info(f"User question: {user_question}")
+    logging.info(f"Generated analysis prompt: {user_question}")
 
     try:
-        # Start a chat session with the AI model
-        model = configure_genai()  # Reconfigure the model with the current API key
-        chat_session = model.start_chat(history=[])  # You can pass an empty chat history if not needed
-
-        # Generate a response from the model using the user question
-        response = chat_session.send_message(user_question)
+        model = configure_genai()
+        chat_session = model.start_chat(history=[])
+        
+        # Generate response with temperature setting for more focused answers
+        response = chat_session.send_message(
+            user_question,
+            generation_config={
+                "temperature": 0.3,  # More deterministic output
+                "max_output_tokens": 500
+            }
+        )
         
     except Exception as e:
-        # Handle errors like rate limit or other issues
         if 'rate limit' in str(e).lower():
-            logging.warning(f"Rate limit reached for API Key {get_current_api_key()}. Switching to the next key.")
-            switch_api_key()  # Switch to the next API key
-            time.sleep(2)  # Optional: Wait before retrying
-            return chat()  # Retry with the new API key
-        else:
-            logging.error(f"Error calling chat model: {str(e)}")
-            return jsonify({"error": "Failed to communicate with the model."}), 500
+            logging.warning(f"Rate limit reached for API Key {get_current_api_key()}. Switching keys.")
+            switch_api_key()
+            time.sleep(2)
+            return chat()  # Retry with new key
+        logging.error(f"Error calling model: {str(e)}")
+        return jsonify({"error": "Failed to generate response"}), 500
 
-    # Get the response text from the model
-    response_text = response.text if hasattr(response, 'text') else "No response text available"
-    logging.info(f"Model response: {response_text}")
-
-    # Return the AI-generated response
-    return jsonify({"response": response_text})
+    # Format the response text with proper spacing
+    response_text = response.text if hasattr(response, 'text') else "No response generated"
+    formatted_response = "\n".join([f"<p style='line-height:1.5'>{line}</p>" for line in response_text.split("\n") if line.strip()])
+    
+    return jsonify({
+        "response": formatted_response,
+        "analysis": {
+            "weakest_category": min(breakdown.items(), key=lambda x: x[1].get('rawScore', 5))[0] if breakdown else None,
+            "strongest_category": max(breakdown.items(), key=lambda x: x[1].get('rawScore', 0))[0] if breakdown else None
+        }
+    })
 
 @app.route('/api/generate_title', methods=['POST'])
 def generate_title():
