@@ -36,9 +36,7 @@ const ChatbotPage = () => {
     const hasProcessedFAQ = useRef(false);
     const bottomReference = useRef<HTMLDivElement>(null);
     const [showScrollToTop, setShowScrollToTop] = useState(false);
-    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-    // Track which message is being hovered for editing
-    const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); 
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false); 
 
     const getRelativeTime = (timestamp: number): string => {
         const now = Date.now();
@@ -469,8 +467,6 @@ const ChatbotPage = () => {
                                     <div 
                                         key={index}
                                         className="flex flex-col relative group"
-                                        onMouseEnter={() => setHoveredMessageIndex(index)}
-                                        onMouseLeave={() => setHoveredMessageIndex(null)}
                                     >
                                         {message.type !== "user" && (
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
