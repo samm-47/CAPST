@@ -74,10 +74,6 @@ const ChatbotPage = () => {
         return groupedChats;
     };
 
-    const initialMessage = {
-        type: "bot",
-        text: "Hello, how can I help you?",
-    };
     const toggleSidebar = () => {
         console.log("Toggling sidebar. Current state:", isSidebarOpen);
         setIsSidebarOpen((prevState) => !prevState);
@@ -92,6 +88,17 @@ const ChatbotPage = () => {
     const scrollToBottom = () => {
         bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
     };
+
+    // Copy Logic with animation and checkmark confirmation
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+    const handleCopy = (text: string, index: number) => {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      });
+    };
+    
     
     useEffect(() => {
         const handleScroll = () => {
@@ -125,16 +132,16 @@ const ChatbotPage = () => {
                     if (parsedMessages.length > 0) {
                         setMessages(parsedMessages);
 
-                        if (parsedMessages.length === 1 && parsedMessages[0].text === initialMessage.text) {
+                        if (parsedMessages.length > 0) {
                             setHasSentMessage(false);
                         } else {
                             setHasSentMessage(true);
                         }
                     }
                 } else {
-                    setMessages([initialMessage]);
+                    setMessages([]);
                     setHasSentMessage(false);
-                    localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
+                    localStorage.setItem("chatHistory", JSON.stringify([]));
                 }
 
                 if (savedChats) {
@@ -283,15 +290,15 @@ const ChatbotPage = () => {
     // Clear chat history
     const clearChatHistory = () => {
         localStorage.removeItem("chatHistory");
-        setMessages([initialMessage]);
+        setMessages([]);
         setHasSentMessage(false);
         setCurrentChatIndex(null);
     };
 
     const startNewChat = () => {
-        setMessages([initialMessage]);
+        setMessages([]);
         setHasSentMessage(false);
-        localStorage.setItem("chatHistory", JSON.stringify([initialMessage]));
+        localStorage.setItem("chatHistory", JSON.stringify([]));
         setCurrentChatIndex(null);
         localStorage.removeItem("currentChatIndex");
     
@@ -326,7 +333,7 @@ const ChatbotPage = () => {
         localStorage.setItem("savedChats", JSON.stringify(updatedChats));
 
         if (currentChatIndex === index) {
-            setMessages([initialMessage]);
+            setMessages([]);
             setHasSentMessage(false);
             setCurrentChatIndex(null);
             localStorage.removeItem("currentChatIndex");
@@ -444,7 +451,21 @@ const ChatbotPage = () => {
                     {hasSentMessage && (
                         <div className="flex items-start w-full max-w-4xl mb-4">
                             <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
-                                {messages.map((message, index) => (
+                                {messages
+                                  .filter((msg, index, arr) => { // Filter out messages before mapped and displayed
+                                    // If the first two messages are identical user messages, skip the first
+                                    if (
+                                      index === 0 &&
+                                      arr.length > 1 &&
+                                      msg.type === "user" &&
+                                      arr[1].type === "user" &&
+                                      msg.text.trim() === arr[1].text.trim() // Text is same
+                                    ) {
+                                      return false; // Remove 
+                                    }
+                                    return true; // Else do not remove
+                                })                                
+                                .map((message, index) => (
                                     <div 
                                         key={index}
                                         className="flex flex-col relative group"
@@ -455,7 +476,7 @@ const ChatbotPage = () => {
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
                                         )}
                                         <div
-                                            className={`p-3 rounded-lg mb-2 ${getWidthClass(message.text)} ${
+                                            className={`p-3 rounded-lg ${getWidthClass(message.text)} ${
                                                 message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
                                             } break-words`}
                                         >
@@ -463,34 +484,31 @@ const ChatbotPage = () => {
                                         </div>
                                         {/* Edit and copy buttons that shows on message hover */}
                                         {/* Buttons (Edit/Copy) Underneath */}
-                                        {hoveredMessageIndex === index && (
                                         <div
-                                            className={`flex gap-2 mt-1 ${
+                                        className={`flex gap-2 mt-1 ${
                                             message.type === "user" ? "ml-auto" : "mr-auto"
-                                            }`}
+                                        } opacity-0 group-hover:opacity-100 transition-opacity duration-200 min-h-[24px]`}
                                         >
-                                            {/* Edit only for user */}
-                                            {message.type === "user" && (
+                                        {/* Edit only for user */}
+                                        {message.type === "user" && (
                                             <button
-                                                onClick={() => setUserInput(message.text)}
-                                                className="text-blue-500 hover:text-blue-700 transition"
-                                                title="Edit message"
+                                            onClick={() => setUserInput(message.text)}
+                                            className="text-gray-300 hover:text-green-700 transition"
+                                            title="Edit message"
                                             >
-                                                <i className="fa-solid fa-pen-to-square"></i>
+                                            <i className="fa-solid fa-pen-to-square"></i>
                                             </button>
-                                            )}
-
-                                            {/* Copy for all */}
-                                            <button
-                                            onClick={() => navigator.clipboard.writeText(message.text)}
-                                            className="text-blue-500 hover:text-blue-700 transition"
-                                            title="Copy message"
-                                            >
-                                            <i className="fa-solid fa-copy"></i>
-                                            </button>
-                                        </div>
                                         )}
 
+                                        {/* Copy for all */}
+                                        <button
+                                        onClick={() => handleCopy(message.text, index)}
+                                        className="text-gray-300 hover:text-green-700 transition w-5 h-5 flex items-center justify-center"
+                                        aria-label="Copy"
+                                        >
+                                        <i className={`fa-solid ${copiedIndex === index ? 'fa-check text-green-500 animate-pulse' : 'fa-copy'}`}></i>
+                                        </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {loading && (
