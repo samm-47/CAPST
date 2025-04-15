@@ -448,7 +448,7 @@ const ChatbotPage = () => {
         <div key={relativeTime}>
             <h3 className="text-black font-semibold mt-4 mb-2">{relativeTime}</h3>
             <ul className="flex-1">
-                {sortedChats.map((chat, _sortedIndex) => {
+                 {sortedChats.map((chat) => {
                     // Find the original index
                     const originalIndex = savedChats.findIndex(c => c.timestamp === chat.timestamp);
                     return (
