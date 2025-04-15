@@ -241,7 +241,7 @@ glossary_terms = [
     "Displacement Ventilation", "Distributed generation", "District heating", "Diurnal heat flow",
     "Diurnal temperature variation", "Double Pane Windows", "Double-Stud Wall", "Downcycle", "Drainage Plane", "Driver",
     "Dual-Mesh Network", "Dynamic Pricing", "Earth construction", "Eco Sinope", "Eco-design", "Eco-label",
-    "Effective Leakage Area", "Embodied energy", "Energy Assessment", "Energy Consumption Graphs", "Energy efficiency",
+    "Effective Leakage Area", "Embodied energy", "Energy Assessment", "Energy efficiency",
     "Engineered wood", "Energy Recovery Ventilator", "Energy Truss", "Engineered Lumber", "Enhanced Air Filtration",
     "Environmental profile", "Environmental profiling", "Ethernet", "Eutrophication", "Evaporative cooling", "Event",
     "F-factor", "Faucet Flow Restrictor", "Filter drain", "Filtration", "Fire-Resistant Insulation", 
