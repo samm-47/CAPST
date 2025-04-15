@@ -38,8 +38,6 @@ const ChatbotPage = () => {
     const bottomReference = useRef<HTMLDivElement>(null);
     const [selectedChats, setSelectedChats] = useState<number[]>([]);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-    const [showScrollToTop, setShowScrollToTop] = useState(false);
-    const [showScrollToBottom, setShowScrollToBottom] = useState(false); 
 
 
     const handleSendToEmail = async (email: string) => {
@@ -50,7 +48,7 @@ const ChatbotPage = () => {
                 chatHistory: savedChats  // Make sure to include the chat history
             });
     
-    const response = await axios.post('http://127.0.0.1:5000/api/send-chat-email', {
+    const response = await axios.post('https://capst.onrender.com/api/send-chat-email', {
                 email,
                 selectedChats,
                 chatHistory: savedChats  // Include the full chat history
@@ -110,80 +108,6 @@ const ChatbotPage = () => {
     };
     
     const chatCancelRef = useRef<ReturnType<typeof axios.CancelToken.source> | null>(null);
-
-        const scrollToTop = () => {
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    };
-
-    
-
-    const scrollToBottom = () => {
-
-        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
-
-    };
-
-
-
-    // Copy Logic with animation and checkmark confirmation
-
-    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-
-
-    const handleCopy = (text: string, index: number) => {
-
-      navigator.clipboard.writeText(text).then(() => {
-
-        setCopiedIndex(index);
-
-        setTimeout(() => setCopiedIndex(null), 2000);
-
-      });
-
-    };
-
-    
-
-    
-
-    useEffect(() => {
-
-        const handleScroll = () => {
-
-            const scrollY = window.scrollY;
-
-            const windowHeight = window.innerHeight;
-
-            const docHeight = document.documentElement.scrollHeight;
-
-    
-
-            setShowScrollToTop(scrollY > 200);
-
-            setShowScrollToBottom(windowHeight + scrollY < docHeight - 100);
-
-        };
-
-    
-
-        window.addEventListener('scroll', handleScroll);
-
-        return () => window.removeEventListener('scroll', handleScroll);
-
-    }, []);
-
-
-
-    useEffect(() => {
-
-        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
-
-    }, [messages]);
-
-    
 
     
 
@@ -597,43 +521,8 @@ const ChatbotPage = () => {
                     {hasSentMessage && (
                         <div className="flex items-start w-full max-w-4xl mb-4">
                             <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
-                               {messages
-
-                                  .filter((msg, index, arr) => { // Filter out messages before mapped and displayed
-
-                                    // If the first two messages are identical user messages, skip the first
-
-                                    if (
-
-                                      index === 0 &&
-
-                                      arr.length > 1 &&
-
-                                      msg.type === "user" &&
-
-                                      arr[1].type === "user" &&
-
-                                      msg.text.trim() === arr[1].text.trim() // Text is same
-
-                                    ) {
-
-                                      return false; // Remove 
-
-                                    }
-
-                                    return true; // Else do not remove
-
-                                })                                
-
-                                .map((message, index) => (
-
-                                    <div 
-
-                                        key={index}
-
-                                        className="flex flex-col relative group"
-
-                                    >
+                                {messages.map((message, index) => (
+                                    <div key={index} className="flex flex-col">
                                         {message.type !== "user" && (
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
                                         )}
@@ -685,7 +574,6 @@ const ChatbotPage = () => {
                             </div>
                         </div>
                     )}
-                    
     
                     {/* Initial Prompts */}
                     {!hasSentMessage && (
@@ -701,78 +589,6 @@ const ChatbotPage = () => {
                             ))}
                         </div>
                     )}
-
-                    {showScrollToTop && (
-
-                        <div className="fixed top-20 z-10 py-2">
-
-                            <button
-
-                                onClick={scrollToTop}
-
-                                className="mx-auto w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full shadow-md flex items-center justify-center hover:bg-blue-500 transition duration-100"
-
-                            >
-
-                                <i className="fa-solid fa-arrow-up"></i>
-
-                            </button>
-
-                        </div>
-
-                    )}
-
-
-
-                    {/* Scroll-to-bottom button */}
-
-                    {showScrollToBottom && (
-
-                        <div className="fixed bottom-20 z-10 py-2">
-
-                            <button
-
-                                onClick={scrollToBottom}
-
-                                className="w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-100"
-
-                            >
-
-                                <i className="fa-solid fa-arrow-down"></i>
-
-                            </button>
-
-                        </div>
-
-                    )}
-
-                    {/* Common Prompts Section (only shown before sending a message) */}
-
-                        {!hasSentMessage && (
-
-                    <div className="flex flex-col items-center max-w-xl w-3/4 bg-white shadow-lg rounded-xl p-6 space-y-3">
-
-                        {[prompt_1, prompt_2, prompt_3].map((prompt, index) => (
-
-                            <button
-
-                                key={index}
-
-                                className="w-full py-2 px-4 rounded-full border-2 border-neutral-900 text-neutral-900 font-semibold transition-all duration-300 hover:bg-neutral-900 hover:text-white"
-
-                                onClick={() => handleSubmission(prompt)}
-
-                            >
-
-                                {prompt}
-
-                            </button>
-
-                        ))}
-
-                    </div>
-
-                )}
     
                     {/* Input Area */}
                     <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? "sticky bottom-0 bg-white shadow-lg" : ""}`}>
