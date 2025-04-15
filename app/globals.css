@@ -193,6 +193,7 @@ Default Elements
 
 /* Page Title Text */
 .page-title {
+  color: #235347;
   @apply text-6xl font-bold mt-4;
 }
 
