@@ -513,7 +513,7 @@ const ChatbotPage = () => {
                     }`}
                 >
                     <h1 className="page-title">{page_title}</h1>
-                    <p className="page-caption text-center mx-auto break-words max-w-[90%] sm:max-w-[70%]">
+                    <p className="page-caption text-center font-bold mx-auto break-words max-w-[90%] sm:max-w-[70%]">
                         {page_caption}
                     </p>
     
