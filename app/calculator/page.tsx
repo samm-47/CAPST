@@ -438,7 +438,7 @@ const CalculatorPage: React.FC = () => {
           <div className="sus-calc-input">
             <div className="sus-calc-topic">
               <label className="sus-calc-title">
-                % Renewable Energy
+                Percent Renewable Energy (%)
               </label>
               <p>Found on your monthly energy utility bill</p>
             </div>
@@ -546,13 +546,15 @@ const CalculatorPage: React.FC = () => {
             </div>
           </div>
 
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
+
           {/* Transportation Mode */}
           <div className="sus-calc-input">
                 <div className="sus-calc-topic">
                   <label className="sus-calc-title">
                     Primary Transportation Mode
                   </label>
-                  <p>Pick the mode you use most often to get around</p>
+                  <p>Pick your most frequently used method of transportation.</p>
                 </div>
                 <div
                   className="sus-calc-input"
@@ -574,12 +576,14 @@ const CalculatorPage: React.FC = () => {
                         checked={transportationMode === `trans${num}`}
                       />
                       <label htmlFor={`trans${num}`} className="text-lg">
-                        {num === 1 ? "Gas Car" : num === 2 ? "Public Transit / Hybrid" : "Walking / Biking / EV"}
+                        {num === 1 ? "Gas Car" : num === 2 ? "Hybrid/Carpool" : "Walk/Bike/EV"}
                       </label>
                     </div>
                   ))}
                 </div>
               </div>
+
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
 
           {/* Waste Management */}
             <div className="sus-calc-input">
@@ -587,7 +591,7 @@ const CalculatorPage: React.FC = () => {
                 <label className="sus-calc-title">
                   Waste Management
                 </label>
-                <p>Choose the option that best matches your household’s waste sorting habits</p>
+                <p>How often do you choose to use recycling and composting?</p>
               </div>
               <div
                 className="sus-calc-input"
@@ -609,7 +613,7 @@ const CalculatorPage: React.FC = () => {
                       checked={wasteManagement === `waste${num}`}
                     />
                     <label htmlFor={`waste${num}`} className="text-lg">
-                      {num === 1 ? "No Recycling/Composting" : num === 2 ? "Some Recycling/Composting" : "Full Recycling & Composting"}
+                      {num === 1 ? "Never" : num === 2 ? "Sometimes" : "Always"}
                     </label>
                   </div>
                 ))}

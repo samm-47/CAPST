@@ -47,8 +47,8 @@ export default function Home() {
               />
             </div>
             <div className="flex-col-centered">
-              <h1 className="text-5xl font-semibold">Sustain</h1>
-              <h1 className="text-5xl mr-auto">ABLE</h1>
+              <h1 className="text-6xl font-semibold">Sustain</h1>
+              <h1 className="text-6xl mr-auto">ABLE</h1>
             </div>
           </div>
           {/* Title after icon */}

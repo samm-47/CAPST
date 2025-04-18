@@ -18,12 +18,12 @@ const Navbar = () => {
             link: "/chatbot"
         },
         {
-            name: "FAQ",
-            link: "/faq"
-        },
-        {
             name: "Glossary",
             link: "/glossary"
+        },
+        {
+            name: "FAQ",
+            link: "/faq"
         },
         {
             name: "GreenifyAI",
