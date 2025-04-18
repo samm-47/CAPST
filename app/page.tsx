@@ -19,7 +19,7 @@ export default function Home() {
     },
     {
       title: "FAQ",
-      caption: "Find answers to frequently asked questions.",
+      caption: "Find answers to some of our most frequently asked questions.",
       href: "/faq",
       icon: "fa-regular fa-question-circle",
     },
