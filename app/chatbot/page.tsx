@@ -198,7 +198,20 @@ const ChatbotPage = () => {
     
     // Handle input changes
     const handleInputChanges = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setUserInput(event.target.value);
+        const textarea = event.target;
+
+        // Reset height to auto, then adjust to scrollHeight
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      
+        // Dynamically toggle overflow and show input chat scrollbar
+        if (textarea.scrollHeight >= 160) {
+          textarea.style.overflowY = "auto";
+        } else {
+          textarea.style.overflowY = "hidden";
+        }
+      
+        setUserInput(textarea.value);
     };
 
     const handleSubmission = async (text?: string) => {
@@ -694,19 +707,27 @@ const ChatbotPage = () => {
     
                     {/* Input Area */}
                     <div className={`w-full max-w-3xl rounded-lg p-4 mb-4 flex items-center ${hasSentMessage ? "sticky bottom-0 bg-white shadow-lg" : ""}`}>
-                        <textarea
-                            value={userInput}
-                            onChange={handleInputChanges}
-                            onKeyDown={(event) => {
-                                if (event.key === "Enter" && !event.shiftKey) {
-                                    handleSubmission();
-                                    event.preventDefault();
-                                }
-                            }}
-                            className="w-full p-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
-                            rows={1}
-                            placeholder="Message Chatbot"
-                        />
+                    <textarea
+                    value={userInput}
+                    onChange={handleInputChanges}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                        handleSubmission();
+                        event.preventDefault();
+                        setTimeout(() => {
+                            const target = event.target as HTMLTextAreaElement;
+                            target.style.height = "auto";
+                        }, 0);
+                        }
+                    }}
+                    className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none transition-all overflow-y-auto"
+                    style={{
+                        minHeight: "44px",
+                        maxHeight: "160px", // stop expanding here
+                    }}
+                    rows={1}
+                    placeholder="Message Chatbot"
+                    />
                         <button
                             onClick={() => handleSubmission()}
                             className="hoverable-div ml-4 w-10 h-10 bg-blue-500 text-white rounded-full shadow-md flex items-center justify-center hover:bg-blue-600 transition duration-100"
