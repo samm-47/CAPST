@@ -38,6 +38,8 @@ const ChatbotPage = () => {
     const bottomReference = useRef<HTMLDivElement>(null);
     const [selectedChats, setSelectedChats] = useState<number[]>([]);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [showScrollToTop, setShowScrollToTop] = useState(false);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
 
     const handleSendToEmail = async (email: string) => {
@@ -109,7 +111,39 @@ const ChatbotPage = () => {
     
     const chatCancelRef = useRef<ReturnType<typeof axios.CancelToken.source> | null>(null);
 
+    // Scroll Handler Functions
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
     
+    const scrollToBottom = () => {
+        bottomReference.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    // Scroll Button Handler
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            const windowHeight = window.innerHeight;
+            const docHeight = document.documentElement.scrollHeight;
+    
+            setShowScrollToTop(scrollY > 200);
+            setShowScrollToBottom(windowHeight + scrollY < docHeight - 100);
+        };
+    
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+    
+        // Copy Logic with animation and checkmark confirmation
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+    const handleCopy = (text: string, index: number) => {
+        navigator.clipboard.writeText(text).then(() => {
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+        });
+    };
 
     // Load previous messages and saved chats from localStorage
     useEffect(() => {
@@ -161,7 +195,7 @@ const ChatbotPage = () => {
             }
         }
     }, [messages]);
-
+    
     // Handle input changes
     const handleInputChanges = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setUserInput(event.target.value);
@@ -521,17 +555,61 @@ const ChatbotPage = () => {
                     {hasSentMessage && (
                         <div className="flex items-start w-full max-w-4xl mb-4">
                             <div className="flex max-w-3xl ml-16 flex-col flex-1 bg-white shadow-lg rounded-lg p-6 overflow-y-auto">
-                                {messages.map((message, index) => (
-                                    <div key={index} className="flex flex-col">
+                                {messages
+                                .filter((msg, index, arr) => { // Filter out messages before mapped and displayed
+                                    // If the first two messages are identical user messages, skip the first
+                                    if (
+                                      index === 0 &&
+                                      arr.length > 1 &&
+                                      msg.type === "user" &&
+                                      arr[1].type === "user" &&
+                                      msg.text.trim() === arr[1].text.trim() // Text is same
+                                    ) {
+                                      return false; // Remove 
+                                    }
+                                    return true; // Else do not remove
+                                })  
+                                .map((message, index) => (
+                                    <div 
+                                        key={index}
+                                        className="flex flex-col relative group"
+                                    >
                                         {message.type !== "user" && (
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
                                         )}
                                         <div
-                                            className={`p-3 rounded-lg mb-4 ${getWidthClass(message.text)} ${
+                                            className={`p-3 rounded-lg ${getWidthClass(message.text)} ${
                                                 message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
                                             } break-words`}
                                         >
                                             {message.text}
+                                        </div>
+                                        {/* Edit and copy buttons that shows on message hover */}
+                                        {/* Buttons (Edit/Copy) Underneath */}
+                                        <div
+                                        className={`flex gap-2 mt-1 ${
+                                            message.type === "user" ? "ml-auto" : "mr-auto"
+                                        } opacity-0 group-hover:opacity-100 transition-opacity duration-200 min-h-[24px]`}
+                                        >
+                                        {/* Edit only for user */}
+                                        {message.type === "user" && (
+                                            <button
+                                            onClick={() => setUserInput(message.text)}
+                                            className="text-gray-300 hover:text-green-700 transition"
+                                            title="Edit message"
+                                            >
+                                            <i className="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                        )}
+
+                                        {/* Copy for all */}
+                                        <button
+                                        onClick={() => handleCopy(message.text, index)}
+                                        className="text-gray-300 hover:text-green-700 transition w-5 h-5 flex items-center justify-center"
+                                        aria-label="Copy"
+                                        >
+                                        <i className={`fa-solid ${copiedIndex === index ? 'fa-check text-green-500 animate-pulse' : 'fa-copy'}`}></i>
+                                        </button>
                                         </div>
                                     </div>
                                 ))}
@@ -574,6 +652,30 @@ const ChatbotPage = () => {
                             </div>
                         </div>
                     )}
+                    {/* Scroll-to-top button */}
+                    {showScrollToTop && (
+                        <div className="fixed top-20 z-10 py-2">
+                            <button
+                                onClick={scrollToTop}
+                                className="mx-auto w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full shadow-md flex items-center justify-center hover:bg-blue-500 transition duration-100"
+                            >
+                                <i className="fa-solid fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Scroll-to-bottom button */}
+                    {showScrollToBottom && (
+                        <div className="fixed bottom-20 z-10 py-2">
+                            <button
+                                onClick={scrollToBottom}
+                                className="w-10 h-10 border-2 border-blue-500 bg-transparent text-black rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition duration-100"
+                            >
+                                <i className="fa-solid fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    )}
+
     
                     {/* Initial Prompts */}
                     {!hasSentMessage && (
