@@ -40,6 +40,9 @@ const ChatbotPage = () => {
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     const [showScrollToTop, setShowScrollToTop] = useState(false);
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+    const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [editText, setEditText] = useState<string>("");
+
 
 
     const handleSendToEmail = async (email: string) => {
@@ -214,7 +217,7 @@ const ChatbotPage = () => {
         setUserInput(textarea.value);
     };
 
-    const handleSubmission = async (text?: string) => {
+    const handleSubmission = async (text?: string, prevMessages: ChatMessage[] = messages) => {
         setHasSentMessage(true);
         const currentUserInput = text || userInput;
       
@@ -222,7 +225,7 @@ const ChatbotPage = () => {
             setUserInput("");
         
             const updatedMessages = [
-                ...messages,
+                ...prevMessages,
                 { type: "user", text: currentUserInput },
             ];
             setMessages(updatedMessages);
@@ -306,6 +309,20 @@ const ChatbotPage = () => {
             }
         }
     };
+
+    const handleSaveEdit = (index: number) => {
+
+        // 1. Truncate everything after the edited message
+        const truncatedMessages = messages.slice(0, index);
+      
+        // 2. Set state
+        setMessages(truncatedMessages);
+        setEditIndex(null);
+        setEditText("");
+      
+        // 3. Resubmit the edited message to the bot
+        handleSubmission(editText, truncatedMessages);
+      };
       
 
     // Loading dots animation
@@ -590,13 +607,41 @@ const ChatbotPage = () => {
                                         {message.type !== "user" && (
                                             <i className="fa-solid fa-user-tie text-gray-500 mb-1 self-start"></i>
                                         )}
-                                        <div
-                                            className={`p-3 rounded-lg ${getWidthClass(message.text)} ${
-                                                message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"
-                                            } break-words`}
-                                        >
-                                            {message.text}
-                                        </div>
+                                        {editIndex === index && message.type === "user" ? (
+                                            <div className="flex flex-col gap-2 w-full">
+                                                <textarea
+                                                value={editText}
+                                                onChange={(e) => setEditText(e.target.value)}
+                                                className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                                rows={2}
+                                                placeholder="Edit your message"
+                                                />
+                                                <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleSaveEdit(index)}
+                                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                                                >
+                                                    Send
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                    setEditIndex(null);
+                                                    setEditText("");
+                                                    }}
+                                                    className="px-3 py-1 bg-gray-300 text-black rounded hover:bg-gray-400 transition"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                </div>
+                                            </div>
+                                            ) : (
+                                            <div
+                                                className={`p-3 rounded-lg ${getWidthClass(message.text)} ${message.type === "user" ? "bg-blue-100 text-blue-900 ml-auto" : "text-gray-900"} break-words`}
+                                            >
+                                                {message.text}
+                                            </div>
+                                        )}
+
                                         {/* Edit and copy buttons that shows on message hover */}
                                         {/* Buttons (Edit/Copy) Underneath */}
                                         <div
@@ -607,7 +652,10 @@ const ChatbotPage = () => {
                                         {/* Edit only for user */}
                                         {message.type === "user" && (
                                             <button
-                                            onClick={() => setUserInput(message.text)}
+                                            onClick={() => {
+                                                setEditIndex(index);
+                                                setEditText(message.text);
+                                            }}
                                             className="text-gray-300 hover:text-green-700 transition"
                                             title="Edit message"
                                             >
