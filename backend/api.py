@@ -8,6 +8,7 @@ import time
 import subprocess
 import logging
 from flask_mail import Mail, Message
+import markdown as md
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -112,32 +113,37 @@ def chat():
     
     score = data.get('score')
     breakdown = data.get('breakdown', {})
-    prompt = data.get('prompt', "")
+    # prompt = data.get('prompt', "")
+    # Add this before constructing the prompt
+    sorted_categories = sorted(
+        [(k, v.get('rawScore', 5)) for k, v in breakdown.items()],
+        key=lambda x: x[1]
+    )
+    min_category, min_score = sorted_categories[0]
+    second_min_category, second_min_score = sorted_categories[1]
+
+    def get_category_name(key):
+        names = {
+            'energyUsage': 'Energy Usage',
+            'percentRenewable': 'Renewable Energy',
+            'waterUsage': 'Water Usage',
+            'airQuality': 'Air Quality',
+            'wasteManagement': 'Waste Management',
+            'transportationMode': 'Transportation'
+        }
+        return names.get(key, key)
 
     # Construct a detailed analysis prompt
     user_question = f"""
-    Analyze this sustainability profile and provide specific recommendations:
-    
-    Overall Score: {score}
-    
-    Category Breakdown:
-    - Energy Usage: {breakdown.get('energyUsage', {}).get('rawScore', 'N/A')}/5
-    - Renewable Energy: {breakdown.get('percentRenewable', {}).get('rawScore', 'N/A')}/5
-    - Water Usage: {breakdown.get('waterUsage', {}).get('rawScore', 'N/A')}/5
-    - Air Quality: {breakdown.get('airQuality', {}).get('rawScore', 'N/A')}/5
-    - Waste Management: {breakdown.get('wasteManagement', {}).get('rawScore', 'N/A')}/5
-    - Transportation: {breakdown.get('transportationMode', {}).get('rawScore', 'N/A')}/5
-    
-    Specific Instructions:
-    1. Focus first on the lowest scoring categories
-    2. Provide 3-5 actionable recommendations
-    3. Include both immediate and long-term improvements
-    4. Format with clear section headings
-    5. Keep response between 150-200 words
-    6. Use 1.5 line spacing
-    
-    Additional context from user: {prompt}
-    """
+        Provide exactly one plain text paragraph (50-70 words) with sustainability recommendations.
+        No HTML, no formatting, no bullet points.
+
+        Structure:
+        "Focus on improving [weak area 1] and [weak area 2]. Start by [immediate action]. Long-term, [future improvement]."
+
+        Example:
+        "Focus on improving Energy and Waste. Start by switching to LEDs and recycling. Long-term, consider solar panels and composting."
+        """
 
     logging.info(f"Generated analysis prompt: {user_question}")
 
@@ -165,8 +171,8 @@ def chat():
 
     # Format the response text with proper spacing
     response_text = response.text if hasattr(response, 'text') else "No response generated"
-    formatted_response = "\n".join([f"<p style='line-height:1.5'>{line}</p>" for line in response_text.split("\n") if line.strip()])
-    
+    formatted_response = response_text.strip()
+
     return jsonify({
         "response": formatted_response,
         "analysis": {
@@ -241,7 +247,7 @@ glossary_terms = [
     "Displacement Ventilation", "Distributed generation", "District heating", "Diurnal heat flow",
     "Diurnal temperature variation", "Double Pane Windows", "Double-Stud Wall", "Downcycle", "Drainage Plane", "Driver",
     "Dual-Mesh Network", "Dynamic Pricing", "Earth construction", "Eco Sinope", "Eco-design", "Eco-label",
-    "Effective Leakage Area", "Embodied energy", "Energy Assessment", "Energy efficiency",
+    "Effective Leakage Area", "Embodied energy", "Energy Assessment", "Energy Consumption Graphs", "Energy efficiency",
     "Engineered wood", "Energy Recovery Ventilator", "Energy Truss", "Engineered Lumber", "Enhanced Air Filtration",
     "Environmental profile", "Environmental profiling", "Ethernet", "Eutrophication", "Evaporative cooling", "Event",
     "F-factor", "Faucet Flow Restrictor", "Filter drain", "Filtration", "Fire-Resistant Insulation", 
@@ -420,162 +426,6 @@ def send_sustainability_email():
     except Exception as e:
         print(f"Error sending email: {e}")
         return jsonify({"error": "Failed to send email"}), 500
-
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:3000", "http://127.0.0.1:5000", "https://capst.onrender.com/api/send-chat-email"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
-
-@app.route('/api/send-chat-email', methods=['POST'])
-def send_chat_history_email():
-    print("\n=== REQUEST RECEIVED ===")
-    print(f"Headers: {request.headers}")
-    print(f"Data: {request.data}")
-    
-    if not request.is_json:
-        print("Error: Request is not JSON")
-        return jsonify({"error": "Request must be JSON"}), 400
-        
-    data = request.get_json()
-    print(f"JSON data: {data}")
-
-    email = data.get('email')
-    selected_chats = data.get('selectedChats', [])
-    chat_history = data.get('chatHistory', [])
-    
-    print(f"Email: {email}")
-    print(f"Selected chats: {selected_chats}")
-    print(f"Chat history length: {len(chat_history)}")
-
-    if not email:
-        print("Error: Email is required")
-        return jsonify({"error": "Email is required"}), 400
-    if not selected_chats or not isinstance(selected_chats, list):
-        print("Error: No chats selected or invalid format")
-        return jsonify({"error": "No chats selected or invalid format"}), 400
-
-    try:
-        # Print details of selected chats
-        print("\n=== Selected Chats Details ===")
-        chats_to_send = []
-        for idx in selected_chats:
-            if idx < 0 or idx >= len(chat_history):
-                print(f"Invalid chat index skipped: {idx}")
-                continue
-            
-            chat = chat_history[idx]
-            print(f"Chat {idx}:")
-            print(f"  Title: {chat.get('title', 'Untitled')}")
-            print(f"  Messages: {len(chat.get('messages', []))}")
-            
-            if chat.get('messages'):
-                first_msg = chat['messages'][0]
-                print(f"  First message: {first_msg.get('type')}: {first_msg.get('text', '')[:50]}...")
-            
-            chats_to_send.append(chat)
-
-        if not chats_to_send:
-            print("Error: No valid chats selected after filtering")
-            return jsonify({"error": "No valid chats selected"}), 400
-
-        # Create HTML email content
-        subject = "Your Selected Chat Histories from Sustainability Chatbot"
-        html_body = """
-        <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }
-                    .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
-                    .chat-container { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
-                    .chat-title { background-color: #f5f5f5; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #ddd; }
-                    .message { padding: 10px 15px; border-bottom: 1px solid #eee; }
-                    .user-message { background-color: #f9f9f9; }
-                    .assistant-message { background-color: #e8f5e9; }
-                    .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 0.9em; color: #777; }
-                    .sources { background-color: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 0.9em; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>Your Sustainability Chat Histories</h2>
-                </div>
-        """
-        
-        for chat in chats_to_send:
-            html_body += f"""
-                <div class="chat-container">
-                    <div class="chat-title">{chat.get('title', 'Untitled Chat')}</div>
-            """
-            
-            for message in chat.get('messages', []):
-                message_class = "user-message" if message.get('type') == "user" else "assistant-message"
-                sender = "You" if message.get('type') == "user" else "Sustainability Assistant"
-                
-                # Check if message contains sources
-                message_text = message.get('text', '')
-                if "Sources:" in message_text:
-                    parts = message_text.split("Sources:")
-                    main_text = parts[0].strip()
-                    sources = parts[1].strip()
-                    message_text = f"""
-                        {main_text}
-                        <div class="sources">
-                            <strong>Sources:</strong><br>
-                            {sources.replace('*', '').replace('<br>', '<br>')}
-                        </div>
-                    """
-                
-                html_body += f"""
-                    <div class="message {message_class}">
-                        <strong>{sender}:</strong><br>
-                        {message_text}
-                    </div>
-                """
-            
-            html_body += "</div>"  # Close chat-container
-        
-        html_body += """
-                <div class="footer">
-                    <p>Thank you for using our sustainability chatbot!</p>
-                    <p>— Sustainability Team</p>
-                </div>
-            </body>
-        </html>
-        """
-
-        # Print final email content
-        print("\n=== Email Content To Be Sent ===")
-        print(f"Subject: {subject}")
-        print(f"Recipient: {email}")
-        print("="*50)
-
-        # Send email with HTML content
-        msg = Message(
-            subject=subject,
-            recipients=[email],
-            sender=app.config['MAIL_DEFAULT_SENDER']
-        )
-        msg.html = html_body
-        
-        print("Attempting to send email...")
-        mail.send(msg)
-        print("Email sent successfully!")
-        
-        return jsonify({
-            "message": f"Successfully sent {len(chats_to_send)} chat(s) to {email}",
-            "sentCount": len(chats_to_send)
-        }), 200
-
-    except Exception as e:
-        print(f"\n!!! Error sending email: {str(e)}")
-        logging.error(f"Error sending chat history email: {str(e)}")
-        return jsonify({
-            "error": "Failed to send email",
-            "details": str(e)
-        }), 500
 
 
 
