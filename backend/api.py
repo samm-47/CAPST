@@ -131,18 +131,48 @@ def chat():
             'transportationMode': 'Transportation'
         }.get(key, key)
 
-    # Construct the perfect response directly
-    response_text = (
-        f"Focus on improving {get_category_name(min_category)} ({min_score}/5) "
-        f"and {get_category_name(second_min_category)} ({second_min_score}/5). "
-        f"Start by [immediate action]. Long-term, consider [future improvement]."
+    # Construct a detailed prompt for Gemini
+    prompt = (
+        f"The user received a sustainability score of {score}/100. "
+        f"Their weakest areas are {get_category_name(min_category)} (score: {min_score}/5) "
+        f"and {get_category_name(second_min_category)} (score: {second_min_score}/5). "
+        "Provide specific, actionable recommendations to improve these areas. "
+        "Include both immediate actions they can take today and long-term improvements. "
+        "Keep the response concise (under 200 words) and structured with bullet points."
     )
 
-    return jsonify({
-        "response": response_text,  # Single string only
-        "weakest_category": min_category,
-        "second_weakest_category": second_min_category
-    })
+    try:
+        model = configure_genai()
+        chat_session = model.start_chat(history=[])
+        response = chat_session.send_message(prompt)
+        response_text = response.text if hasattr(response, 'text') else "No response available."
+        
+        return jsonify({
+            "response": response_text,
+            "weakest_category": min_category,
+            "second_weakest_category": second_min_category
+        })
+
+    except Exception as e:
+        if 'rate limit' in str(e).lower():
+            logging.warning(f"Rate limit reached for API Key {get_current_api_key()}. Switching to the next key.")
+            switch_api_key()
+            time.sleep(2)
+            return chat()  # Retry with new API key
+        else:
+            logging.error(f"Error calling chat model: {str(e)}")
+            # Fallback to generic advice if API fails
+            fallback_response = (
+                f"Focus on improving {get_category_name(min_category)} ({min_score}/5) "
+                f"and {get_category_name(second_min_category)} ({second_min_score}/5). "
+                "For immediate actions, consider energy audits or water-saving fixtures. "
+                "Long-term, look into solar panels or sustainable transportation options."
+            )
+            return jsonify({
+                "response": fallback_response,
+                "weakest_category": min_category,
+                "second_weakest_category": second_min_category
+            }), 200 if 'response' in locals() else 500
 
 @app.route('/api/generate_title', methods=['POST'])
 def generate_title():
