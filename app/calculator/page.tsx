@@ -373,23 +373,40 @@ const CalculatorPage: React.FC = () => {
       }
     };
   };
-      // Add a function to safely render HTML from the response
-      const renderResponseHTML = (html: string) => {
-        // Simple sanitization (consider using a library like DOMPurify for production)
-        const cleanHtml = html
-          .replace(/<script.*?>.*?<\/script>/gi, '')
-          .replace(/<\/?[^>]+(>|$)/g, (match) => {
-            // Only allow basic formatting tags
-            const allowedTags = ['p', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'h3', 'h4'];
-            const tagMatch = match.match(/<\/?([a-z]+)[^>]*>/i);
-            if (tagMatch && allowedTags.includes(tagMatch[1].toLowerCase())) {
-              return match;
-            }
-            return '';
-          });
-          
-        return { __html: cleanHtml };
-      };
+  const renderResponseHTML = (html: string) => {
+    // First preserve all spacing and line breaks
+    let cleanHtml = html
+      .replace(/\n/g, '<br/>') // Convert newlines to <br/>
+      .replace(/  /g, ' &nbsp;') // Convert double spaces to &nbsp;
+  
+    // Replace single * with bullet points, but only when used as bullets
+    cleanHtml = cleanHtml
+      .replace(/(^|<br\/>|\n)\s*\*\s/g, '$1• ') // Start of line or after newline
+      .replace(/<br\/>\s*\*\s/g, '<br/>• ')    // After <br> tags
+      .replace(/<p>\s*\*\s/g, '<p>• ')         // Inside paragraphs
+  
+    // Handle markdown-style **bold** and other formatting
+    cleanHtml = cleanHtml
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **bold** to <strong>
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')             // *italic* to <em>
+  
+    // Remove any remaining standalone asterisks (not part of formatting)
+    cleanHtml = cleanHtml.replace(/(^|\s)\*(\s|$)/g, '$1$2')
+  
+    // Apply safe HTML rendering
+    cleanHtml = cleanHtml
+      .replace(/<script.*?>.*?<\/script>/gi, '')
+      .replace(/<\/?[^>]+(>|$)/g, (match) => {
+        const allowedTags = ['p', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'h3', 'h4', 'span', 'div'];
+        const tagMatch = match.match(/<\/?([a-z]+)[^>]*>/i);
+        if (tagMatch && allowedTags.includes(tagMatch[1].toLowerCase())) {
+          return match;
+        }
+        return '';
+      });
+  
+    return { __html: cleanHtml };
+  };
   
 
   return (
