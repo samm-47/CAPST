@@ -80,6 +80,7 @@
   }
 
 .sustainability-response {
+  color: #333; /* Or your preferred text color */
   max-height: 50vh;
   padding-right: 10px; /* Prevents text from touching scrollbar */
   overflow-y: auto;
