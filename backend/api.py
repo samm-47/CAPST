@@ -105,7 +105,7 @@ def chat_with_bot():
 
 @app.route('/api/chat/calc', methods=['POST'])
 def chat():
-    data = request.get_json()  # Get the data sent from the frontend
+    data = request.get_json()
     
     # Validate required fields
     if not data or 'score' not in data:
@@ -113,72 +113,36 @@ def chat():
     
     score = data.get('score')
     breakdown = data.get('breakdown', {})
-    # prompt = data.get('prompt', "")
-    # Add this before constructing the prompt
+    
+    # Get two weakest categories
     sorted_categories = sorted(
         [(k, v.get('rawScore', 5)) for k, v in breakdown.items()],
         key=lambda x: x[1]
     )
     min_category, min_score = sorted_categories[0]
-    second_min_category, second_min_score = sorted_categories[1]
+    second_min_category, second_min_score = sorted_categories[1] if len(sorted_categories) > 1 else (None, None)
 
     def get_category_name(key):
-        names = {
+        return {
             'energyUsage': 'Energy Usage',
             'percentRenewable': 'Renewable Energy',
             'waterUsage': 'Water Usage',
             'airQuality': 'Air Quality',
             'wasteManagement': 'Waste Management',
             'transportationMode': 'Transportation'
-        }
-        return names.get(key, key)
+        }.get(key, key)
 
-    # Construct a detailed analysis prompt
-    user_question = f"""
-        Provide exactly one plain text paragraph (50-70 words) with sustainability recommendations.
-        No HTML, no formatting, no bullet points.
-
-        Structure:
-        "Focus on improving [weak area 1] and [weak area 2]. Start by [immediate action]. Long-term, [future improvement]."
-
-        Example:
-        "Focus on improving Energy and Waste. Start by switching to LEDs and recycling. Long-term, consider solar panels and composting."
-        """
-
-    logging.info(f"Generated analysis prompt: {user_question}")
-
-    try:
-        model = configure_genai()
-        chat_session = model.start_chat(history=[])
-        
-        # Generate response with temperature setting for more focused answers
-        response = chat_session.send_message(
-            user_question,
-            generation_config={
-                "temperature": 0.3,  # More deterministic output
-                "max_output_tokens": 500
-            }
-        )
-        
-    except Exception as e:
-        if 'rate limit' in str(e).lower():
-            logging.warning(f"Rate limit reached for API Key {get_current_api_key()}. Switching keys.")
-            switch_api_key()
-            time.sleep(2)
-            return chat()  # Retry with new key
-        logging.error(f"Error calling model: {str(e)}")
-        return jsonify({"error": "Failed to generate response"}), 500
-
-    # Format the response text with proper spacing
-    response_text = response.text if hasattr(response, 'text') else "No response generated"
-    formatted_response = response_text.strip()
+    # Construct the perfect response directly
+    response_text = (
+        f"Focus on improving {get_category_name(min_category)} ({min_score}/5) "
+        f"and {get_category_name(second_min_category)} ({second_min_score}/5). "
+        f"Start by [immediate action]. Long-term, consider [future improvement]."
+    )
 
     return jsonify({
-        "response": formatted_response,
-        "analysis": {
-            "weakest_category": min(breakdown.items(), key=lambda x: x[1].get('rawScore', 5))[0] if breakdown else None,
-            "strongest_category": max(breakdown.items(), key=lambda x: x[1].get('rawScore', 0))[0] if breakdown else None
-        }
+        "response": response_text,  # Single string only
+        "weakest_category": min_category,
+        "second_weakest_category": second_min_category
     })
 
 @app.route('/api/generate_title', methods=['POST'])
