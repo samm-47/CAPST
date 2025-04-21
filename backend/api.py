@@ -8,7 +8,6 @@ import time
 import subprocess
 import logging
 from flask_mail import Mail, Message
-import markdown as md
 
 # Initialize Flask app
 app = Flask(__name__)
