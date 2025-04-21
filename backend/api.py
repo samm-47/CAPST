@@ -391,6 +391,155 @@ def send_sustainability_email():
         print(f"Error sending email: {e}")
         return jsonify({"error": "Failed to send email"}), 500
 
+@app.route('/api/send-chat-email', methods=['POST'])
+def send_chat_history_email():
+    print("\n=== REQUEST RECEIVED ===")
+    print(f"Headers: {request.headers}")
+    print(f"Data: {request.data}")
+    
+    if not request.is_json:
+        print("Error: Request is not JSON")
+        return jsonify({"error": "Request must be JSON"}), 400
+        
+    data = request.get_json()
+    print(f"JSON data: {data}")
+
+    email = data.get('email')
+    selected_chats = data.get('selectedChats', [])
+    chat_history = data.get('chatHistory', [])
+    
+    print(f"Email: {email}")
+    print(f"Selected chats: {selected_chats}")
+    print(f"Chat history length: {len(chat_history)}")
+
+    if not email:
+        print("Error: Email is required")
+        return jsonify({"error": "Email is required"}), 400
+    if not selected_chats or not isinstance(selected_chats, list):
+        print("Error: No chats selected or invalid format")
+        return jsonify({"error": "No chats selected or invalid format"}), 400
+
+    try:
+        # Print details of selected chats
+        print("\n=== Selected Chats Details ===")
+        chats_to_send = []
+        for idx in selected_chats:
+            if idx < 0 or idx >= len(chat_history):
+                print(f"Invalid chat index skipped: {idx}")
+                continue
+            
+            chat = chat_history[idx]
+            print(f"Chat {idx}:")
+            print(f"  Title: {chat.get('title', 'Untitled')}")
+            print(f"  Messages: {len(chat.get('messages', []))}")
+            
+            if chat.get('messages'):
+                first_msg = chat['messages'][0]
+                print(f"  First message: {first_msg.get('type')}: {first_msg.get('text', '')[:50]}...")
+            
+            chats_to_send.append(chat)
+
+        if not chats_to_send:
+            print("Error: No valid chats selected after filtering")
+            return jsonify({"error": "No valid chats selected"}), 400
+
+        # Create HTML email content
+        subject = "Your Selected Chat Histories from Sustainability Chatbot"
+        html_body = """
+        <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }
+                    .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+                    .chat-container { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; }
+                    .chat-title { background-color: #f5f5f5; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #ddd; }
+                    .message { padding: 10px 15px; border-bottom: 1px solid #eee; }
+                    .user-message { background-color: #f9f9f9; }
+                    .assistant-message { background-color: #e8f5e9; }
+                    .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 0.9em; color: #777; }
+                    .sources { background-color: #f5f5f5; padding: 10px; margin-top: 10px; font-size: 0.9em; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>Your Sustainability Chat Histories</h2>
+                </div>
+        """
+        
+        for chat in chats_to_send:
+            html_body += f"""
+                <div class="chat-container">
+                    <div class="chat-title">{chat.get('title', 'Untitled Chat')}</div>
+            """
+            
+            for message in chat.get('messages', []):
+                message_class = "user-message" if message.get('type') == "user" else "assistant-message"
+                sender = "You" if message.get('type') == "user" else "Sustainability Assistant"
+                
+                # Check if message contains sources
+                message_text = message.get('text', '')
+                if "Sources:" in message_text:
+                    parts = message_text.split("Sources:")
+                    main_text = parts[0].strip()
+                    sources = parts[1].strip()
+                    message_text = f"""
+                        {main_text}
+                        <div class="sources">
+                            <strong>Sources:</strong><br>
+                            {sources.replace('*', '').replace('<br>', '<br>')}
+                        </div>
+                    """
+                
+                html_body += f"""
+                    <div class="message {message_class}">
+                        <strong>{sender}:</strong><br>
+                        {message_text}
+                    </div>
+                """
+            
+            html_body += "</div>"  # Close chat-container
+        
+        html_body += """
+                <div class="footer">
+                    <p>Thank you for using our sustainability chatbot!</p>
+                    <p>— Sustainability Team</p>
+                </div>
+            </body>
+        </html>
+        """
+
+        # Print final email content
+        print("\n=== Email Content To Be Sent ===")
+        print(f"Subject: {subject}")
+        print(f"Recipient: {email}")
+        print("="*50)
+
+        # Send email with HTML content
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            sender=app.config['MAIL_DEFAULT_SENDER']
+        )
+        msg.html = html_body
+        
+        print("Attempting to send email...")
+        mail.send(msg)
+        print("Email sent successfully!")
+        
+        return jsonify({
+            "message": f"Successfully sent {len(chats_to_send)} chat(s) to {email}",
+            "sentCount": len(chats_to_send)
+        }), 200
+
+    except Exception as e:
+        print(f"\n!!! Error sending email: {str(e)}")
+        logging.error(f"Error sending chat history email: {str(e)}")
+        return jsonify({
+            "error": "Failed to send email",
+            "details": str(e)
+        }), 500
+
+
 
 
 # Run the Flask app
