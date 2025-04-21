@@ -326,20 +326,23 @@ const CalculatorPage: React.FC = () => {
   
       // Update UI
       sustainabilityGrade.textContent = sustainabilityScore;
-      sustainabilityExplanation.textContent = sustainabilityScoreDetail;
+      sustainabilityExplanation.innerHTML = sustainabilityScoreDetail;
+      sustainabilityScoreDetail = sustainabilityScoreDetail.replace(/\n/g, '<br/>');
+
   
       try {
         // Create the properly formatted payload with minimal prompt
         const payload = {
           score: sustainabilityScoreInt.toString(),
-          grade: sustainabilityScore,
-          breakdown: Object.entries(breakdown).map(([category, data]) => ({
-            category,
-            selected: data.selected,
-            score: data.rawScore.toString(),
-            weighted: data.weightedScore.toFixed(2)
-          })),
-          prompt: `Given sustainability score ${sustainabilityScoreInt} (${sustainabilityScore}), provide specific recommendations focusing on ${getLowestScoringCategories(breakdown)}. Output in 100 words with 1.5 line spacing.`
+          breakdown: {
+            energyUsage: { rawScore: breakdown.energyUsage?.rawScore || 0 },
+            percentRenewable: { rawScore: breakdown.percentRenewable?.rawScore || 0 },
+            waterUsage: { rawScore: breakdown.waterUsage?.rawScore || 0 },
+            airQuality: { rawScore: breakdown.airQuality?.rawScore || 0 },
+            wasteManagement: { rawScore: breakdown.wasteManagement?.rawScore || 0 },
+            transportationMode: { rawScore: breakdown.transportationMode?.rawScore || 0 }
+          },
+          prompt: `Given sustainability score ${sustainabilityScoreInt}, provide recommendations...`
         };
     
         console.log("Sending minimized payload:", payload);
@@ -369,16 +372,24 @@ const CalculatorPage: React.FC = () => {
         setChatbotResponse(errorMessage);
       }
     };
-    
-    // Helper function to identify lowest scoring categories
-    function getLowestScoringCategories(breakdown: Record<string, ScoreBreakdown>): string {
-      const minScore = Math.min(...Object.values(breakdown).map(b => b.rawScore));
-      const lowCategories = Object.entries(breakdown)
-        .filter(([, data]) => data.rawScore === minScore)  // Use array destructuring with empty first element
-        .map(([category]) => category);
-      return lowCategories.join(" and ");
-    }
   };
+      // Add a function to safely render HTML from the response
+      const renderResponseHTML = (html: string) => {
+        // Simple sanitization (consider using a library like DOMPurify for production)
+        const cleanHtml = html
+          .replace(/<script.*?>.*?<\/script>/gi, '')
+          .replace(/<\/?[^>]+(>|$)/g, (match) => {
+            // Only allow basic formatting tags
+            const allowedTags = ['p', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'h3', 'h4'];
+            const tagMatch = match.match(/<\/?([a-z]+)[^>]*>/i);
+            if (tagMatch && allowedTags.includes(tagMatch[1].toLowerCase())) {
+              return match;
+            }
+            return '';
+          });
+          
+        return { __html: cleanHtml };
+      };
   
 
   return (
@@ -546,13 +557,15 @@ const CalculatorPage: React.FC = () => {
             </div>
           </div>
 
+
+          <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
           {/* Transportation Mode */}
           <div className="sus-calc-input">
                 <div className="sus-calc-topic">
                   <label className="sus-calc-title">
                     Primary Transportation Mode
                   </label>
-                  <p>Pick the mode you use most often to get around</p>
+                  <p>Pick your most frequently used method of transportation.</p>
                 </div>
                 <div
                   className="sus-calc-input"
@@ -574,20 +587,21 @@ const CalculatorPage: React.FC = () => {
                         checked={transportationMode === `trans${num}`}
                       />
                       <label htmlFor={`trans${num}`} className="text-lg">
-                        {num === 1 ? "Gas Car" : num === 2 ? "Public Transit / Hybrid" : "Walking / Biking / EV"}
+                        {num === 1 ? "Gas Car" : num === 2 ? "Hybrid/Carpool" : "Walk/Bike/EV"}
                       </label>
                     </div>
                   ))}
                 </div>
               </div>
 
+              <hr className="border-gray-600 w-3/4" style={{ opacity: 0.50, borderWidth: '1px' }} />
           {/* Waste Management */}
             <div className="sus-calc-input">
               <div className="sus-calc-topic">
                 <label className="sus-calc-title">
                   Waste Management
                 </label>
-                <p>Choose the option that best matches your household’s waste sorting habits</p>
+                <p>How often do you choose to use recycling and composting?</p>
               </div>
               <div
                 className="sus-calc-input"
@@ -609,7 +623,7 @@ const CalculatorPage: React.FC = () => {
                       checked={wasteManagement === `waste${num}`}
                     />
                     <label htmlFor={`waste${num}`} className="text-lg">
-                      {num === 1 ? "No Recycling/Composting" : num === 2 ? "Some Recycling/Composting" : "Full Recycling & Composting"}
+                      {num === 1 ? "Never" : num === 2 ? "Sometimes" : "Always"}
                     </label>
                   </div>
                 ))}
@@ -694,9 +708,12 @@ const CalculatorPage: React.FC = () => {
                 </button>
 
                 <h2 className="text-xl font-semibold mb-4">Understanding Your Score</h2>
-                <div className="mb-4 overflow-y-auto max-h-[400px] text-black">
-                  {chatbotResponse}
-                </div>
+                <div 
+                  className="sustainability-response" 
+                  dangerouslySetInnerHTML={renderResponseHTML(chatbotResponse)} 
+                  style={{ lineHeight: '1.5' }}
+                />
+
 
                 <div className="flex flex-col gap-4 mt-4">
                   {/* Expandable Email Input Section */}
@@ -760,4 +777,3 @@ const CalculatorPage: React.FC = () => {
 };
 
 export default CalculatorPage;
-
