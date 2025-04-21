@@ -79,10 +79,13 @@
     transform: scale(0.95);
   }
 
-  .sustainability-response {
-    line-height: 1.5;
-    font-size: 16px;
-  }
+.sustainability-response {
+  max-height: 50vh;
+  padding-right: 10px; /* Prevents text from touching scrollbar */
+  overflow-y: auto;
+  line-height: 1.5;
+  font-size: 16px;
+}
   
   .sustainability-response p {
     margin-bottom: 12px;
