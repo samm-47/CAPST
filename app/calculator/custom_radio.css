@@ -78,3 +78,25 @@
   .copyButton:active {
     transform: scale(0.95);
   }
+
+  .sustainability-response {
+    line-height: 1.5;
+    font-size: 16px;
+  }
+  
+  .sustainability-response p {
+    margin-bottom: 12px;
+  }
+  
+  .sustainability-response ul {
+    padding-left: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .sustainability-response li {
+    margin-bottom: 8px;
+  }
+  
+  .sustainability-response strong {
+    font-weight: 600;
+  }
